@@ -233,7 +233,7 @@ void steadyNS::solvesupremizer(word type)
         {
             if (Usup.boundaryField()[i].type() != "processor")
             {
-                changeBCtype(Usup, "fixedValue", i);
+                ITHACAutilities::changeBCtype(Usup, "fixedValue", i);
                 assignBC(Usup, i, v);
                 assignIF(Usup, v);
             }
@@ -1029,4 +1029,12 @@ void steadyNS::Forces_matrices(label NUmodes, label NPmodes, label NSUPmodes)
 }
 
 
-
+void steadyNS::restart()
+{
+    volScalarField& p = _p();
+    volScalarField& p0 = _p0();
+    volVectorField& U = _U();
+    volVectorField& U0 = _U0();
+    p = p0;
+    U = U0;
+}
