@@ -1,0 +1,14 @@
+SOURCE = \
+reductionProblem/reductionProblem.C \
+steadyNS/steadyNS.C \
+steadyNSturb/steadyNSturb.C \
+unsteadyNS/unsteadyNS.C \
+unsteadyBB/unsteadyBB.C \
+unsteadyNSturb/unsteadyNSturb.C \
+unsteadyNST/unsteadyNST.C \
+unsteadyNSTturb/unsteadyNSTturb.C \
+steadyNS_simple/steadyNS_simple.C \
+unsteadyNS_pimple/unsteadyNS_pimple.C \
+unsteadyNS_piso/unsteadyNS_piso.C \
+unsteadyNS_PISO/unsteadyNS_PISO.C \
+laplacianProblem/laplacianProblem.C 

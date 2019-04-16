@@ -64,7 +64,7 @@ volVectorField& U = _U();
 
 pRefCell = 0;
 pRefValue = 0.0;
-setRefCell(p, simple.dict(), pRefCell, pRefValue);
+setRefCell(p, pimple.dict(), pRefCell, pRefValue);
 
 _laminarTransport = autoPtr<singlePhaseTransportModel>
                     (

@@ -1,0 +1,13 @@
+SOURCE = \
+reducedProblem/reducedProblem.C \
+reducedUnsteadyNS/reducedUnsteadyNS.C \
+reducedUnsteadyBB/reducedUnsteadyBB.C \
+reducedUnsteadyNSturb/reducedUnsteadyNSturb.C \
+reducedUnsteadyNST/reducedUnsteadyNST.C \
+reducedUnsteadyNSTturb/reducedUnsteadyNSTturb.C \
+reducedSteadyNS/reducedSteadyNS.C \
+reducedSteadyNSturb/reducedSteadyNSturb.C \
+reducedLaplacian/reducedLaplacian.C \
+reducedSimpleSteadyNS/reducedSimpleSteadyNS.C \
+reducedPimpleUnsteadyNS/reducedPimpleUnsteadyNS.C \
+reducedPisoUnsteadyNS/reducedPisoUnsteadyNS.C 

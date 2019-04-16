@@ -8,5 +8,8 @@ reducedSteadyNS/reducedSteadyNS.C
 reducedSteadyNSturb/reducedSteadyNSturb.C
 reducedLaplacian/reducedLaplacian.C
 reducedSimpleSteadyNS/reducedSimpleSteadyNS.C
+reducedPimpleUnsteadyNS/reducedPimpleUnsteadyNS.C
+reducedPisoUnsteadyNS/reducedPisoUnsteadyNS.C
+
 
 LIB = $(FOAM_USER_LIBBIN)/libITHACA_ROMPROBLEMS
