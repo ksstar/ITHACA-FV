@@ -36,6 +36,40 @@
 #include <cmath>
 
 // * * * * * * * * * * * * * * * Constructors * * * * * * * * * * * * * * * * //
+namespace Foam
+{
+Ostream& operator<< (Ostream& os, const Eigen::MatrixXd& mat)
+{
+    os << mat.rows() << mat.cols() << UList<double>(const_cast<Eigen::MatrixXd&>
+            (mat).data(), mat.size());
+    return os;
+}
+Istream& operator>> (Istream& is, Eigen::MatrixXd& mat)
+{
+    label nrow, ncol;
+    is >> nrow >> ncol;
+    mat.resize(nrow, ncol);
+    UList<double> list(mat.data(), nrow * ncol);
+    is >> list;
+    return is;
+}
+Ostream& operator<< (Ostream& os, const Eigen::Tensor<double, 3 >& tens)
+{
+    os << tens.dimension(0) << tens.dimension(1) << tens.dimension(
+           2) << UList<double>(const_cast<Eigen::Tensor<double, 3 >&>(tens).data(),
+                               tens.size());
+    return os;
+}
+Istream& operator>> (Istream& is, Eigen::Tensor<double, 3 >& tens)
+{
+    label d1, d2, d3;
+    is >> d1 >> d2 >> d3;
+    tens.resize(d1, d2, d3);
+    UList<double> list(tens.data(), d1 * d2 * d3);
+    is >> list;
+    return is;
+}
+}
 
 // Constructor
 unsteadyBB::unsteadyBB() {}
@@ -54,15 +88,20 @@ unsteadyBB::unsteadyBB(int argc, char* argv[])
     argList& args = _args();
 #include "createTime.H"
 #include "createMesh.H"
-    _pimple = autoPtr<pimpleControl>
-              (
-                  new pimpleControl
-                  (
-                      mesh
-                  )
-              );
 #include "createFields.H"
 #include "createFvOptions.H"
+    turbulence->validate();
+    ITHACAdict = new IOdictionary
+    (
+        IOobject
+        (
+            "ITHACAdict",
+            runTime.system(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        )
+    );
     offline = ITHACAutilities::check_off();
     podex = ITHACAutilities::check_pod();
     supex = ITHACAutilities::check_sup();
@@ -77,6 +116,7 @@ void unsteadyBB::truthSolve(List<scalar> mu_now)
 {
 #include "initContinuityErrs.H"
     Time& runTime = _runTime();
+    argList& args = _args();
     fvMesh& mesh = _mesh();
     volScalarField& p = _p();
     volVectorField& U = _U();

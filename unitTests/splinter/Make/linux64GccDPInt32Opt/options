@@ -1,0 +1,17 @@
+# 1 "Make/options"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "Make/options"
+EXE_INC = -I$(LIB_ITHACA_SRC)/thirdparty/Eigen -I$(LIB_ITHACA_SRC)/ITHACA_THIRD_PARTY/splinter/include -w -std=c++11
+
+
+
+
+
+EXE_LIBS = -L$(FOAM_USER_LIBBIN) -lITHACA_THIRD_PARTY 
+
+
+
+
+
+ 

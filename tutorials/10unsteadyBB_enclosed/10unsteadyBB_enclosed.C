@@ -41,7 +41,8 @@ class tutorial10: public unsteadyBB
             U(_U()),
             p(_p()),
             p_rgh(_p_rgh()),
-            T(_T())
+            T(_T()),
+	    args(_args())
         {}
 
         // Fields To Perform
@@ -50,8 +51,17 @@ class tutorial10: public unsteadyBB
         volScalarField& p_rgh;
         volScalarField& T;
 
+	/// Arg List
+        argList& args;
+
+	/// Perform an Offline solve
         void offlineSolve(Eigen::MatrixXd par_BC)
         {
+	    volVectorField U0 = U;
+            volScalarField P0 = p;
+	    volScalarField Prgh0 = p_rgh;
+	    volScalarField P0 = T;
+
             List<scalar> mu_now(1);
 
             if (offline)
@@ -63,6 +73,11 @@ class tutorial10: public unsteadyBB
             {
                 for (label k = 0; k < par_BC.rows(); k++)
                 {
+		    U = U0;
+                    p = P0;
+		    p_rgh = Prgh0;
+                    T = T0;
+
                     for (label j = 0; j < par_BC.cols(); j++)
                     {
                         for (label i = 0; i < mu.cols(); i++)
@@ -74,6 +89,7 @@ class tutorial10: public unsteadyBB
                     }
 
                     truthSolve(mu_now);
+		    restart();
                 }
             }
         }
