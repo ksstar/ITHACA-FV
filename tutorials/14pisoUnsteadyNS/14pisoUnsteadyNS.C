@@ -59,9 +59,8 @@ class tutorial14 : public unsteadyNS_piso
         {
             Vector<double> inl(0, 0, 0);
             List<scalar> mu_now(1);
-	    volVectorField U0 = U; 
-            volScalarField P0 = p; 
-
+            volVectorField U0 = U;
+            volScalarField P0 = p;
 
             // if the offline solution is already performed read the fields
             if (offline)
@@ -69,19 +68,20 @@ class tutorial14 : public unsteadyNS_piso
                 ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/Offline/");
                 ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/Offline/");
             }
+
             else
             {
                 Vector<double> Uinl(0.0001, 0, 0);
-		scalar pinl = 0;
+                scalar pinl = 0;
                 label BCind = 0;
 
                 for (label i = 0; i < mu.cols(); i++)
                 {
                     mu_now[0] = mu(0, i);
-			Info << "mu: " << mu(0, i)<< endl;
+                    Info << "mu: " << mu(0, i) << endl;
                     //change_viscosity(mu(0, i));
                     U = U0;
-		    p = P0;
+                    p = P0;
                     truthSolve2(mu_now);
                 }
             }
@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     // Perform the offline solve
     example.offlineSolve();
     // Solve the supremizer problem
-   // example.solvesupremizer();
+    // example.solvesupremizer();
     // Search the lift function
     example.liftSolve();
     // Homogenize the snapshots
@@ -137,7 +137,6 @@ int main(int argc, char* argv[])
     reducedPisoUnsteadyNS reduced(example);
     PtrList<volVectorField> U_rec_list;
     PtrList<volScalarField> P_rec_list;
-
     // Set values of the online solve
     reduced.nu = 0.01;
     reduced.tstart = 0.0;
@@ -147,10 +146,7 @@ int main(int argc, char* argv[])
     vel(0, 0) = 1;
     reduced.setOnlineVelocity(vel);
     reduced.solveOnline_Piso();
-
-     //   reduced.solveOnline_sup(temp_now_BC, vel_now_BC, k, par_on_BC.rows());
-      //  reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP", 2);
-
-
+    //   reduced.solveOnline_sup(temp_now_BC, vel_now_BC, k, par_on_BC.rows());
+    //  reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP", 2);
     exit(0);
 }

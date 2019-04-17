@@ -1,2 +1,4 @@
 SOURCE = \
-StreamTest.C 
+StreamTest.C \
+
+# sources

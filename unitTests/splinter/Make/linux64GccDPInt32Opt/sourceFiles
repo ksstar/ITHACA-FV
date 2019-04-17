@@ -1,2 +1,4 @@
 SOURCE = \
-test.C 
+test.C \
+
+# sources

@@ -67,92 +67,77 @@ void reducedPisoUnsteadyNS::solveOnline_Piso()
     scalar residual_jump(1);
     scalar U_norm_res(1);
     scalar P_norm_res(1);
-  
     Time& runTime = problem->_runTime();
     instantList Times = runTime.times();
-    runTime.setEndTime(finalTime+dt);
+    runTime.setEndTime(finalTime + dt);
     runTime.setTime(Times[1], 1);
     runTime.setDeltaT(dt);
-
     label i = 1;
-
     Eigen::MatrixXd a = Eigen::VectorXd::Zero(ULmodes.size());
     Eigen::MatrixXd b = Eigen::VectorXd::Zero(problem->Pmodes.size());
-
     volVectorField Uaux("Uaux", problem->Ufield[0]);
-    Uaux.storeOldTime(); 
+    Uaux.storeOldTime();
     volScalarField Paux("Paux", problem->Pfield[0]);
-    Paux.storeOldTime(); 
-
+    Paux.storeOldTime();
     ITHACAstream::exportSolution(Uaux, name(i),
                                  "./ITHACAoutput/Reconstruct/");
     ITHACAstream::exportSolution(Paux, name(i),
                                  "./ITHACAoutput/Reconstruct/");
     i++;
-
     ITHACAparameters para;
     float residualJumpLim =
         para.ITHACAdict->lookupOrDefault<float>("residualJumpLim", 1e-5);
     float normalizedResidualLim =
         para.ITHACAdict->lookupOrDefault<float>("normalizedResidualLim", 1e-5);
-
     pisoControl& piso = problem->_piso();
     setRefCell(Paux, piso.dict(), problem->pRefCell, problem->pRefValue);
 
     while (runTime.loop())
     {
-	Info << "Time = " << runTime.timeName() << nl << endl;	
-
+        Info << "Time = " << runTime.timeName() << nl << endl;
         residual_jump = 1;
         U_norm_res = 1;
         P_norm_res = 1;
+        //Uaux.oldTime();
+        //Paux.oldTime();
+        //while (residual_jump > residualJumpLim || std::max(U_norm_res, P_norm_res) > normalizedResidualLim)
+        //  {
+        //problem->_phi() = linearInterpolate(Uaux) & problem->_U().mesh().Sf();
+        // Define the momentum equation
+        fvVectorMatrix Au(get_Umatrix_Online(Uaux, Paux));
 
- 	//Uaux.oldTime(); 
-	//Paux.oldTime();
+        while (U_norm_res > 0.0001)
+        {
+            List<Eigen::MatrixXd> RedLinSysU = ULmodes.project(Au);
+            a = reducedProblem::solveLinearSys(RedLinSysU, a, uresidual, vel_now);
+            Info << "res for a: " << uresidual.norm() << endl;
+            uresidual = uresidual.cwiseAbs();
+            U_norm_res = uresidual.sum() / (RedLinSysU[1].cwiseAbs()).sum();
+        }
 
-	//while (residual_jump > residualJumpLim || std::max(U_norm_res, P_norm_res) > normalizedResidualLim)
-    //	{
-	
-	    	//problem->_phi() = linearInterpolate(Uaux) & problem->_U().mesh().Sf();
-		// Define the momentum equation
-        	fvVectorMatrix Au(get_Umatrix_Online(Uaux, Paux));
+        Uaux = ULmodes.reconstruct(a, "Uaux");
+        problem->_phi() = linearInterpolate(Uaux) & problem->_U().mesh().Sf();
 
-		while (U_norm_res > 0.0001)
-		{
-		
-		List<Eigen::MatrixXd> RedLinSysU = ULmodes.project(Au);
-       		a = reducedProblem::solveLinearSys(RedLinSysU, a, uresidual, vel_now);
-        	Info << "res for a: " << uresidual.norm() << endl;
-		
-		uresidual = uresidual.cwiseAbs();
-		U_norm_res = uresidual.sum() / (RedLinSysU[1].cwiseAbs()).sum();
-		}
+        /// Construct pressure matrix using the momentum matrix
+        while (piso.correct())
+        {
+            fvScalarMatrix Ap(get_Pmatrix_Online(Uaux, Paux));
+            List<Eigen::MatrixXd> RedLinSysP = problem->Pmodes.project(Ap);
+            b = reducedProblem::solveLinearSys(RedLinSysP, b, presidual);
+            Info << "res for b: " << presidual.norm() << endl;
+        }
 
- 		Uaux = ULmodes.reconstruct(a, "Uaux");
-        	problem->_phi() = linearInterpolate(Uaux) & problem->_U().mesh().Sf();
-
-		/// Construct pressure matrix using the momentum matrix
-		while (piso.correct())
-        	{
-        		fvScalarMatrix Ap(get_Pmatrix_Online(Uaux, Paux));
-			List<Eigen::MatrixXd> RedLinSysP = problem->Pmodes.project(Ap);
-		b = reducedProblem::solveLinearSys(RedLinSysP, b, presidual);
-        	Info << "res for b: " << presidual.norm() << endl;
-		}
-
- 		Uaux = ULmodes.reconstruct(a, "Uaux");
-        	Paux = problem->Pmodes.reconstruct(b, "Paux");
-    	//}
-  
-	Info << "Time = " << i*dt << nl << endl;
+        Uaux = ULmodes.reconstruct(a, "Uaux");
+        Paux = problem->Pmodes.reconstruct(b, "Paux");
+        //}
+        Info << "Time = " << i*dt << nl << endl;
         ITHACAstream::exportSolution(Uaux, name(i),
-                                 "./ITHACAoutput/Reconstruct/");
+                                     "./ITHACAoutput/Reconstruct/");
         ITHACAstream::exportSolution(Paux, name(i),
-                                 "./ITHACAoutput/Reconstruct/");
-	Uaux.storeOldTime(); 
-        Paux.storeOldTime(); 
-	
-   	i++ ;  
+                                     "./ITHACAoutput/Reconstruct/");
+        Uaux.storeOldTime();
+        Paux.storeOldTime();
+        i++ ;
     }
 }
 
@@ -164,29 +149,26 @@ fvVectorMatrix reducedPisoUnsteadyNS::get_Umatrix_Online(volVectorField& U,
     IOMRFZoneList& MRF = problem->_MRF();
     surfaceScalarField& phi = problem->_phi();
     MRF.correctBoundaryVelocity(U);
-
     IOdictionary transportProperties
     (
-    	IOobject
-    	(
-        	"transportProperties",
-        	runTime.constant(),
-        	mesh,
-        	IOobject::MUST_READ,
-        	IOobject::NO_WRITE
-    	)
-   );
-
-dimensionedScalar nu
-(
-     transportProperties.lookup("nu")
-);
-
+        IOobject
+        (
+            "transportProperties",
+            runTime.constant(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        )
+    );
+    dimensionedScalar nu
+    (
+        transportProperties.lookup("nu")
+    );
     fvVectorMatrix Ueqn
     (
-        fvm::ddt(U) 
-	+ fvm::div(phi, U)
-        -fvm::laplacian(nu,U) == -fvc::grad(p)
+        fvm::ddt(U)
+        + fvm::div(phi, U)
+        - fvm::laplacian(nu, U) == -fvc::grad(p)
     );
     problem->Ueqn_global = &Ueqn;
     return Ueqn;
@@ -200,38 +182,36 @@ fvScalarMatrix reducedPisoUnsteadyNS::get_Pmatrix_Online(volVectorField& U,
     surfaceScalarField& phi = problem->_phi();
     fvMesh& mesh = problem->_mesh();
     MRF.correctBoundaryVelocity(U);
-   pisoControl piso(mesh);
-    
+    pisoControl piso(mesh);
     volScalarField rAU(1.0 / problem->Ueqn_global->A());
     volVectorField HbyA(constrainHbyA(rAU * problem->Ueqn_global->H(), U, p));
-    surfaceScalarField phiHbyA("phiHbyA", fvc::flux(HbyA)+  		  fvc::interpolate(rAU)*fvc::ddtCorr(U, phi));
+    surfaceScalarField phiHbyA("phiHbyA",
+                               fvc::flux(HbyA) +            fvc::interpolate(rAU)*fvc::ddtCorr(U, phi));
     adjustPhi(phiHbyA, U, p);
-// Update the pressure BCs to ensure flux consistency    
+    // Update the pressure BCs to ensure flux consistency
     constrainPressure(p, U, phiHbyA, rAU);
-while (piso.correctNonOrthogonal()) 
-    {  
-    fvScalarMatrix pEqn
-    (
-        fvm::laplacian(rAU, p) == fvc::div(phiHbyA)
-    );
-pEqn.setReference(problem->pRefCell, problem->pRefValue);
-pEqn.solve(mesh.solver(p.select(piso.finalInnerIter()))); 
+
+    while (piso.correctNonOrthogonal())
+    {
+        fvScalarMatrix pEqn
+        (
+            fvm::laplacian(rAU, p) == fvc::div(phiHbyA)
+        );
+        pEqn.setReference(problem->pRefCell, problem->pRefValue);
+        pEqn.solve(mesh.solver(p.select(piso.finalInnerIter())));
 
         if (piso.finalNonOrthogonalIter())
         {
             phi = phiHbyA - pEqn.flux();
         }
-}
+    }
 
-U = HbyA - rAU * fvc::grad(p);
-
+    U = HbyA - rAU * fvc::grad(p);
     U.correctBoundaryConditions();
-
-fvScalarMatrix pEqn
+    fvScalarMatrix pEqn
     (
         fvm::laplacian(rAU, p) == fvc::div(phiHbyA)
     );
-
     return pEqn;
 }
 

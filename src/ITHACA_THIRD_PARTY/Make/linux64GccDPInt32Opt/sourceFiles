@@ -10,4 +10,6 @@ splinter/src/knots.C \
 splinter/src/mykroneckerproduct.C \
 splinter/src/serializer.C \
 splinter/src/utilities.C \
-splinter/src/rbfspline.C 
+splinter/src/rbfspline.C \
+
+# sources
