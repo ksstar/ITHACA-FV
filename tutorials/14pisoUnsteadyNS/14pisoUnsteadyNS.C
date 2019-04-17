@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     // Perform the offline solve
     example.offlineSolve();
     // Solve the supremizer problem
-    example.solvesupremizer();
+   // example.solvesupremizer();
     // Search the lift function
     example.liftSolve();
     // Homogenize the snapshots

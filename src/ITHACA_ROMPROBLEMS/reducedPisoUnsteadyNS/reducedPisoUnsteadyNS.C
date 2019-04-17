@@ -186,7 +186,7 @@ dimensionedScalar nu
     (
         fvm::ddt(U) 
 	+ fvm::div(phi, U)
-        -fvm::laplacian(nu,U)
+        -fvm::laplacian(nu,U) == -fvc::grad(p)
     );
     problem->Ueqn_global = &Ueqn;
     return Ueqn;
