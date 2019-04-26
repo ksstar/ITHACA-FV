@@ -75,6 +75,7 @@ void unsteadyNS::truthSolve(List<scalar> mu_now)
 {
 #include "initContinuityErrs.H"
     Time& runTime = _runTime();
+    argList& args = _args();
     surfaceScalarField& phi = _phi();
     fvMesh& mesh = _mesh();
     fv::options& fvOptions = _fvOptions();

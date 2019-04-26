@@ -208,6 +208,8 @@ void reducedSteadyNS::reconstruct_PPE(fileName folder, int printevery)
 
 void reducedSteadyNS::reconstruct_sup(fileName folder, int printevery)
 {
+
+    fvMesh& mesh = problem->_mesh();
     mkDir(folder);
     ITHACAutilities::createSymLink(folder);
     int counter = 0;
@@ -224,7 +226,14 @@ void reducedSteadyNS::reconstruct_sup(fileName folder, int printevery)
                 U_rec += Umodes[j] * online_solution[i](j + 1, 0);
             }
 
-            ITHACAstream::exportSolution(U_rec, name(online_solution[i](0, 0)), folder);
+	    ITHACAstream::exportSolution(U_rec, name(online_solution[i](0, 0)), folder);
+
+	    surfaceScalarField Phi_rec("Phi_rec", (linearInterpolate(Umodes[0] ) & Umodes[0].mesh().Sf() )* 0);
+            Phi_rec = linearInterpolate(U_rec ) & U_rec.mesh().Sf();
+
+	    ITHACAstream::exportSolution(Phi_rec, name(online_solution[i](0, 0)), folder);
+
+            
             volScalarField P_rec("P_rec", problem->Pmodes[0] * 0);
 
             for (label j = 0; j < Nphi_p; j++)

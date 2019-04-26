@@ -36,40 +36,7 @@
 #include <cmath>
 
 // * * * * * * * * * * * * * * * Constructors * * * * * * * * * * * * * * * * //
-namespace Foam
-{
-Ostream& operator<< (Ostream& os, const Eigen::MatrixXd& mat)
-{
-    os << mat.rows() << mat.cols() << UList<double>(const_cast<Eigen::MatrixXd&>
-            (mat).data(), mat.size());
-    return os;
-}
-Istream& operator>> (Istream& is, Eigen::MatrixXd& mat)
-{
-    label nrow, ncol;
-    is >> nrow >> ncol;
-    mat.resize(nrow, ncol);
-    UList<double> list(mat.data(), nrow * ncol);
-    is >> list;
-    return is;
-}
-Ostream& operator<< (Ostream& os, const Eigen::Tensor<double, 3 >& tens)
-{
-    os << tens.dimension(0) << tens.dimension(1) << tens.dimension(
-           2) << UList<double>(const_cast<Eigen::Tensor<double, 3 >&>(tens).data(),
-                               tens.size());
-    return os;
-}
-Istream& operator>> (Istream& is, Eigen::Tensor<double, 3 >& tens)
-{
-    label d1, d2, d3;
-    is >> d1 >> d2 >> d3;
-    tens.resize(d1, d2, d3);
-    UList<double> list(tens.data(), d1 * d2 * d3);
-    is >> list;
-    return is;
-}
-}
+
 
 // Constructor
 unsteadyBB::unsteadyBB() {}
@@ -88,9 +55,16 @@ unsteadyBB::unsteadyBB(int argc, char* argv[])
     argList& args = _args();
 #include "createTime.H"
 #include "createMesh.H"
+    _pimple = autoPtr<pimpleControl>
+              (
+                  new pimpleControl
+                  (
+                      mesh
+                  )
+              );
+    //pimpleControl& pimple = _pimple();
 #include "createFields.H"
 #include "createFvOptions.H"
-    turbulence->validate();
     ITHACAdict = new IOdictionary
     (
         IOobject
@@ -967,6 +941,28 @@ void unsteadyBB::change_viscosity(double mu)
     {
         this->assignBC(ciao, i, mu);
     }
+}
+
+void unsteadyBB::restart()
+{
+    volScalarField& p = _p();
+    volScalarField& p0 = _p0();
+    volScalarField& p_rgh = _p_rgh();
+    volScalarField& prgh0 = _prgh0();
+    volScalarField& T = _T();
+    volScalarField& T0 = _T0();
+    volVectorField& U = _U();
+    volVectorField& U0 = _U0();
+    surfaceScalarField& phi = _phi();
+    surfaceScalarField& phi0 = _phi0();
+    p = p0;
+    U = U0;
+    p_rgh = prgh0;
+    T = T0;
+    phi = phi0;
+    //turbulence.reset(
+   //     (incompressible::turbulenceModel::New(U, phi, _laminarTransport())).ptr()
+   // );
 }
 
 

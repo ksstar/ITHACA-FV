@@ -133,6 +133,9 @@ class reducedSteadyNS: public reducedProblem
         /// Recontructed velocity field
         PtrList<volVectorField> UREC;
 
+        /// Recontructed velocity field
+        PtrList<surfaceScalarField> PHIREC;
+
         /// Newton object used to solve the non linear problem
         newton_steadyNS newton_object;
 

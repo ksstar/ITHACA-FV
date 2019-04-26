@@ -1,0 +1,54 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  6
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+Build  : 6
+Exec   : postProcess -func flowRatePatch(name=outlet, phi)
+Date   : Apr 19 2019
+Time   : 10:42:36
+Host   : "cfdclu17.ugent.be"
+PID    : 33898
+I/O    : uncollated
+Case   : /cfdfile2/data/fm/sabrina/ITHACA-FV/tutorials/03steadyNS_UQ
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 0
+
+surfaceFieldValue flowRatePatch(name=outlet,phi):
+    total faces  = 70
+    total area   = 0.166667
+
+
+Time = 0
+
+Reading fields:
+
+Executing functionObjects
+surfaceFieldValue flowRatePatch(name=outlet,phi) write:
+--> FOAM Warning : 
+    From function virtual bool Foam::functionObjects::fieldValues::surfaceFieldValue::write()
+    in file fieldValues/surfaceFieldValue/surfaceFieldValue.C at line 807
+    Requested field phi not found in database and not processed
+
+
+Time = 1669
+
+Reading fields:
+    surfaceScalarFields: phi
+
+Executing functionObjects
+surfaceFieldValue flowRatePatch(name=outlet,phi) write:
+    sum(outlet) of phi = 0.1
+
+
+End
+

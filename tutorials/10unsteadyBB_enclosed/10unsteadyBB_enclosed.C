@@ -60,7 +60,7 @@ class tutorial10: public unsteadyBB
 	    volVectorField U0 = U;
             volScalarField P0 = p;
 	    volScalarField Prgh0 = p_rgh;
-	    volScalarField P0 = T;
+	    volScalarField T0 = T;
 
             List<scalar> mu_now(1);
 
@@ -223,7 +223,8 @@ int main(int argc, char* argv[])
     example.inletIndexT << 1, 2;
     /// Time parameters
     example.startTime = 0.0;
-    example.finalTime = 10.0;
+    example.finalTime = 0.1;
+ //example.finalTime = 10.0;
     example.timeStep = 0.005;
     example.writeEvery = 0.01;
     // Perform the Offline Solve;

@@ -81,6 +81,19 @@ class unsteadyBB: public unsteadyNS
         /// List of pointers used to form the temperature snapshots matrix
         PtrList<volScalarField> Tfield;
 
+	/// Initial Pressure field (for restart purposes)
+        autoPtr<volScalarField> _p0;
+
+        /// Initial Velocity field (for restart purposes)
+        autoPtr<volVectorField> _U0;
+
+	/// Initial shifted Pressure field (for restart purposes)
+        autoPtr<volScalarField> _prgh0;
+
+        /// Initial Temperature field (for restart purposes)
+        autoPtr<volScalarField> _T0;
+
+
         /// List of pointers used to form the temperature snapshots matrix
         PtrList<volScalarField> Tfield_on;
 
@@ -174,6 +187,10 @@ class unsteadyBB: public unsteadyNS
 
         /// Source Term Heat
         autoPtr<volScalarField> _S;
+
+	// Dummy variables to transform pimplefoam into a class
+        /// pimpleControl
+        autoPtr<pimpleControl> _pimple;
 
         // Functions
         /// Perform a truthsolve for parameters mu_now
@@ -306,6 +323,10 @@ class unsteadyBB: public unsteadyNS
         ///
         Eigen::Tensor<double, 3 > convective_term_tens_temperature(label NUmodes,
                 label NTmodes, label NSUPmodes);
+
+	/// set U, P, Prgh and T back to the values into the 0 folder
+        void restart();
+
 };
 
 #endif

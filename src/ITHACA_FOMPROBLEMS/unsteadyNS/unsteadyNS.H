@@ -45,7 +45,18 @@ SourceFiles
 #include "IOMRFZoneList.H"
 #include "fixedFluxPressureFvPatchScalarField.H"
 #include "steadyNS.H"
+#include "ITHACAstream.H"
+#include "ITHACAparameters.H"
+#if OPENFOAM >= 1812
+#include "ITHACAforces18.H"
+#else
+#include "ITHACAforces.H"
+#endif
+#include "volFields.H"
 #include <iostream>
+#include "IPstream.H"
+#include "OPstream.H"
+#include "Modes.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

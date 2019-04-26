@@ -33,7 +33,9 @@ SourceFiles
 #include "ITHACAstream.H"
 #include <chrono>
 #include<math.h>
-#include<iomanip>
+//#include<iomanip>
+#include "forces.H"
+#include "IOmanip.H"
 
 class tutorial04: public unsteadyNS
 {
@@ -42,17 +44,23 @@ class tutorial04: public unsteadyNS
             :
             unsteadyNS(argc, argv),
             U(_U()),
-            p(_p())
+            p(_p()),
+	    args(_args())
         {}
 
         // Fields To Perform
         volVectorField& U;
         volScalarField& p;
 
+	/// Arg List
+        argList& args;
+
         void offlineSolve()
         {
             Vector<double> inl(0, 0, 0);
             List<scalar> mu_now(1);
+	    volVectorField U0 = U;
+            volScalarField P0 = p;
 
             if (offline)
             {
@@ -64,13 +72,16 @@ class tutorial04: public unsteadyNS
             else
             {
                 for (label i = 0; i < mu.cols(); i++)
-                {
+                {	
+	            U = U0;
+                    p = P0;
                     //inl[0] = mu(0, i);
                     mu_now[0] = mu(0, i);
                     //assignBC(U, BCind, inl);
                     assignIF(U, inl);
                     change_viscosity( mu(0, i));
                     truthSolve(mu_now);
+		    restart();
                 }
             }
         }
@@ -108,7 +119,8 @@ int main(int argc, char* argv[])
     example.inletIndex(0, 1) = 0;
     // Time parameters
     example.startTime = 0;
-    example.finalTime = 20;
+    //example.finalTime = 20;
+    example.finalTime = 1;
     example.timeStep = 0.01;
     example.writeEvery = 1.0;
     // Perform The Offline Solve;

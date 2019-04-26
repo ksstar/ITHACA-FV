@@ -176,6 +176,16 @@ class ITHACAstream
         static void exportFields(PtrList<volScalarField>& field, word folder,
                                  word fieldname);
 
+	//--------------------------------------------------------------------------
+        /// Function to export volScalarFields
+        ///
+        /// @param[in]  field      The field you want to export.
+        /// @param[in]  folder     The folder where you want to save the field.
+        /// @param[in]  fieldname  The name you want to give to the file.
+        ///
+        static void exportFields(PtrList<surfaceScalarField>& field, word folder,
+                                 word fieldname);
+
         //--------------------------------------------------------------------------
         /// Read a two dimensional matrix from e a txt fle in Eigen format
         /*One has to provide the complete filename with the absolute or relative path*/
