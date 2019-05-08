@@ -105,13 +105,14 @@ class tutorial03_UQ : public steadyNS
             else
             {
                 Vector<double> Uinl(0, 0, 0);
-		Info<< "Here0" << endl;
                 for (label j = 0; j < par_BC.cols(); j++)
                 {
                     U = U0;
                     p = P0;
-                    mu_now[0] = mu(0, 0);
-	            Uinl[0] = par_BC(0, j);
+                    mu_now[0] = mu(0, j);
+                    change_viscosity(mu(0, j));
+	            //Uinl[0] = par_BC(0, j);
+                    Uinl[0] = 1;
                     assignBC(U, inletIndex(0, 0), Uinl);
                     truthSolve(mu_now);
                     restart();
@@ -137,13 +138,14 @@ class tutorial03_UQ : public steadyNS
             {
             
                 Vector<double> Uinl(0, 0, 0);
-		Info<< "Here0" << endl;
                 for (label j = 0; j < par_BC.cols(); j++)
                 {
                     U = U0;
                     p = P0;
-                    mu_now[0] = mu(0, 0);
-	            Uinl[0] = par_BC(0, j);
+                    mu_now[0] = mu(0, j);
+                    change_viscosity(mu(0, j));
+	            //Uinl[0] = par_BC(0, j);
+                    Uinl[0] = 1;
                     assignBC(U, inletIndex(0, 0), Uinl);
                     truthSolve(mu_now, folder );
                     restart();
@@ -158,13 +160,17 @@ int main(int argc, char* argv[])
 {
     // Construct the tutorial object
     tutorial03_UQ example(argc, argv);
-    // the offline samples for the boundary conditions
+    // the offline samples 
     Info << "Here" << endl;
-    word par_offline_BC("./par_offline");
+    word par_offline_BC("./par_offline_vel");
+    word par_offline_nu("./par_offline_nu");
     // the samples which will be used for setting the boundary condition in the online stage
-    word par_online_BC("./par_online");
+    word par_online_BC("./par_online_vel");
+    word par_online_nu("./par_online_nu");
     Eigen::MatrixXd par_off_BC = ITHACAstream::readMatrix(par_offline_BC);
     Eigen::MatrixXd par_on_BC = ITHACAstream::readMatrix(par_online_BC);
+    Eigen::MatrixXd par_off_nu = ITHACAstream::readMatrix(par_offline_nu);
+    Eigen::MatrixXd par_on_nu = ITHACAstream::readMatrix(par_online_nu);
     // Read some parameters from file
     ITHACAparameters para;
     int NmodesUout = para.ITHACAdict->lookupOrDefault<int>("NmodesUout", 15);
@@ -176,16 +182,16 @@ int main(int argc, char* argv[])
     int NmodesOut     = para.ITHACAdict->lookupOrDefault<int>("NmodesOut", 15);
     // Read the par file where the parameters are stored
     //word filename("./par_online");
-    //example.mu = ITHACAstream::readMatrix(filename);
+    example.mu = ITHACAstream::readMatrix(par_online_nu);
     // Set the number of parameters
-    example.Pnumber = 1;
+    //example.Pnumber = 1;
     // Set samples
-    example.Tnumber = 1;
+    //example.Tnumber = 1;
     // Set the parameters infos
-    example.setParameters();
+    //example.setParameters();
     // Set the parameter ranges
-    example.mu_range(0, 0) = 1;
-    example.mu_range(0, 1) = 1;
+    //example.mu_range(0, 0) = 1;
+    //example.mu_range(0, 1) = 1;
     // Generate equispaced samples inside the parameter range
     example.genEquiPar();
     // Set the inlet boundaries patch 0 directions x and y
@@ -291,16 +297,18 @@ int main(int argc, char* argv[])
     reducedSteadyNS ridotto(example);
     // Set the inlet velocity
     Eigen::MatrixXd vel_now(2, 1);
-    vel_now(0, 0) = 1;
-    vel_now(1, 0) = 0;
+    //vel_now(0, 0) = 1;
+    //vel_now(1, 0) = 0;
 
     auto start_ROM = std::chrono::high_resolution_clock::now();
     // Perform an online solve for the new values of inlet velocities
-    for (label k = 0; k <  par_on_BC.cols(); k++)
+    //for (label k = 0; k <  par_on_BC.cols(); k++)
+    for (label k = 0; k <  par_on_nu.cols(); k++)
     {
         // Set the reduced viscosity
-        ridotto.nu = example.mu(0, 0);
+        ridotto.nu = example.mu(0, k);
 	vel_now(0, 0) = par_on_BC(0,k);
+        //vel_now(0, 0) = 1;
         ridotto.solveOnline_sup(vel_now);
         Eigen::MatrixXd tmp_sol(ridotto.y.rows() + 1, 1);
         tmp_sol(0) = k + 1;
@@ -323,12 +331,7 @@ int main(int argc, char* argv[])
 
 
     tutorial03_UQ HFonline2(argc, argv);
-    HFonline2.Pnumber = 1;
-    HFonline2.Tnumber = 1;
-    HFonline2.setParameters();
-    HFonline2.mu_range(0, 0) = 1;
-    HFonline2.mu_range(0, 1) = 1;
-    HFonline2.genEquiPar();
+    HFonline2.mu = ITHACAstream::readMatrix(par_online_nu);
     HFonline2.inletIndex.resize(1, 2);
     HFonline2.inletIndex(0, 0) = 0;
     HFonline2.inletIndex(0, 1) = 0;

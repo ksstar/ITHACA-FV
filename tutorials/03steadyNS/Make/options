@@ -31,6 +31,8 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/Foam2Eigen \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/EigenFunctions \
     -I$(LIB_ITHACA_SRC)/ITHACA_CORE/Containers \
+    -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAsensitivity \
+    -I$(LIB_ITHACA_SRC)/ITHACA_CORE/ITHACAsensitivity/FiguresOfMerit \
     -I$(LIB_ITHACA_SRC)/thirdparty/Eigen \
     -I$(LIB_ITHACA_SRC)/thirdparty/spectra/include \
     -I$(LIB_ITHACA_SRC)/ITHACA_THIRD_PARTY/splinter/include \
