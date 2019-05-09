@@ -11,6 +11,4 @@ steadyNS_simple/steadyNS_simple.C \
 unsteadyNS_pimple/unsteadyNS_pimple.C \
 unsteadyNS_piso/unsteadyNS_piso.C \
 unsteadyNS_PISO/unsteadyNS_PISO.C \
-laplacianProblem/laplacianProblem.C \
-
-# sources
+laplacianProblem/laplacianProblem.C 

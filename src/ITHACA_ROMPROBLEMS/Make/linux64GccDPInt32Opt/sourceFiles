@@ -10,6 +10,4 @@ reducedSteadyNSturb/reducedSteadyNSturb.C \
 reducedLaplacian/reducedLaplacian.C \
 reducedSimpleSteadyNS/reducedSimpleSteadyNS.C \
 reducedPimpleUnsteadyNS/reducedPimpleUnsteadyNS.C \
-reducedPisoUnsteadyNS/reducedPisoUnsteadyNS.C \
-
-# sources
+reducedPisoUnsteadyNS/reducedPisoUnsteadyNS.C 
