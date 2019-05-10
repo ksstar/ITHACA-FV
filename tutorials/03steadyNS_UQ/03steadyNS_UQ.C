@@ -111,8 +111,8 @@ class tutorial03_UQ : public steadyNS
                     p = P0;
                     mu_now[0] = mu(0, j);
                     change_viscosity(mu(0, j));
-	            //Uinl[0] = par_BC(0, j);
-                    Uinl[0] = 1;
+	            Uinl[0] = par_BC(0, j);
+                    //Uinl[0] = 1;
                     assignBC(U, inletIndex(0, 0), Uinl);
                     truthSolve(mu_now);
                     restart();
@@ -144,8 +144,8 @@ class tutorial03_UQ : public steadyNS
                     p = P0;
                     mu_now[0] = mu(0, j);
                     change_viscosity(mu(0, j));
-	            //Uinl[0] = par_BC(0, j);
-                    Uinl[0] = 1;
+	            Uinl[0] = par_BC(0, j);
+                    //Uinl[0] = 1;
                     assignBC(U, inletIndex(0, 0), Uinl);
                     truthSolve(mu_now, folder );
                     restart();
