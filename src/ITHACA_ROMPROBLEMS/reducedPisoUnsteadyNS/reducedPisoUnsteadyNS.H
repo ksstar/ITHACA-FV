@@ -110,6 +110,12 @@ class reducedPisoUnsteadyNS: public reducedProblem
    
       //  int counter = 0;
 
+        /// Reconstructed pressure field
+        PtrList<volScalarField> PREC;
+
+        /// Recontructed velocity field
+        PtrList<volVectorField> UREC;
+
 
 	Eigen::MatrixXd online_solution;
 

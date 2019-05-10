@@ -70,7 +70,7 @@ void reducedPisoUnsteadyNS::solveOnline_Piso()
   
     Time& runTime = problem->_runTime();
     instantList Times = runTime.times();
-    runTime.setEndTime(finalTime+dt);
+    runTime.setEndTime(finalTime);
     runTime.setTime(Times[1], 1);
     runTime.setDeltaT(dt);
 
@@ -122,7 +122,7 @@ void reducedPisoUnsteadyNS::solveOnline_Piso()
 		U_norm_res = uresidual.sum() / (RedLinSysU[1].cwiseAbs()).sum();
 		//}
 
- 		Uaux = ULmodes.reconstruct(a, "Uaux");
+ 		//Uaux = ULmodes.reconstruct(a, "Uaux");
         	problem->_phi() = linearInterpolate(Uaux) & problem->_U().mesh().Sf();
 
 		/// Construct pressure matrix using the momentum matrix
@@ -147,6 +147,9 @@ void reducedPisoUnsteadyNS::solveOnline_Piso()
         Paux.storeOldTime(); 
 	
    	i++ ;  
+
+        UREC.append(Uaux);
+        PREC.append(Paux);
     }
 }
 

@@ -153,6 +153,17 @@ int main(int argc, char* argv[])
     // Reconstruct the solution and export it
     reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP/", 1);
 
+    // Calculate error between online- and corresponding full order solution
+    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
+                                         example.Ufield, reduced.UREC);
+    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields(
+                                         example.Pfield, reduced.PREC);
+    //Export the matrix containing the error
+    ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
+                               "./ITHACAoutput/l2error");
+    ITHACAstream::exportMatrix(L2errorMatrixP, "L2errorMatrixT", "eigen",
+                               "./ITHACAoutput/l2error");
+
      //   reduced.solveOnline_sup(temp_now_BC, vel_now_BC, k, par_on_BC.rows());
       //  reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP", 2);
 

@@ -155,8 +155,8 @@ void unsteadyNS_piso::truthSolve2(List<scalar> mu_now)
     ITHACAstream::exportSolution(p, name(counter), "./ITHACAoutput/Offline/");
     std::ofstream of("./ITHACAoutput/Offline/" + name(counter) + "/" +
                      runTime.timeName());
-    Ufield.append(U);
-    Pfield.append(p);
+   // Ufield.append(U);
+   // Pfield.append(p);
     counter++;
     //nextWrite += writeEvery;
 
