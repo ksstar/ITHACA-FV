@@ -34,6 +34,13 @@ SourceFiles
 #include "forces.H"
 #include "IOmanip.H"
 
+#include <iostream>
+#include <chrono>
+#include <ctime>
+#include <math.h>
+
+ 
+
 class tutorial03_UQ : public steadyNS
 {
     public:
@@ -160,8 +167,7 @@ int main(int argc, char* argv[])
 {
     // Construct the tutorial object
     tutorial03_UQ example(argc, argv);
-    // the offline samples 
-    Info << "Here" << endl;
+    // the offline samples
     word par_offline_BC("./par_offline_vel");
     word par_offline_nu("./par_offline_nu");
     // the samples which will be used for setting the boundary condition in the online stage
@@ -208,6 +214,10 @@ int main(int argc, char* argv[])
     auto finish_sup = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_sup = finish_sup - start_sup;
 
+    std::cout << "elapsed_sup: " << elapsed_sup.count() << " seconds.";
+    std::cout << std::endl;
+
+
     auto start_POD = std::chrono::high_resolution_clock::now();
     // Search the lift function for the velocity
     example.liftSolve();
@@ -226,6 +236,10 @@ int main(int argc, char* argv[])
     auto finish_POD = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed_POD = finish_POD - start_POD;
+
+    std::cout << "elapsed_POD: " << elapsed_POD.count() << " seconds.";
+    std::cout << std::endl;
+
 // Create a list with number of modes for which the projection needs to be performed
     Eigen::MatrixXd List_of_modes(NmodesOut, 1);
 
@@ -263,11 +277,11 @@ int main(int argc, char* argv[])
     // Calculate the coefficients and L2 error and store the error in a matrix for each number of modes
     for (int i = 0; i < List_of_modes.rows(); i++)
     {
-        Eigen::MatrixXd coeffU = ITHACAutilities::get_coeffs(example.Ufield, example.Umodes,
+        Eigen::MatrixXd coeffU = ITHACAutilities::get_coeffs(example.Ufield, ULmodes,
                                  List_of_modes(i, 0) + example.liftfield.size());
         Eigen::MatrixXd coeffP = ITHACAutilities::get_coeffs(example.Pfield, example.Pmodes, List_of_modes(i, 0));
         PtrList<volVectorField> rec_fieldU = ITHACAutilities::reconstruct_from_coeff(
-                example.Umodes, coeffU, List_of_modes(i, 0));
+                ULmodes, coeffU, List_of_modes(i, 0));
         PtrList<volScalarField> rec_fieldP = ITHACAutilities::reconstruct_from_coeff(
                 example.Pmodes, coeffP, List_of_modes(i, 0));
         Eigen::MatrixXd L2errorProjU = ITHACAutilities::error_listfields(example.Ufield,
@@ -289,6 +303,9 @@ int main(int argc, char* argv[])
     example.projectSUP("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
     auto finish_matrix = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_matrix = finish_matrix - start_matrix;
+
+    std::cout << "elapsed_matrix: " << elapsed_matrix.count() << " seconds.";
+    std::cout << std::endl;   
 
 // Resize the modes for projection
     example.Pmodes.resize(NmodesPproj);
@@ -323,6 +340,9 @@ int main(int argc, char* argv[])
     auto finish_ROM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
 
+    std::cout << "elapsed_ROM: " << elapsed_ROM.count() << " seconds.";
+    std::cout << std::endl;
+
     // Save the online solution
     ITHACAstream::exportMatrix(ridotto.online_solution, "red_coeff", "python",
                                "./ITHACAoutput/red_coeff");
@@ -341,6 +361,9 @@ int main(int argc, char* argv[])
     HFonline2.offlineSolve2(par_on_BC, "./ITHACAoutput/Offline2/");
     auto finish_FOM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_FOM = finish_FOM - start_FOM;
+
+    std::cout << "elapsed_FOM: " << elapsed_FOM.count() << " seconds.";
+    std::cout << std::endl;
 
     // Calculate error between online- and corresponding full order solution
     Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(

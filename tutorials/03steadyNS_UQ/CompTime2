@@ -1,0 +1,214 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  6
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+Build  : 6
+Exec   : 03steadyNS_UQ
+Date   : May 14 2019
+Time   : 11:14:27
+Host   : "cfdclu17.ugent.be"
+PID    : 35888
+I/O    : uncollated
+Case   : /cfdfile2/data/fm/sabrina/ITHACA-FV/tutorials/03steadyNS_UQ
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Reading field p
+
+Create time
+
+Reading field p
+
+Create mesh for time = 0
+
+
+SIMPLE: Convergence criteria found
+        p: tolerance 1e-09
+        U: tolerance 1e-09
+        nuTilda: tolerance 1e-06
+
+Reading field p
+
+0
+Reading field U
+
+Reading/calculating face flux field phi
+
+Selecting incompressible transport model Newtonian
+Selecting turbulence model type laminar
+Selecting laminar stress model Stokes
+No MRF models present
+
+Offline data already exist, reading existing data
+POD don't exist, performing a POD decomposition
+Supremizers don't exist, performing a POD decomposition
+######### Reading the Data for U #########
+Reading U number 1
+Reading U number 2
+Reading U number 3
+Reading U number 4
+Reading U number 5
+Reading U number 6
+Reading U number 7
+Reading U number 8
+Reading U number 9
+Reading U number 10
+Reading U number 11
+Reading U number 12
+Reading U number 13
+Reading U number 14
+Reading U number 15
+Reading U number 16
+Reading U number 17
+Reading U number 18
+Reading U number 19
+Reading U number 20
+Reading U number 21
+Reading U number 22
+Reading U number 23
+Reading U number 24
+Reading U number 25
+Reading U number 26
+
+######### Reading the Data for p #########
+Reading p number 1
+Reading p number 2
+Reading p number 3
+Reading p number 4
+Reading p number 5
+Reading p number 6
+Reading p number 7
+Reading p number 8
+Reading p number 9
+Reading p number 10
+Reading p number 11
+Reading p number 12
+Reading p number 13
+Reading p number 14
+Reading p number 15
+Reading p number 16
+Reading p number 17
+Reading p number 18
+Reading p number 19
+Reading p number 20
+Reading p number 21
+Reading p number 22
+Reading p number 23
+Reading p number 24
+Reading p number 25
+Reading p number 26
+
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 1, Final residual = 3.24425e-07, No Iterations (82 82 82)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 1, Final residual = 9.55163e-07, No Iterations (82 82 82)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (82 82 82)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00267477, Final residual = 6.03421e-08, No Iterations (66 66 66)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.0125279, Final residual = 8.59699e-07, No Iterations (66 66 66)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (66 66 66)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00116835, Final residual = 6.67801e-08, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00547967, Final residual = 9.02058e-07, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00114865, Final residual = 6.64128e-08, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00547632, Final residual = 9.17528e-07, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00163476, Final residual = 5.86428e-08, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00767113, Final residual = 8.43291e-07, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000184384, Final residual = 6.2643e-08, No Iterations (52 52 52)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.000923974, Final residual = 8.52595e-07, No Iterations (52 52 52)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (52 52 52)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 1.40665e-05, Final residual = 6.14416e-08, No Iterations (42 42 42)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.000157671, Final residual = 9.53259e-07, No Iterations (42 42 42)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (42 42 42)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00107821, Final residual = 6.23982e-08, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00515623, Final residual = 8.63948e-07, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00126858, Final residual = 7.25402e-08, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00597609, Final residual = 9.83918e-07, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000770766, Final residual = 6.75527e-08, No Iterations (60 60 60)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.0036292, Final residual = 8.8905e-07, No Iterations (60 60 60)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (60 60 60)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000468778, Final residual = 7.18603e-08, No Iterations (57 57 57)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00226227, Final residual = 9.83246e-07, No Iterations (57 57 57)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (57 57 57)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00125683, Final residual = 7.18686e-08, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00592138, Final residual = 9.7546e-07, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000793025, Final residual = 7.24445e-08, No Iterations (60 60 60)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00380426, Final residual = 9.74777e-07, No Iterations (60 60 60)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (60 60 60)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00180818, Final residual = 6.48235e-08, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00851634, Final residual = 9.36209e-07, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000130367, Final residual = 6.31576e-08, No Iterations (47 47 47)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.000633261, Final residual = 8.16361e-07, No Iterations (47 47 47)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (47 47 47)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000538286, Final residual = 6.75491e-08, No Iterations (58 58 58)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00259578, Final residual = 9.37149e-07, No Iterations (58 58 58)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (58 58 58)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000183237, Final residual = 6.27986e-08, No Iterations (52 52 52)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.000924224, Final residual = 8.56069e-07, No Iterations (52 52 52)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (52 52 52)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00197157, Final residual = 5.66824e-08, No Iterations (65 65 65)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00929443, Final residual = 8.17348e-07, No Iterations (65 65 65)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (65 65 65)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00125497, Final residual = 5.5446e-08, No Iterations (63 63 63)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00601632, Final residual = 8.07924e-07, No Iterations (63 63 63)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (63 63 63)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000469354, Final residual = 7.19739e-08, No Iterations (57 57 57)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00227738, Final residual = 9.91972e-07, No Iterations (57 57 57)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (57 57 57)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00329673, Final residual = 5.78602e-08, No Iterations (67 67 67)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.0155127, Final residual = 8.52871e-07, No Iterations (67 67 67)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (67 67 67)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000186973, Final residual = 6.60849e-08, No Iterations (49 49 49)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.000894094, Final residual = 8.77034e-07, No Iterations (49 49 49)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (49 49 49)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00157466, Final residual = 5.57689e-08, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00755513, Final residual = 8.28043e-07, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (64 64 64)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.000376485, Final residual = 6.87434e-08, No Iterations (56 56 56)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00183892, Final residual = 9.57846e-07, No Iterations (56 56 56)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (56 56 56)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.0013884, Final residual = 6.13752e-08, No Iterations (63 63 63)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.006579, Final residual = 8.75244e-07, No Iterations (63 63 63)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (63 63 63)
+DILUPBiCCCG:  Solving for Usupx, Initial residual = 0.00105957, Final residual = 6.05244e-08, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupy, Initial residual = 0.00501655, Final residual = 8.24665e-07, No Iterations (62 62 62)
+DILUPBiCCCG:  Solving for Usupz, Initial residual = 0, Final residual = 0, No Iterations (62 62 62)
+elapsed_sup: 7.79504 seconds.
+Solving a lifting Problem
+Constructing velocity potential field Phi
+
+GAMG:  Solving for Phi, Initial residual = 1, Final residual = 0.00615968, No Iterations 11
+GAMG:  Solving for Phi, Initial residual = 5.85793e-05, Final residual = 3.79147e-07, No Iterations 10
+GAMG:  Solving for Phi, Initial residual = 3.78718e-07, Final residual = 3.78077e-09, No Iterations 9
+GAMG:  Solving for Phi, Initial residual = 3.78073e-09, Final residual = 8.64035e-11, No Iterations 7
+GAMG:  Solving for Phi, Initial residual = 8.64035e-11, Final residual = 8.64035e-11, No Iterations 0
+GAMG:  Solving for Phi, Initial residual = 8.64035e-11, Final residual = 8.64035e-11, No Iterations 0
+GAMG:  Solving for Phi, Initial residual = 8.64035e-11, Final residual = 8.64035e-11, No Iterations 0
+GAMG:  Solving for Phi, Initial residual = 8.64035e-11, Final residual = 8.64035e-11, No Iterations 0
+GAMG:  Solving for Phi, Initial residual = 8.64035e-11, Final residual = 8.64035e-11, No Iterations 0
+GAMG:  Solving for Phi, Initial residual = 8.64035e-11, Final residual = 8.64035e-11, No Iterations 0
+GAMG:  Solving for Phi, Initial residual = 8.64035e-11, Final residual = 8.64035e-11, No Iterations 0
+Continuity error = 2.34727e-09
+Interpolated velocity error = 0.00142398
+####### Performing the POD using EigenDecomposition U #######
+Using Eigen EigenSolver 
+####### End of the POD for U #######
+####### Saving the POD bases for U #######
+####### Performing the POD using EigenDecomposition for p #######
+Using Eigen EigenSolver 
+####### End of the POD for p #######
+####### Saving the POD bases for p #######
+####### Performing the POD using EigenDecomposition Usup #######
+Using Eigen EigenSolver 
+####### End of the POD for Usup #######
+####### Saving the POD bases for Usup #######
+elapsed_POD: 8.48264 seconds.

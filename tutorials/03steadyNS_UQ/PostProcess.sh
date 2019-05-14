@@ -1,7 +1,7 @@
 #!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 
-cd ITHACAoutput_rnd/Offline2
+cd ITHACAoutput/Offline2
 
 postProcess -func "minMaxMagnitude(U)"
 postProcess -func "patchAverage(name=outlet,U)"
