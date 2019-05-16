@@ -122,7 +122,7 @@ steadyNS::steadyNS(int argc, char* argv[])
 // * * * * * * * * * * * * * * Full Order Methods * * * * * * * * * * * * * * //
 
 // Method to perform a truthSolve
-void steadyNS::truthSolve(List<scalar> mu_now)
+void steadyNS::truthSolve(List<scalar> mu_now, word folder)
 {
     Time& runTime = _runTime();
     argList& args = _args();
@@ -135,8 +135,8 @@ void steadyNS::truthSolve(List<scalar> mu_now)
     IOMRFZoneList& MRF = _MRF();
     singlePhaseTransportModel& laminarTransport = _laminarTransport();
 #include "NLsolve.H"
-    ITHACAstream::exportSolution(U, name(counter), "./ITHACAoutput/Offline/");
-    ITHACAstream::exportSolution(p, name(counter), "./ITHACAoutput/Offline/");
+    ITHACAstream::exportSolution(U, name(counter), folder);
+    ITHACAstream::exportSolution(p, name(counter), folder);
     Ufield.append(U);
     Pfield.append(p);
     counter++;
@@ -161,6 +161,8 @@ void steadyNS::truthSolve(List<scalar> mu_now)
                                    "./ITHACAoutput/Offline");
     }
 }
+
+
 
 // Method to solve the supremizer problem
 void steadyNS::solvesupremizer(word type)

@@ -118,6 +118,9 @@ void reducedSimpleSteadyNS::solveOnline_Simple(scalar mu_now)
                                  "./ITHACAoutput/Reconstruct/");
     ITHACAstream::exportSolution(Paux, name(counter),
                                  "./ITHACAoutput/Reconstruct/");
+
+    UREC.append(Uaux);
+    PREC.append(Paux);
 }
 
 fvVectorMatrix reducedSimpleSteadyNS::get_Umatrix_Online(volVectorField& U,

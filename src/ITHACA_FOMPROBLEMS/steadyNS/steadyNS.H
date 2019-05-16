@@ -224,7 +224,8 @@ class steadyNS: public reductionProblem
         /// to construct mu_interp matrix which is written out in the Offline folder, also for par file in
         /// the Parameters folder.
         ///
-        void truthSolve(List<scalar> mu_now);
+        void truthSolve(List<scalar> mu_now, word folder = "./ITHACAoutput/Offline/");
+
 
         ///
         /// solve the supremizer either with the use of the pressure snaphots or the pressure modes

@@ -74,6 +74,12 @@ class reducedSimpleSteadyNS: public reducedProblem
 
         ~reducedSimpleSteadyNS() {};
 
+	/// Reconstructed pressure field
+        PtrList<volScalarField> PREC;
+
+        /// Recontructed velocity field
+        PtrList<volVectorField> UREC;
+
         // Functions
 
         /// Method to perform an online solve using a PPE stabilisation method
