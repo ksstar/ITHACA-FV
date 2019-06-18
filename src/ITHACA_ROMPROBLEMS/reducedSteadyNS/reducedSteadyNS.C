@@ -209,11 +209,16 @@ void reducedSteadyNS::reconstruct_PPE(fileName folder, int printevery)
 void reducedSteadyNS::reconstruct_sup(fileName folder, int printevery)
 {
 
+    Eigen::MatrixXd sumLocalContErrMat(online_solution.size(),1);
+
     fvMesh& mesh = problem->_mesh();
     mkDir(folder);
     ITHACAutilities::createSymLink(folder);
     int counter = 0;
     int nextwrite = 0;
+    int counter2 = 0;
+
+    scalar sumLocalContErr;
 
     for (label i = 0; i < online_solution.size(); i++)
     {
@@ -233,6 +238,13 @@ void reducedSteadyNS::reconstruct_sup(fileName folder, int printevery)
 
 	    ITHACAstream::exportSolution(Phi_rec, name(online_solution[i](0, 0)), folder);
 
+	    volScalarField contErr(fvc::div(Phi_rec));
+
+    	    sumLocalContErr = mag(contErr)().weightedAverage(Phi_rec.mesh().V()).value();
+	    sumLocalContErrMat(counter2,0) = sumLocalContErr;
+	    counter2++;
+
+	    Info<< "time step continuity errors : sum local = " << sumLocalContErr << endl;
             
             volScalarField P_rec("P_rec", problem->Pmodes[0] * 0);
 
@@ -245,10 +257,22 @@ void reducedSteadyNS::reconstruct_sup(fileName folder, int printevery)
             nextwrite += printevery;
             UREC.append(U_rec);
             PREC.append(P_rec);
+
         }
+
+	
+        
+
+     	//scalar globalContErr = contErr.weightedAverage(Phi_rec.mesh.V()).value();
+      	// cumulativeContErr += globalContErr;
+
+    	
 
         counter++;
     }
+
+ITHACAstream::exportMatrix(sumLocalContErrMat, "sumLocalContErrMat", "eigen", "./ITHACAoutput/PostProcess");
+
 }
 
 double reducedSteadyNS::inf_sup_constant()

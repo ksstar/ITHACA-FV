@@ -168,6 +168,9 @@ class steadyNS: public reductionProblem
         /// Pressure forces
         Eigen::MatrixXd n_matrix;
 
+	/// Matrix to store local continuity error - FOM
+ 	//Eigen::MatrixXd sumLocalContErrFOMMat;
+	scalar sumLocalContErrFOM;
 
         // Other Variables
         /// Boolean variable to check the existence of the supremizer modes

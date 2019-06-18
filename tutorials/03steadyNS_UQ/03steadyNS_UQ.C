@@ -50,6 +50,7 @@ class tutorial03_UQ : public steadyNS
             steadyNS(argc, argv),
             U(_U()),
             p(_p()),
+	    //phi(_phi()),
             args(_args())
         {}
 
@@ -57,6 +58,8 @@ class tutorial03_UQ : public steadyNS
         volVectorField& U;
         /// Pressure field
         volScalarField& p;
+	/// Flux
+	//surfaceScalarField phi;
         /// Arg List
         argList& args;
 
@@ -133,6 +136,9 @@ class tutorial03_UQ : public steadyNS
             List<scalar> mu_now(1);
             volVectorField U0 = U;
             volScalarField P0 = p;
+            //surfaceScalarField phi0 = phi;
+
+	    Eigen::MatrixXd sumLocalContErrFOMMat(par_BC.cols(),1);
 
 	    if (ITHACAutilities::check_folder(folder))
             {
@@ -155,8 +161,10 @@ class tutorial03_UQ : public steadyNS
                     //Uinl[0] = 1;
                     assignBC(U, inletIndex(0, 0), Uinl);
                     truthSolve(mu_now, folder );
+		    sumLocalContErrFOMMat(j,0) = sumLocalContErrFOM;
                     restart();
                 }
+		ITHACAstream::exportMatrix(sumLocalContErrFOMMat, "sumLocalContErrFOMMat", "eigen", "./ITHACAoutput/PostProcess");
 	     }
             
         }

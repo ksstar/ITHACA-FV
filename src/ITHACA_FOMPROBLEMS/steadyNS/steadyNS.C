@@ -139,6 +139,9 @@ void steadyNS::truthSolve(List<scalar> mu_now, word folder)
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
     ITHACAstream::exportSolution(phi, name(counter), folder);
+
+    sumLocalContErrFOM = mag(fvc::div(phi))().weightedAverage(phi.mesh().V()).value();
+
     Ufield.append(U);
     Pfield.append(p);
     counter++;
