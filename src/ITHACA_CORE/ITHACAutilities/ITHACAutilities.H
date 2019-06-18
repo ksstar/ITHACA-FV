@@ -51,10 +51,9 @@ SourceFiles
 #include "polyMeshTools.H"
 #include <chrono>
 #include "mixedFvPatchFields.H"
+#include "fvMeshSubset.H"
 using namespace std::placeholders;
-
 #include "Foam2Eigen.H"
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -171,94 +170,84 @@ class ITHACAutilities
         /// @param[in]  coeff_matrix  The matrix of coefficients.
         /// @return     rec_field     The reconstructed field as PtrList.
         ///
-        template<typename T>
-        static PtrList<T> reconstruct_from_coeff(PtrList<T>& modes,
+        template<class TypeField>
+        static PtrList<TypeField> reconstruct_from_coeff(PtrList<TypeField>& modes,
                 Eigen::MatrixXd& coeff_matrix, label Nmodes);
 
         //--------------------------------------------------------------------------
-        /// Function to compute the relative error between two volVectorFields in L2 norm
+        /// Function to compute the relative error between two Fields in L2 norm
         ///
         /// @param[in]  field1  The field 1
         /// @param[in]  field2  The field 2
         ///
         /// @return     L2 norm of the relative error.
         ///
-        static double error_fields(volVectorField& field1, volVectorField& field2);
+        template<class TypeField>
+        static double error_fields(TypeField& field1, TypeField& field2);
 
         //--------------------------------------------------------------------------
-        /// Function to compute the absolute error between two volVectorFields in L2 norm
+        /// Function to compute the relative error between two volVectorFields in L2 norm, given the mesh volumes field
+        ///
+        /// @param[in]  field1  The field 1
+        /// @param[in]  field2  The field 2
+        /// @param[in]  Volumes  The field containing the volumes of the mesh cells
+        ///
+        /// @return     L2 norm of the relative error.
+        ///
+        template<typename T>
+        static double error_fields(GeometricField<T, fvPatchField, volMesh>& field1,
+                                   GeometricField<T, fvPatchField, volMesh>& field2, volScalarField& Volumes);
+
+        //--------------------------------------------------------------------------
+        /// Function to compute the absolute error between two Fields in L2 norm
         ///
         /// @param[in]  field1  The field 1
         /// @param[in]  field2  The field 2
         ///
         /// @return     L2 norm of the absolute error.
         ///
-        static double error_fields_abs(volVectorField& field1, volVectorField& field2);
+        template<class TypeField>
+        static double error_fields_abs(TypeField& field1, TypeField& field2);
 
         //--------------------------------------------------------------------------
-        /// Function to compute the relative error between two volScalarFields in L2 norm
-        ///
-        /// @param[in]  field1  The field 1
-        /// @param[in]  field2  The field 2
-        ///
-        /// @return     L2 norm of the absolute error.
-        ///
-        static double error_fields(volScalarField& field1, volScalarField& field2);
-
-        //--------------------------------------------------------------------------
-        /// Function to compute the absolute error between two volScalarFields in L2 norm
-        ///
-        /// @param[in]  field1  The field 1
-        /// @param[in]  field2  The field 2
-        ///
-        /// @return     L2 norm of the absolute error.
-        ///
-        static double error_fields_abs(volScalarField& field1, volScalarField& field2);
-
-        //--------------------------------------------------------------------------
-        /// Function to compute the relative error in L2 norm between two lists of volVectorFields
+        /// Function to compute the relative error in L2 norm between two lists of Fields (both scalar or vector)
         ///
         /// @param[in]  fields1  The fields 1
         /// @param[in]  fields2  The fields 2
         ///
         /// @return     A vector containing the error between the two fields in Eigen::MatrixXd form.
         ///
-        static Eigen::MatrixXd error_listfields(PtrList<volVectorField>& fields1,
-                                                PtrList<volVectorField>& fields2);
+        template<class TypeField>
+        static Eigen::MatrixXd error_listfields(PtrList<TypeField>& fields1,
+                                                PtrList<TypeField>& fields2);
+
 
         //--------------------------------------------------------------------------
-        /// Function to compute the relative error in L2 norm between two lists of volScalarFields
+        /// Function to compute the relative error in L2 norm between two lists of Fields (both scalar or vector), given the list of mesh volumes fields
+        ///
+        /// @param[in]  fields1  The fields 1
+        /// @param[in]  fields2  The fields 2
+        /// @param[in]  Volumes  The list of the mesh volumes fields
+        ///
+        /// @return     A vector containing the error between the two fields in Eigen::MatrixXd form.
+        ///
+        template<class TypeField>
+        static Eigen::MatrixXd error_listfields(
+            PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields1,
+            PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields2,
+            PtrList<volScalarField>& Volumes);
+
+        //--------------------------------------------------------------------------
+        /// Function to compute the absolute error in L2 norm between two lists of Fields
         ///
         /// @param[in]  fields1  The fields 1
         /// @param[in]  fields2  The fields 2
         ///
         /// @return     A vector containing the error between the two fields in Eigen::MatrixXd form.
         ///
-        static Eigen::MatrixXd error_listfields(PtrList<volScalarField>& fields1,
-                                                PtrList<volScalarField>& fields2);
-
-        //--------------------------------------------------------------------------
-        /// Function to compute the absolute error in L2 norm between two lists of volScalarFields
-        ///
-        /// @param[in]  fields1  The fields 1
-        /// @param[in]  fields2  The fields 2
-        ///
-        /// @return     A vector containing the error between the two fields in Eigen::MatrixXd form.
-        ///
-        static Eigen::MatrixXd error_listfields_abs(PtrList<volScalarField>& fields1,
-                PtrList<volScalarField>& fields2);
-
-        //--------------------------------------------------------------------------
-        /// Function to compute the absolute error in L2 norm between two lists of volVectorFields
-        ///
-        /// @param[in]  fields1  The fields 1
-        /// @param[in]  fields2  The fields 2
-        ///
-        /// @return     A vector containing the error between the two fields in Eigen::MatrixXd form.
-        ///
-        static Eigen::MatrixXd error_listfields_abs(PtrList<volVectorField>& fields1,
-                PtrList<volVectorField>& fields2);
-
+        template<class TypeField>
+        static Eigen::MatrixXd error_listfields_abs(PtrList<TypeField>& fields1,
+                PtrList<TypeField>& fields2);
 
         //--------------------------------------------------------------------------
         /// Function to compute a Mass Matrix from a list of Basis Functions (vectorial) for L2 projection
@@ -280,38 +269,32 @@ class ITHACAutilities
         static Eigen::MatrixXd get_mass_matrix(PtrList<volScalarField> modes,
                                                int Nmodes = 0);
 
+        //-----------------------------------------------------------------------------
+        /// @brief      Gets the mass matrix using the eigen routine
+        ///
+        /// @param[in]  fields            The openFoam fields
+        /// @param[in]  consider_volumes  True if you want to consider the volumes
+        ///
+        /// @tparam     T                 type of field
+        ///
+        /// @return     The mass matrix eigen.
+        ///
+        template<typename T>
+        static Eigen::MatrixXd get_mass_matrix_Eigen(PtrList<T>& fields,
+                bool consider_volumes = true);
+
         //--------------------------------------------------------------------------
-        /// Function to compute the FV Mass Matrix from a vector or scalar field: diagonal matrix where non zero elements are the volumes of the cells.
+        /// Function to get the vector containing the volumes of the mesh.
         ///
         /// @param[in]  snapshot  A snapshot in volScalarField or volVectorField form.
         ///
+        /// @param[in]  dimension  A word to be chosen between "scalar" and "vector". "scalar" is default.
+        ///
         /// @return     The FV mass matrix in Eigen::MatrixXd form.
         ///
-        template<class type_f>
-        static Eigen::MatrixXd get_mass_matrix_FV(
-            GeometricField<type_f, fvPatchField, volMesh>& snapshot);
-
-        //--------------------------------------------------------------------------
-        /// Project a snapshot scalar field on a non-orthogonal basis function and get the coefficients of the projection
-        ///
-        /// @param[in]  snapshots  The snapshots matrix.
-        /// @param[in]  modes     The modes.
-        ///
-        /// @return     The coefficients of the projection.
-        ///
-        static Eigen::MatrixXd get_coeffs(PtrList<volScalarField> snapshots,
-                                          PtrList<volScalarField> modes,  int Nmodes = 0);
-
-        //--------------------------------------------------------------------------
-        /// Project a snapshot vector field on a non-orthogonal basis function and get the coefficients of the projection
-        ///
-        /// @param[in]  snapshots  The snapshots matrix.
-        /// @param[in]  modes     The modes.
-        ///
-        /// @return     The coefficients of the projection.
-        ///
-        static Eigen::MatrixXd get_coeffs(PtrList<volVectorField> snapshots,
-                                          PtrList<volVectorField> modes, int Nmodes = 0);
+        template<class TypeField>
+        static Eigen::VectorXd get_mass_matrix_FV(
+            GeometricField<TypeField, fvPatchField, volMesh>& snapshot);
 
         //--------------------------------------------------------------------------
         /// Project a snapshot vector field on a non-orthogonal basis function and get the coefficients of the projection
@@ -337,26 +320,16 @@ class ITHACAutilities
                                           PtrList<volScalarField>& modes, int Nmodes = 0);
 
         //--------------------------------------------------------------------------
-        /// @brief      Gets the coeffs ortho.
+        /// Project a snapshot scalar field on a non-orthogonal basis function and get the coefficients of the projection
         ///
-        /// @param[in]  snapshots  The snapshots
-        /// @param      modes      The modes
+        /// @param[in]  snapshots  The snapshots matrix.
+        /// @param[in]  modes     The modes.
         ///
-        /// @return     The coeffs ortho.
+        /// @return     The coefficients of the projection.
         ///
-        static Eigen::MatrixXd get_coeffs_ortho(PtrList<volScalarField> snapshots,
-                                                PtrList<volScalarField>& modes, int Nmodes = 0);
-
-        //--------------------------------------------------------------------------
-        /// @brief      Gets the coeffs ortho.
-        ///
-        /// @param[in]  snapshots  The snapshots
-        /// @param      modes      The modes
-        ///
-        /// @return     The coeffs ortho.
-        ///
-        static Eigen::MatrixXd get_coeffs_ortho(PtrList<volVectorField> snapshots,
-                                                PtrList<volVectorField>& modes, int Nmodes = 0);
+        template<class TypeField>
+        static Eigen::MatrixXd get_coeffs(PtrList<TypeField> snapshots,
+                                          PtrList<TypeField> modes,  int Nmodes = 0);
 
         //--------------------------------------------------------------------------
         /// Project a snapshot scalar field on an orthogonal basis function
@@ -381,6 +354,18 @@ class ITHACAutilities
         ///
         static Eigen::VectorXd get_coeffs_ortho(volVectorField snapshot,
                                                 PtrList<volVectorField>& modes, int Nmodes = 0);
+
+        //--------------------------------------------------------------------------
+        /// @brief      Gets the coeffs ortho.
+        ///
+        /// @param[in]  snapshots  The snapshots
+        /// @param      modes      The modes
+        ///
+        /// @return     The coeffs ortho.
+        ///
+        template<class TypeField>
+        static Eigen::MatrixXd get_coeffs_ortho(PtrList<TypeField> snapshots,
+                                                PtrList<TypeField>& modes, int Nmodes = 0);
 
         //--------------------------------------------------------------------------
         /// Assign internal field condition
@@ -420,6 +405,15 @@ class ITHACAutilities
         /// @param[in]  value   The value you want to assign (it must be a double).
         ///
         static void assignBC(volScalarField& s, label BC_ind, double& value);
+
+        //--------------------------------------------------------------------------
+        /// Assign Boundary Condition to a volScalarField
+        ///
+        /// @param[in]  s       field where you want to assign the BC.
+        /// @param[in]  BC_ind  The BC index.
+        /// @param[in]  value   The value you want to assign (it must be a List<double>).
+        ///
+        static void assignBC(volScalarField& s, label BC_ind, List<double> value);
 
         //--------------------------------------------------------------------------
         /// Assign Boundary Condition to a volVectorField
@@ -517,20 +511,6 @@ class ITHACAutilities
                                   double value);
 #pragma GCC diagnostic pop
 
-        //-----------------------------------------------------------------------------
-        /// @brief      Gets the mass matrix using the eigen routine
-        ///
-        /// @param[in]  fields            The openFoam fields
-        /// @param[in]  consider_volumes  True if you want to consider the volumes
-        ///
-        /// @tparam     T                 type of field
-        ///
-        /// @return     The mass matrix eigen.
-        ///
-        template<typename T>
-        static Eigen::MatrixXd get_mass_matrix_Eigen(PtrList<T>& fields,
-                bool consider_volumes = true);
-
         //--------------------------------------------------------------------------
         /// @brief      Change the boundary condition type for a GeometricField
         ///
@@ -540,8 +520,9 @@ class ITHACAutilities
         ///
         /// @tparam     type_f  The type of field it can be scalar or vector
         ///
-        template<typename type_f>
-        static void changeBCtype(GeometricField<type_f, fvPatchField, volMesh>& field,
+        template<class TypeField>
+        static void changeBCtype(GeometricField<TypeField, fvPatchField, volMesh>&
+                                 field,
                                  word BCtype, label BC_ind);
 
         //--------------------------------------------------------------------------
@@ -633,14 +614,14 @@ class ITHACAutilities
         ///
         static Eigen::MatrixXd rotationMatrix(vector AxisOfRotation,
                                               double AngleOfRotation);
-        
-	//--------------------------------------------------------------------------
+
+        //--------------------------------------------------------------------------
         /// @brief      Compute the distance between the boundary face center and the boundary cell center
         ///
         /// @param[in]  BC_ind   Index of the boundary patch
         /// @param[in]  mesh     Mesh
         ///
-	/// @return     Vector of the face to cell center distance in Eigen format
+        /// @return     Vector of the face to cell center distance in Eigen format
         ///
         static Eigen::VectorXd boudaryFaceToCellDistance(fvMesh& mesh, label BC_ind);
 
@@ -660,6 +641,51 @@ class ITHACAutilities
         static void assignMixedBC(GeometricField<type_f, fvPatchField, volMesh>& field,
                                   label BC_ind, Eigen::MatrixXd& value,
                                   Eigen::MatrixXd& grad, Eigen::MatrixXd& valueFrac);
+
+
+        //--------------------------------------------------------------------------
+        /// @brief      Assign value of a boundary condition of type "mixed"
+        ///
+        /// @param[in,out]   field      Field
+        /// @param[in]       BC_ind     Index of the boundary patch
+        /// @param[in]       value      Reference fixed value
+        /// @param[in]       grad       Reference patch normal gradient
+        /// @param[in]       valueFrac  Weight field
+        ///
+        /// @tparam          type_f     Type of the field, it can be scalar or vector.
+        ///
+        template<typename type_f>
+        static void assignMixedBC(GeometricField<type_f, fvPatchField, volMesh>& field,
+                                  label BC_ind, List<type_f>& value,
+                                  List<type_f>& grad, List<scalar>& valueFrac);
+
+        ///
+        /// @brief      Gets the indices from coordinates of a given box.
+        ///
+        /// @param      field   A geometric Field from OpenFoam field
+        /// @param[in]  Box     The box
+        ///
+        /// @tparam     type_f  type of the Field can be Scalar or Vector
+        ///
+        /// @return     The indices from box.
+        ///
+        template<typename type_f>
+        static List<int> getIndicesFromBox(
+            GeometricField<type_f, fvPatchField, volMesh>& field, Eigen::MatrixXd Box);
+
+        ///
+        /// @brief      Gets a subMesh from a box of coordinates and a given field (used only for the mesh).
+        ///
+        /// @param      field   The field passed
+        /// @param[in]  Box     The box of coordinates 3*2 matrix
+        ///
+        /// @tparam     type_f  type of the Field can be Scalar or Vector
+        ///
+        /// @return     The subMesh from the box. It can later used to interpolate any Field
+        ///
+        template<typename type_f>
+        static fvMeshSubset* getSubMeshFromBox(
+            GeometricField<type_f, fvPatchField, volMesh>& field, Eigen::MatrixXd Box);
 };
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 //
@@ -675,6 +701,32 @@ void ITHACAutilities::assignMixedBC(
     GeometricField<vector, fvPatchField, volMesh>& field, label BC_ind,
     Eigen::MatrixXd& value,
     Eigen::MatrixXd& grad, Eigen::MatrixXd& valueFrac);
+
+template<>
+void ITHACAutilities::assignMixedBC(
+    GeometricField<vector, fvPatchField, volMesh>& field, label BC_ind,
+    List<vector>& value,
+    List<vector>& grad, List<scalar>& valueFrac);
+
+template<>
+void ITHACAutilities::assignMixedBC(
+    GeometricField<scalar, fvPatchField, volMesh>& field, label BC_ind,
+    List<scalar>& value,
+    List<scalar>& grad, List<scalar>& valueFrac);
+
+template<>
+void ITHACAutilities::setIndices2Value(labelList& ind2set,
+                                       List<vector>& value2set, labelList& movingIDS, List<vector>& originalList);
+
+template<>
+double ITHACAutilities::error_fields(
+    GeometricField<scalar, fvPatchField, volMesh>& field1,
+    GeometricField<scalar, fvPatchField, volMesh>& field2, volScalarField& Volumes);
+
+template<>
+double ITHACAutilities::error_fields(
+    GeometricField<vector, fvPatchField, volMesh>& field1,
+    GeometricField<vector, fvPatchField, volMesh>& field2, volScalarField& Volumes);
 
 template<typename T, typename G>
 void ITHACAutilities::assignIF(T& s, G& value)
@@ -705,35 +757,6 @@ Eigen::MatrixXd ITHACAutilities::get_mass_matrix_Eigen(PtrList<T>& fields,
 
     return M;
 }
-
-template<>
-Eigen::MatrixXd ITHACAutilities::get_mass_matrix_FV(
-    GeometricField<scalar, fvPatchField, volMesh>& snapshot);
-
-
-template<>
-PtrList<volVectorField> ITHACAutilities::reconstruct_from_coeff(
-    PtrList<volVectorField>& modes, Eigen::MatrixXd& coeff_matrix, label Nmodes);
-
-template<>
-PtrList<volScalarField> ITHACAutilities::reconstruct_from_coeff(
-    PtrList<volScalarField>& modes, Eigen::MatrixXd& coeff_matrix, label Nmodes);
-
-template<>
-void ITHACAutilities::changeBCtype(
-    GeometricField<scalar, fvPatchField, volMesh>& field, word BCtype,
-    label BC_ind);
-
-template<>
-void ITHACAutilities::changeBCtype(
-    GeometricField<vector, fvPatchField, volMesh>& field, word BCtype,
-    label BC_ind);
-
-template<>
-void ITHACAutilities::setIndices2Value(labelList& ind2set,
-                                       List<vector>& value2set, labelList& movingIDS, List<vector>& originalList);
-
-
 
 #endif
 

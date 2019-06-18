@@ -45,22 +45,32 @@ void ITHACAstream::exportFields(PtrList<volVectorField>& field, word folder,
                                 word fieldname)
 {
     ITHACAutilities::createSymLink(folder);
+    Info << "######### Exporting the Data for " << fieldname << " #########" <<
+         endl;
 
     for (label j = 0; j < field.size() ; j++)
     {
         exportSolution(field[j], name(j + 1), folder, fieldname);
+        printProgress(double(j + 1) / field.size());
     }
+
+    std::cout << std::endl;
 }
 
 void ITHACAstream::exportFields(PtrList<volScalarField>& field, word folder,
                                 word fieldname)
 {
     ITHACAutilities::createSymLink(folder);
+    Info << "######### Exporting the Data for " << fieldname << " #########" <<
+         endl;
 
     for (label j = 0; j < field.size() ; j++)
     {
         exportSolution(field[j], name(j + 1), folder, fieldname);
+        printProgress(double(j + 1) / field.size());
     }
+
+    std::cout << std::endl;
 }
 
 void ITHACAstream::exportMatrix(Eigen::MatrixXd& matrice, word Name, word tipo,
@@ -135,7 +145,7 @@ void ITHACAstream::exportMatrix(Eigen::MatrixXd& matrice, word Name, word tipo,
     }
 }
 
-void ITHACAstream::exportMatrix(List < Eigen::MatrixXd >& matrice, word Name,
+void ITHACAstream::exportMatrix(List <Eigen::MatrixXd>& matrice, word Name,
                                 word tipo, word folder)
 {
     std::string message = "The extension \"" +  tipo +
@@ -217,13 +227,13 @@ void ITHACAstream::exportMatrix(List < Eigen::MatrixXd >& matrice, word Name,
     }
 }
 
-List< Eigen::MatrixXd > ITHACAstream::readMatrix(word folder, word mat_name)
+List<Eigen::MatrixXd> ITHACAstream::readMatrix(word folder, word mat_name)
 {
     int file_count = 0;
     DIR* dirp;
     struct dirent* entry;
     dirp = opendir(folder.c_str());
-    List <Eigen::MatrixXd > result;
+    List <Eigen::MatrixXd> result;
 
     while ((entry = readdir(dirp)) != NULL)
     {
@@ -336,7 +346,7 @@ void ITHACAstream::read_fields(PtrList<volVectorField>& Lfield, word Name,
 
         for (label i = 2 + first_snap; i < last_s; i++)
         {
-            Info << "Reading " << Name << " number " << i - 1 << endl;
+            //Info << "Reading " << Name << " number " << i - 1 << endl;
             volVectorField tmp_field(
                 IOobject
                 (
@@ -348,6 +358,7 @@ void ITHACAstream::read_fields(PtrList<volVectorField>& Lfield, word Name,
                 mesh
             );
             Lfield.append(tmp_field);
+            printProgress(double(i + 1) / last_s);
         }
 
         std::cout << std::endl;
@@ -396,7 +407,7 @@ void ITHACAstream::read_fields(PtrList<volScalarField>& Lfield, word Name,
 
         for (label i = 2 + first_snap; i < last_s; i++)
         {
-            Info << "Reading " << Name << " number " << i - 1 << endl;
+            //Info << "Reading " << Name << " number " << i - 1 << endl;
             volScalarField tmp_field(
                 IOobject
                 (
@@ -408,6 +419,7 @@ void ITHACAstream::read_fields(PtrList<volScalarField>& Lfield, word Name,
                 mesh
             );
             Lfield.append(tmp_field);
+            printProgress(double(i + 1) / last_s);
         }
 
         std::cout << std::endl;
@@ -447,7 +459,7 @@ void ITHACAstream::read_fields(PtrList<volScalarField>& Lfield,
 
         for (label i = 2 + first_snap; i < last_s; i++)
         {
-            Info << "Reading " << field.name() << " number " << i - 1 << endl;
+            //Info << "Reading " << field.name() << " number " << i - 1 << endl;
             volScalarField tmp_field(
                 IOobject
                 (
@@ -459,6 +471,7 @@ void ITHACAstream::read_fields(PtrList<volScalarField>& Lfield,
                 field.mesh()
             );
             Lfield.append(tmp_field);
+            printProgress(double(i + 1) / last_s);
         }
 
         std::cout << std::endl;
@@ -491,7 +504,7 @@ void ITHACAstream::read_fields(PtrList<volScalarField>& Lfield,
 
         for (label i = first_snap + 1; i < last_s; i++)
         {
-            Info << "Reading " << field.name() << " number " << i << endl;
+            //Info << "Reading " << field.name() << " number " << i << endl;
             volScalarField tmp_field(
                 IOobject
                 (
@@ -503,6 +516,7 @@ void ITHACAstream::read_fields(PtrList<volScalarField>& Lfield,
                 field.mesh()
             );
             Lfield.append(tmp_field);
+            printProgress(double(i + 1) / last_s);
         }
 
         Info << endl;
@@ -538,7 +552,7 @@ void ITHACAstream::read_fields(PtrList<volVectorField>& Lfield,
 
         for (label i = 2 + first_snap; i < last_s; i++)
         {
-            Info << "Reading " << field.name() << " number " << i - 1 << endl;
+            //Info << "Reading " << field.name() << " number " << i - 1 << endl;
             volVectorField tmp_field(
                 IOobject
                 (
@@ -550,6 +564,7 @@ void ITHACAstream::read_fields(PtrList<volVectorField>& Lfield,
                 field.mesh()
             );
             Lfield.append(tmp_field);
+            printProgress(double(i + 1) / last_s);
         }
 
         std::cout << std::endl;
@@ -582,7 +597,7 @@ void ITHACAstream::read_fields(PtrList<volVectorField>& Lfield,
 
         for (label i = first_snap + 1; i < last_s; i++)
         {
-            Info << "Reading " << field.name() << " number " << i << endl;
+            //Info << "Reading " << field.name() << " number " << i << endl;
             volVectorField tmp_field(
                 IOobject
                 (
@@ -594,6 +609,7 @@ void ITHACAstream::read_fields(PtrList<volVectorField>& Lfield,
                 field.mesh()
             );
             Lfield.append(tmp_field);
+            printProgress(double(i + 1) / last_s);
         }
 
         Info << endl;
@@ -628,4 +644,17 @@ void ITHACAstream::writePoints(pointField points, fileName folder,
     os << "FoamFile \n { \n version     2.0; \n format      ascii; \n class       vectorField; \n location    ""1 / polyMesh""; \n object      points; \n }"
        << endl;
     os << points << endl;
+}
+
+void ITHACAstream::printProgress(double percentage)
+{
+    int val = static_cast<int>(percentage * 100);
+    int lpad = static_cast<int> (percentage * PBWIDTH);
+    int rpad = PBWIDTH - lpad;
+
+    if (Pstream::master())
+    {
+        printf ("\r%3d%% [%.*s%*s]", val, lpad, PBSTR, rpad, "");
+        fflush (stdout);
+    }
 }
