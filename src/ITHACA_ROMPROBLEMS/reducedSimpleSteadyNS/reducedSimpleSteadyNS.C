@@ -145,6 +145,15 @@ void reducedSimpleSteadyNS::solveOnline_Simple(scalar mu_now,
               std::endl;
     Uaux = ULmodes.reconstruct(a, "Uaux");
     Paux = problem->Pmodes.reconstruct(b, "Paux");
+
+    surfaceScalarField Phiaux("Phiaux", (linearInterpolate(ULmodes[0] ) & ULmodes[0].mesh().Sf() )* 0);
+    Phiaux = linearInterpolate(Uaux) & Uaux.mesh().Sf();
+
+    volScalarField contErr(fvc::div(Phiaux));
+
+    sumLocalContErrROM = mag(contErr)().weightedAverage(Phiaux.mesh().V()).value();
+    Info<< "time step continuity errors : sum local = " << sumLocalContErrROM << endl;
+
     ITHACAstream::exportSolution(Uaux, name(counter),
                                  "./ITHACAoutput/Reconstruct/");
     ITHACAstream::exportSolution(Paux, name(counter),

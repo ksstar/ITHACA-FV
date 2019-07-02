@@ -99,6 +99,13 @@ class unsteadyNS: public steadyNS
         /// maxDeltaT
         scalar maxDeltaT;
 
+	/// List of pointers used to form the temperature snapshots matrix
+        PtrList<volScalarField> Pfield_on;
+
+        /// List of pointers used to form the temperature snapshots matrix
+        PtrList<volVectorField> Ufield_on;
+
+
         // Functions
 
         //--------------------------------------------------------------------------
@@ -107,7 +114,7 @@ class unsteadyNS: public steadyNS
         /// to construct mu_interp matrix which is written out in the Offline folder, also for par file in
         /// the Parameters folder.
         ///
-        void truthSolve(List<scalar> mu_now);
+        void truthSolve(List<scalar> mu_now, fileName folder = "./ITHACAoutput/Offline/");
 
         //--------------------------------------------------------------------------
         /// Function to check if the solution must be exported.

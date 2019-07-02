@@ -81,11 +81,15 @@ SIMPLE
     nNonOrthogonalCorrectors 0;
     pRefCell 0;
     pRefValue 0;
+    PhiRefCell 0; 
+    PhiRefValue 0;
 }
 
 potentialFlow
 {
     nNonOrthogonalCorrectors 10;
+    PhiRefCell 0; 
+    PhiRefValue 0;
 }
 
 
@@ -96,6 +100,8 @@ PIMPLE
     nCorrectors     2;
     pRefCell        0;
     pRefValue       0;
+    PhiRefCell 0; 
+    PhiRefValue 0;
 }
 
 relaxationFactors

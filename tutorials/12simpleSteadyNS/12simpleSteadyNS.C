@@ -120,6 +120,8 @@ int main(int argc, char* argv[])
     word vel_file(para.ITHACAdict->lookup("online_velocities"));
     Eigen::MatrixXd vel = ITHACAstream::readMatrix(vel_file);
 
+    Eigen::MatrixXd sumLocalContErrROMMat(example.mu.size(),1);
+
     //Perform the online solutions
     for (label k = 0; k < (example.mu).size(); k++)
     {
@@ -127,7 +129,10 @@ int main(int argc, char* argv[])
         example.change_viscosity(mu_now);
         reduced.setOnlineVelocity(vel);
         reduced.solveOnline_Simple(mu_now, NmodesUproj, NmodesPproj);
+	sumLocalContErrROMMat(k,0) = reduced.sumLocalContErrROM;
     }
+
+    ITHACAstream::exportMatrix(sumLocalContErrROMMat, "sumLocalContErrROMMat", "eigen", "./ITHACAoutput/PostProcess");
 
     exit(0);
 }

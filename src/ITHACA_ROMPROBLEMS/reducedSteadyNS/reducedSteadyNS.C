@@ -218,6 +218,15 @@ void reducedSteadyNS::reconstruct_PPE(fileName folder, int printevery)
                 P_rec += problem->Pmodes[j] * online_solution[i](j + Nphi_u + 1, 0);
             }
 
+
+  	    surfaceScalarField Phi_rec("Phi_rec", (linearInterpolate(Umodes[0] ) & Umodes[0].mesh().Sf() )* 0);
+    	    Phi_rec = linearInterpolate(U_rec) & U_rec.mesh().Sf();
+
+    	    volScalarField contErr(fvc::div(Phi_rec));
+
+    	    sumLocalContErrROM = mag(contErr)().weightedAverage(Phi_rec.mesh().V()).value();
+    	    Info<< "time step continuity errors : sum local = " << sumLocalContErrROM << endl;
+
             ITHACAstream::exportSolution(P_rec, name(online_solution[i](0, 0)), folder);
             nextwrite += printevery;
         }
@@ -232,6 +241,9 @@ void reducedSteadyNS::reconstruct_sup(fileName folder, int printevery)
     ITHACAutilities::createSymLink(folder);
     int counter = 0;
     int nextwrite = 0;
+    int counter2 = 0;
+
+    Eigen::MatrixXd sumLocalContErrROMMat(online_solution.size(),1);
 
     for (label i = 0; i < online_solution.size(); i++)
     {
@@ -252,6 +264,16 @@ void reducedSteadyNS::reconstruct_sup(fileName folder, int printevery)
                 P_rec += problem->Pmodes[j] * online_solution[i](j + Nphi_u + 1, 0);
             }
 
+  	    surfaceScalarField Phi_rec("Phi_rec", (linearInterpolate(Umodes[0] ) & Umodes[0].mesh().Sf() )* 0);
+    	    Phi_rec = linearInterpolate(U_rec) & U_rec.mesh().Sf();
+
+    	    volScalarField contErr(fvc::div(Phi_rec));
+
+    	    sumLocalContErrROM = mag(contErr)().weightedAverage(Phi_rec.mesh().V()).value();
+    	    Info<< "time step continuity errors : sum local = " << sumLocalContErrROM << endl;
+	    sumLocalContErrROMMat(counter2,0) = sumLocalContErrROM;
+	    counter2++;
+
             ITHACAstream::exportSolution(P_rec, name(online_solution[i](0, 0)), folder);
             nextwrite += printevery;
             UREC.append(U_rec);
@@ -260,6 +282,7 @@ void reducedSteadyNS::reconstruct_sup(fileName folder, int printevery)
 
         counter++;
     }
+ITHACAstream::exportMatrix(sumLocalContErrROMMat, "sumLocalContErrROMMat", "eigen", "./ITHACAoutput/PostProcess");
 }
 
 double reducedSteadyNS::inf_sup_constant()

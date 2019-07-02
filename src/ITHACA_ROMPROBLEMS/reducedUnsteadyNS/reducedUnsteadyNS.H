@@ -69,6 +69,7 @@ struct newton_unsteadyNS_sup: public newton_argument<double>
         scalar dt;
         Eigen::VectorXd y_old;
         Eigen::VectorXd BC;
+        Eigen::MatrixXd tauU;
 };
 
 
@@ -96,6 +97,7 @@ struct newton_unsteadyNS_PPE: public newton_argument<double>
         scalar dt;
         Eigen::VectorXd y_old;
         Eigen::VectorXd BC;
+	Eigen::MatrixXd tauU;
 };
 
 
@@ -140,6 +142,27 @@ class reducedUnsteadyNS: public reducedSteadyNS
         /// Scalar to store the initial time if the online simulation
         scalar tstart;
 
+        /// Number of timesteps calculated for penalty method
+        int timeSteps;
+
+	/// List of pointers to store the modes for velocity
+        PtrList<volVectorField> LUmodes;
+
+ 	/// List of Eigen matrices to store current online solution for momentum equation
+        Eigen::MatrixXd online_sol;
+
+	/// Penalty Factor temperature
+        Eigen::MatrixXd tauIter;
+
+/// Maximum number of iterations to be done for the computation of the penalty factor
+        scalar maxIter;
+
+
+
+/// Tolerance for the residual of the boundary values, there is the same tolerance for velocity and temperature
+        scalar tolerance;
+
+
         /// Pointer to the FOM problem
         unsteadyNS* problem;
 
@@ -154,7 +177,7 @@ class reducedUnsteadyNS: public reducedSteadyNS
         /// @param[in]  startSnap The first snapshot taken from the offline snahpshots
         /// and used to get the reduced initial condition.
         ///
-        void solveOnline_PPE(Eigen::MatrixXd& vel_now, label startSnap = 0);
+        Eigen::MatrixXd solveOnline_PPE(Eigen::MatrixXd& vel_now, label NParaSet = 0,label startSnap = 0);
 
         /// Method to perform an online solve using a supremizer stabilisation method
         ///
@@ -164,7 +187,7 @@ class reducedUnsteadyNS: public reducedSteadyNS
         /// @param[in]  startSnap The first snapshot taken from the offline snahpshots
         /// and used to get the reduced initial condition.
         ///
-        void solveOnline_sup(Eigen::MatrixXd& vel_now, label startSnap = 0);
+        Eigen::MatrixXd solveOnline_sup(Eigen::MatrixXd& vel_now, label NParaSet = 0, label startSnap = 0);
 
         /// Method to reconstruct a solution from an online solve with a PPE stabilisation technique.
         /// stabilisation method
@@ -181,6 +204,11 @@ class reducedUnsteadyNS: public reducedSteadyNS
         /// @param[in]  printevery  The printevery
         ///
         void reconstruct_sup(fileName folder = "./online_rec", int printevery = 1);
+
+
+
+ Eigen::MatrixXd penalty_sup(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit);
+
 
 };
 

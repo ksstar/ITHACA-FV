@@ -157,6 +157,9 @@ class reducedSteadyNS: public reducedProblem
 
         /// Penalty Factor
         Eigen::MatrixXd tauU;
+	
+	/// scalar local continuity error - ROM
+        scalar sumLocalContErrROM;
 
         // Functions
 

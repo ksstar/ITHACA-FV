@@ -127,6 +127,10 @@ class reducedSimpleSteadyNS: public reducedProblem
         /// Imposed boundary conditions.
         Eigen::MatrixXd vel_now;
 
+	/// scalar local continuity error - ROM
+        scalar sumLocalContErrROM;
+
+
         /// Counter.
         int counter = 0;
 };

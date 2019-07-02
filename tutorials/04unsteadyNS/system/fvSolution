@@ -84,11 +84,15 @@ PIMPLE
 {
     nNonOrthogonalCorrectors 1;
     nCorrectors 3;
+    PhiRefCell 0; 
+    PhiRefValue 0;
 }
 
 potentialFlow
 {
     nNonOrthogonalCorrectors 10;
+    PhiRefCell 0; 
+    PhiRefValue 0;
 }
 
 

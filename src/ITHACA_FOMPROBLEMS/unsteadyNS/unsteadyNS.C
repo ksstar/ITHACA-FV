@@ -71,7 +71,7 @@ unsteadyNS::unsteadyNS(int argc, char* argv[])
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-void unsteadyNS::truthSolve(List<scalar> mu_now)
+void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
 {
 #include "initContinuityErrs.H"
     Time& runTime = _runTime();
@@ -126,9 +126,9 @@ void unsteadyNS::truthSolve(List<scalar> mu_now)
         if (checkWrite(runTime))
         {
             nsnapshots += 1;
-            ITHACAstream::exportSolution(U, name(counter), "./ITHACAoutput/Offline/");
-            ITHACAstream::exportSolution(p, name(counter), "./ITHACAoutput/Offline/");
-            std::ofstream of("./ITHACAoutput/Offline/" + name(counter) + "/" +
+            ITHACAstream::exportSolution(U, name(counter), folder);
+            ITHACAstream::exportSolution(p, name(counter), folder);
+            std::ofstream of(folder + name(counter) + "/" +
                              runTime.timeName());
             Ufield.append(U);
             Pfield.append(p);
@@ -157,7 +157,7 @@ void unsteadyNS::truthSolve(List<scalar> mu_now)
     if (mu_samples.rows() == nsnapshots * mu.cols())
     {
         ITHACAstream::exportMatrix(mu_samples, "mu_samples", "eigen",
-                                   "./ITHACAoutput/Offline");
+                                   folder);
     }
 }
 
