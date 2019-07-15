@@ -58,8 +58,8 @@ class tutorial04: public unsteadyNS
             {
                 ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/Offline/");
                 ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/Offline/");
-                mu_samples =
-                    ITHACAstream::readMatrix("./ITHACAoutput/Offline/mu_samples_mat.txt");
+                //mu_samples =
+                  //  ITHACAstream::readMatrix("./ITHACAoutput/Offline/mu_samples_mat.txt");
             }
             else
             {
@@ -126,19 +126,27 @@ int main(int argc, char* argv[])
                         NmodesPout);
     ITHACAPOD::getModes(example.supfield, example.supmodes, example.podex,
                         example.supex, 1, NmodesSUPout);
+
+
+// Resize the modes for projection
+    example.Umodes.resize(NmodesUproj);
+    example.Pmodes.resize(NmodesPproj);
+
+
     example.projectSUP("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
     reducedUnsteadyNS reduced(example);
     // Set values of the reduced stuff
-    reduced.nu = 0.055;
+    reduced.nu = 0.1;
     reduced.tstart = 0;
-    reduced.finalTime = 15;
+    reduced.finalTime = 20;
     reduced.dt = 0.01;
+
     // Set the online velocity
     Eigen::MatrixXd vel_now(1, 1);
-    vel_now(0, 0) = 2;
+    vel_now(0, 0) = 1;
     reduced.solveOnline_sup(vel_now);
     // Reconstruct the solution and export it
-    reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP/", 5);
+    reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP/", 100);
     //reduced.reconstruct_PPE("./ITHACAoutput/Reconstruction/",4);
     exit(0);
 }

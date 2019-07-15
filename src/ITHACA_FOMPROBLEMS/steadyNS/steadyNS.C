@@ -925,7 +925,6 @@ List< Eigen::MatrixXd > steadyNS::bcVelocityVec(label NUmodes,
 
     label BCsize = NUmodes + NSUPmodes;
     List < Eigen::MatrixXd > bcVelVec(inletIndex.rows());
-    //List < Eigen::MatrixXd > bcVelVec(patches_penalty.size());
 
     for (label j = 0; j < inletIndex.rows(); j++)
     {

@@ -149,8 +149,8 @@ int main(int argc, char* argv[])
     /// Set the parameters infos
     example.setParameters();
     // Set the parameter ranges
-    example.mu_range(0, 0) = 0.001;
-    example.mu_range(0, 1) = 0.001;
+    example.mu_range(0, 0) = 0.0001;
+    example.mu_range(0, 1) = 0.0001;
     // Generate equispaced samples inside the parameter range
     example.genEquiPar();
     // Set the inlet boundaries where we have non homogeneous boundary conditions
@@ -159,31 +159,21 @@ int main(int argc, char* argv[])
     example.inletIndex(0, 1) = 0;
     // Time parameters
     example.startTime = 0;
-    example.finalTime = 100;
+    example.finalTime = 10;
     example.timeStep = 0.0005;
-    example.writeEvery = 0.1;
+    example.writeEvery = 0.01;
 
     // Perform The Offline Solve;
     example.offlineSolve(par_off);
 
-// Create a list with number of modes for which the projection needs to be performed
-    Eigen::MatrixXd List_of_modes(5, 1);
-    for (int i = 0; i < List_of_modes.rows(); i++)
-    {
-        List_of_modes(i, 0) = i + 1;
-    }
-    // Export with number of modes for which the projection needs to be performed
-    ITHACAstream::exportMatrix(List_of_modes, "List_of_modes", "eigen",
-                               "./ITHACAoutput/l2error");
-    // Perform the projection for all number of modes in list List_of_modes
-    Eigen::MatrixXd L2errorProjMatrixU(example.Ufield.size(), List_of_modes.rows());
-    Eigen::MatrixXd L2errorProjMatrixP(example.Pfield.size(), List_of_modes.rows());
-
+    auto start_POD = std::chrono::high_resolution_clock::now();
 
     if (example.bcMethod == "lift")
     {
+	// Solve the supremizer problem
+    	//example.solvesupremizer();
         // Search the lift function
-    	example.liftSolve();
+   	example.liftSolve();
     	// Create homogeneous basis functions for velocity
     	example.computeLift(example.Ufield, example.liftfield, example.Uomfield);
     	// Perform a POD decomposition for velocity and pressure
@@ -191,48 +181,9 @@ int main(int argc, char* argv[])
                         NmodesUout);
     	ITHACAPOD::getModes(example.Pfield, example.Pmodes, example.podex, 0, 0,
                         NmodesPout);
-    	ITHACAPOD::getModes(example.supfield, example.supmodes, example.podex,
-                        example.supex, 1, NmodesSUPout);
-        // Create locally the temperature modes
-        //PtrList<volScalarField> ULmodes;
+       // ITHACAPOD::getModes(example.supfield, example.supmodes, example.podex,
+                  //      example.supex, 1, NmodesSUPout);
 
-        ///for (label k = 0; k < example.liftfield.size(); k++)
-        //{
-       //     ULmodes.append(example.liftfield[k]);
-       // }   
-
-       // for (label k = 0; k < List_of_modes.size(); k++)
-       // {
-        //    ULmodes.append(example.Umodes[k]);
-      //  }
-
-        // Calculate the coefficients and L2 error and store the error in a matrix for each number of modes
-      //  for (int i = 0; i < List_of_modes.rows(); i++)
-       // {
-       //     Eigen::MatrixXd coeffU = ITHACAutilities::get_coeffs(example.Ufield, ULmodes, 
-       //     List_of_modes(i, 0)+ example.liftfield.size());
-        //    Eigen::MatrixXd coeffP = ITHACAutilities::get_coeffs(example.Pfield, example.Pmodes,
-        //    List_of_modes(i, 0));
-    
-         //   PtrList<volVectorField> rec_fieldU = ITHACAutilities::reconstruct_from_coeff(
-          //     ULmodes, coeffU, List_of_modes(i, 0));
-         //   PtrList<volScalarField> rec_fieldP = ITHACAutilities::reconstruct_from_coeff(
-         //       example.Pmodes, coeffP, List_of_modes(i, 0));
-         //   Eigen::MatrixXd L2errorProjU = ITHACAutilities::error_listfields(example.Ufield,
-         //                              rec_fieldU);
-         //   Eigen::MatrixXd L2errorProjP = ITHACAutilities::error_listfields(example.Pfield,
-         //                             rec_fieldP);
-
-        //    L2errorProjMatrixU.col(i) = L2errorProjU;
-        //    L2errorProjMatrixP.col(i) = L2errorProjP;
-
-            // Export the matrix containing the error
-         //   ITHACAstream::exportMatrix(L2errorProjMatrixU, "L2errorProjMatrixUlift", "eigen",
-         //                     "./ITHACAoutput/l2error");
-           // ITHACAstream::exportMatrix(L2errorProjMatrixP, "L2errorProjMatrixPlift", "eigen",
-          //                      "./ITHACAoutput/l2error");
-
-       // }
 
     }
     else if (example.bcMethod == "penalty")
@@ -243,22 +194,8 @@ int main(int argc, char* argv[])
                         NmodesOut);
     }
 
-
-
-    auto start_POD = std::chrono::high_resolution_clock::now();
-    // Search the lift function
-    example.liftSolve();
-    // Create homogeneous basis functions for velocity
-    example.computeLift(example.Ufield, example.liftfield, example.Uomfield);
-    // Perform a POD decomposition for velocity and pressure
-    ITHACAPOD::getModes(example.Uomfield, example.Umodes, example.podex, 0, 0,
-                        NmodesUout);
-    ITHACAPOD::getModes(example.Pfield, example.Pmodes, example.podex, 0, 0,
-                        NmodesPout);
-
     auto finish_POD = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_POD = finish_POD - start_POD;
-
     std::cout << "elapsed_POD: " << elapsed_POD.count() << " seconds.";
     std::cout << std::endl;
 
@@ -270,11 +207,11 @@ int main(int argc, char* argv[])
     std::cout << "elapsed_sup: " << elapsed_sup.count() << " seconds.";
     std::cout << std::endl;
 
+    // Reduced Matrices
     auto start_matrix = std::chrono::high_resolution_clock::now();
     example.projectSUP("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
     auto finish_matrix = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_matrix = finish_matrix - start_matrix;
-
     std::cout << "elapsed_matrix: " << elapsed_matrix.count() << " seconds.";
     std::cout << std::endl;
 
@@ -284,39 +221,53 @@ int main(int argc, char* argv[])
 
     reducedUnsteadyNS reduced(example);
     // Set values of the reduced stuff
-    reduced.nu = 0.001;
+    reduced.nu = 0.0001;
     reduced.tstart = 0;
-    reduced.finalTime = 100;
+    reduced.finalTime = 10;
     reduced.dt = 0.0005;
-    reduced.maxIter = 1000;
+    reduced.maxIter = 100;
     reduced.tolerance = 0.0001;
+    reduced.timeSteps = 10;
 
     auto start_ROM = std::chrono::high_resolution_clock::now();
     // Set the online temperature BC and solve reduced model
-    for (label k = 0; k < (par_on.rows()); k++)
-    {
+    //for (label k = 0; k < (par_on.rows()); k++)
+    //{
         Eigen::MatrixXd vel_now(2, 1);
-        vel_now(0, 0) = par_on(k, 0);
-        vel_now(1, 0) = par_on(k, 1);
+        vel_now(0, 0) = 1;
+        //vel_now(1, 0) = par_on(k, 1);
 
         if (example.bcMethod == "penalty")
         {
             // set initial quess for penalty factors temperature BCs (>  0)
-            Eigen::MatrixXd tauInit(vel_now.rows(),1) ;
-            tauInit << 0.00001,0.00001;
+            Eigen::MatrixXd tauInit(1,1) ;
+	    ///Eigen::MatrixXd tauInit(vel_now.rows(),1) ;
+            tauInit << 1.0;
             reduced.tauU = reduced.penalty_sup(vel_now, tauInit);
-	     reduced.tauU = tauInit;
+	    reduced.tauU = tauInit;
         }
 
-        reduced.solveOnline_sup(vel_now, k, par_on.rows());
-        reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP", 200);
-    }
+        reduced.solveOnline_sup(vel_now, 0, 1);
+	//reduced.solveOnline_sup(vel_now, k, par_on.rows());
     auto finish_ROM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
     std::cout << "elapsed_ROM: " << elapsed_ROM.count() << " seconds.";
     std::cout << std::endl;
 
-    // Performing full order simulation for second parameter set - temp_BC
+    auto start_ROM_REC = std::chrono::high_resolution_clock::now();
+    reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP", 20);
+
+    auto finish_ROM_REC = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_ROM_REC = finish_ROM_REC - start_ROM_REC;
+    std::cout << "elapsed_ROM_REC: " << elapsed_ROM_REC.count() << " seconds.";
+    std::cout << std::endl;
+    //}
+   
+
+exit(0);
+}
+
+ /*   // Performing full order simulation for second parameter set - temp_BC
     tutorialLID HFonline2(argc, argv);
     HFonline2.Pnumber = 1;
     HFonline2.Tnumber = 1;
@@ -328,9 +279,9 @@ int main(int argc, char* argv[])
     HFonline2.inletIndex(0, 0) = 0;
     HFonline2.inletIndex(0, 1) = 0;
     HFonline2.startTime = 0.0;
-    HFonline2.finalTime = 100;
+    HFonline2.finalTime = 10;
     HFonline2.timeStep = 0.0005;
-    HFonline2.writeEvery = 0.1;
+    HFonline2.writeEvery = 0.01;
     // Reconstruct the online solution
     HFonline2.onlineSolveFull(par_on, 1,
                               "./ITHACAoutput/HFonline2");
@@ -350,6 +301,7 @@ int main(int argc, char* argv[])
     ITHACAstream::exportMatrix(L2errorMatrixP, "L2errorMatrixP", "eigen",
                                "./ITHACAoutput/l2error");
 exit(0);
-}
+} */
+
 
 

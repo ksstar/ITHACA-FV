@@ -26,39 +26,50 @@ ddtSchemes
 gradSchemes
 {
     default         Gauss linear;
+    //default        Gauss cubic;
+    //grad(p) Gauss linear;
 }
 
 divSchemes
 {
-    default         Gauss linear;
-/*    div(phi,U)      Gauss linear; //linearUpwind grad(U);*/
-/*    div((nuEff*dev(T(grad(U))))) Gauss linear;*/
-/*    div((nuEff*dev2(T(grad(U))))) Gauss linear;*/
-/*    div((nuEff*dev2(T(grad(Ua))))) Gauss linear;*/
-/*    div((interpolate(U)&S),U) Gauss linearUpwind grad(U);*/
-/*    div((interpolate(U)&S),Usup) Gauss linearUpwind grad(Usup);*/
-/*    div((interpolate(U)&S),Ulift0) Gauss linearUpwind grad(Ulift0);*/
-/*    div((interpolate(Usup)&S),U) Gauss linearUpwind grad(U);*/
-/*    div((interpolate(Usup)&S),Usup) Gauss linearUpwind grad(Usup);*/
-/*    div((interpolate(Usup)&S),Ulift0) Gauss linearUpwind grad(Ulift0);*/
-/*    div((interpolate(Ulift0)&S),U) Gauss linearUpwind grad(U);*/
-/*    div((interpolate(Ulift0)&S),Usup) Gauss linearUpwind grad(Usup);*/
-/*    div((interpolate(Ulift0)&S),Ulift0) Gauss linearUpwind grad(Ulift0);*/
+    default          Gauss linear;
+    //default  Gauss cubic;
+    /*div(phi,U) Gauss linear;
+
+    div(U) Gauss linear;
+
+    div((nuEff*dev(T(grad(U))))) Gauss linear;
+    div((nuEff*dev2(T(grad(U))))) Gauss linear;
+    div((nuEff*dev2(T(grad(Ua))))) Gauss linear;
+    div((interpolate(U)&S),U) Gauss linear;
+    div((interpolate(U)&S),Usup) Gauss linear;
+    div((interpolate(U)&S),Ulift0) Gauss linear;
+    div((interpolate(Usup)&S),U) Gauss linear;
+    div((interpolate(Usup)&S),Usup) Gauss linear;
+    div((interpolate(Usup)&S),Ulift0) Gauss linear;
+    div((interpolate(Ulift0)&S),U) Gauss linear;
+    div((interpolate(Ulift0)&S),Usup) Gauss linear;
+    div((interpolate(Ulift0)&S),Ulift0) Gauss linear;
+    div(Ulift0) Gauss linear;*/
+    
 }
 
 laplacianSchemes
 {
+    //default        Gauss cubic orthogonal;
     default        Gauss linear orthogonal;
 }
 
 interpolationSchemes
 {
-    default         linear;
+    default         cubic;
+    //default         linear;
 }
 
 snGradSchemes
 {
     default         orthogonal;
+//default         cubic orthogonal;
 }
 
 fluxRequired

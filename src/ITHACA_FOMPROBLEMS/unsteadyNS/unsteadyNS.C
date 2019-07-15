@@ -61,9 +61,21 @@ unsteadyNS::unsteadyNS(int argc, char* argv[])
                       mesh
                   )
               );
+ITHACAdict = new IOdictionary
+    (
+        IOobject
+        (
+            "ITHACAdict",
+            runTime.system(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        )
+    );
 #include "createFields.H"
 #include "createFvOptions.H"
     para = new ITHACAparameters;
+    bcMethod = ITHACAdict->lookupOrDefault<word>("bcMethod", "lift");
     offline = ITHACAutilities::check_off();
     podex = ITHACAutilities::check_pod();
     supex = ITHACAutilities::check_sup();
