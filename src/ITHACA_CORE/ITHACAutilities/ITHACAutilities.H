@@ -221,6 +221,18 @@ class ITHACAutilities
         static Eigen::MatrixXd error_listfields(PtrList<TypeField>& fields1,
                                                 PtrList<TypeField>& fields2);
 
+	//--------------------------------------------------------------------------
+        /// Function to compute the relative error in L2 norm between two lists of Fields (both scalar or vector)
+        ///
+        /// @param[in]  fields1  The fields 1
+        /// @param[in]  fields2  The fields 2
+        ///
+        /// @return     A vector containing the error between the two fields in Eigen::MatrixXd form.
+        ///
+        template<class TypeField>
+        static Eigen::MatrixXd error_listfields_min_IC(PtrList<TypeField>& fields1,
+                                                PtrList<TypeField>& fields2);
+
 
         //--------------------------------------------------------------------------
         /// Function to compute the relative error in L2 norm between two lists of Fields (both scalar or vector), given the list of mesh volumes fields
@@ -233,6 +245,21 @@ class ITHACAutilities
         ///
         template<class TypeField>
         static Eigen::MatrixXd error_listfields(
+            PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields1,
+            PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields2,
+            PtrList<volScalarField>& Volumes);
+
+        //--------------------------------------------------------------------------
+        /// Function to compute the relative error in L2 norm between two lists of Fields (both scalar or vector), given the list of mesh volumes fields
+        ///
+        /// @param[in]  fields1  The fields 1
+        /// @param[in]  fields2  The fields 2
+        /// @param[in]  Volumes  The list of the mesh volumes fields
+        ///
+        /// @return     A vector containing the error between the two fields in Eigen::MatrixXd form.
+        ///
+        template<class TypeField>
+        static Eigen::MatrixXd error_listfields_min_IC(
             PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields1,
             PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields2,
             PtrList<volScalarField>& Volumes);

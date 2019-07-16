@@ -102,7 +102,15 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
     runTime.setDeltaT(timeStep);
     nextWrite = startTime;
     // Initialize Nsnapshots
-    int nsnapshots = 0;
+    ITHACAstream::exportSolution(U, name(counter), "./ITHACAoutput/Offline/");
+    ITHACAstream::exportSolution(p, name(counter), "./ITHACAoutput/Offline/");
+    std::ofstream of("./ITHACAoutput/Offline/" + name(counter) + "/" +
+                     runTime.timeName());
+    Ufield.append(U);
+    Pfield.append(p);
+    counter++;
+    nextWrite += writeEvery;
+    
 
     // Start the time loop
     while (runTime.run())
@@ -111,8 +119,10 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
 #include "CourantNo.H"
 #include "setDeltaT.H"
         runTime.setEndTime(finalTime + timeStep);
-        Info << "Time = " << runTime.timeName() << nl << endl;
-
+        runTime++;
+        
+	Info << "Time = " << runTime.timeName() << nl << endl;
+        
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
@@ -137,7 +147,6 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
 
         if (checkWrite(runTime))
         {
-            nsnapshots += 1;
             ITHACAstream::exportSolution(U, name(counter), folder);
             ITHACAstream::exportSolution(p, name(counter), folder);
             std::ofstream of(folder + name(counter) + "/" +
@@ -157,7 +166,7 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
             }
         }
 
-        runTime++;
+        
     }
 
     // Resize to Unitary if not initialized by user (i.e. non-parametric problem)
@@ -166,7 +175,7 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
         mu.resize(1, 1);
     }
 
-    if (mu_samples.rows() == nsnapshots * mu.cols())
+    if (mu_samples.rows() == counter * mu.cols())
     {
         ITHACAstream::exportMatrix(mu_samples, "mu_samples", "eigen",
                                    folder);

@@ -816,6 +816,8 @@ Eigen::MatrixXd steadyNS::pressure_BC1(label NUmodes, label NPmodes)
         reduce(BC1_matrix, sumOp<Eigen::MatrixXd>());
     }
 
+    ITHACAstream::exportMatrix(BC1_matrix, "BC1", "eigen", "./ITHACAoutput/Matrices/");
+
     return BC1_matrix;
 }
 
@@ -898,6 +900,8 @@ Eigen::MatrixXd steadyNS::pressure_BC3(label NUmodes, label NPmodes)
     {
         reduce(BC3_matrix, sumOp<Eigen::MatrixXd>());
     }
+
+    ITHACAstream::exportMatrix(BC3_matrix, "BC3", "eigen", "./ITHACAoutput/Matrices/");
 
     return BC3_matrix;
 }

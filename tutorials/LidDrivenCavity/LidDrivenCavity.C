@@ -117,7 +117,8 @@ class tutorialLID: public unsteadyNS
             else
             {
             }
-}
+        }
+
 };
 
 /*---------------------------------------------------------------------------*\
@@ -159,9 +160,9 @@ int main(int argc, char* argv[])
     example.inletIndex(0, 1) = 0;
     // Time parameters
     example.startTime = 0;
-    example.finalTime = 10;
+    example.finalTime = 0.25;
     example.timeStep = 0.0005;
-    example.writeEvery = 0.01;
+    example.writeEvery = 0.005;
 
     // Perform The Offline Solve;
     example.offlineSolve(par_off);
@@ -181,10 +182,6 @@ int main(int argc, char* argv[])
                         NmodesUout);
     	ITHACAPOD::getModes(example.Pfield, example.Pmodes, example.podex, 0, 0,
                         NmodesPout);
-       // ITHACAPOD::getModes(example.supfield, example.supmodes, example.podex,
-                  //      example.supex, 1, NmodesSUPout);
-
-
     }
     else if (example.bcMethod == "penalty")
     {
@@ -199,17 +196,78 @@ int main(int argc, char* argv[])
     std::cout << "elapsed_POD: " << elapsed_POD.count() << " seconds.";
     std::cout << std::endl;
 
-    // Solve the supremizer problem
+    /* // Solve the supremizer problem
     auto start_sup = std::chrono::high_resolution_clock::now();
     example.solvesupremizer("modes");
     auto finish_sup = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_sup = finish_sup - start_sup;
     std::cout << "elapsed_sup: " << elapsed_sup.count() << " seconds.";
-    std::cout << std::endl;
+    std::cout << std::endl; */
+
+    NmodesSUPproj = 0;
+
+ /*   // Create a list with number of modes for which the projection needs to be performed
+    Eigen::MatrixXd List_of_modes(NmodesOut-5, 1);
+    for (int i = 0; i < List_of_modes.rows(); i++)
+    {
+        List_of_modes(i, 0) = i + 1;
+    }
+
+    // Export with number of modes for which the projection needs to be performed
+    ITHACAstream::exportMatrix(List_of_modes, "List_of_modes", "eigen", "./ITHACAoutput/l2error");
+
+    PtrList<volVectorField> Umodes;
+
+    if (example.liftfield.size() != 0)
+    {
+        for (label k = 0; k < example.liftfield.size(); k++)
+        {
+            Umodes.append(example.liftfield[k]);
+        }
+    }
+
+    for (label k = 0; k < List_of_modes.size(); k++)
+    {
+            Umodes.append(example.Umodes[k]);
+    }
+
+    if (example.supex == 1)
+    {
+        for (label k = 0; k < NmodesSUPproj; k++)
+        {
+            Umodes.append(example.supmodes[k]);
+        }
+    }
+
+
+    // Perform the projection for all number of modes in list List_of_modes
+    Eigen::MatrixXd L2errorProjMatrixU(example.Ufield.size()-1, List_of_modes.rows());
+    Eigen::MatrixXd L2errorProjMatrixP(example.Pfield.size()-1, List_of_modes.rows());
+
+    // Calculate the coefficients and L2 error and store the error in a matrix for each number of modes
+    for (int i = 0; i < List_of_modes.rows(); i++)
+    {
+        Eigen::MatrixXd coeffU = ITHACAutilities::get_coeffs(example.Ufield,Umodes,
+                                   List_of_modes(i, 0) + example.liftfield.size() + NmodesSUPproj);
+        Eigen::MatrixXd coeffP = ITHACAutilities::get_coeffs(example.Pfield, example.Pmodes,
+                                 List_of_modes(i, 0));
+        PtrList<volVectorField> rec_fieldU = ITHACAutilities::reconstruct_from_coeff(
+                		 Umodes, coeffU, List_of_modes(i, 0));
+        PtrList<volScalarField> rec_fieldP = ITHACAutilities::reconstruct_from_coeff(
+                		 example.Pmodes, coeffP, List_of_modes(i, 0));
+        L2errorProjMatrixU.col(i) = ITHACAutilities::error_listfields_min_IC(example.Ufield, rec_fieldU);
+        L2errorProjMatrixP.col(i) = ITHACAutilities::error_listfields_min_IC(example.Pfield, rec_fieldP);
+    }
+
+    // Export the matrix containing the error
+    ITHACAstream::exportMatrix(L2errorProjMatrixU, "L2errorProjMatrixU", "eigen",
+                               "./ITHACAoutput/l2error");
+    ITHACAstream::exportMatrix(L2errorProjMatrixP, "L2errorProjMatrixP", "eigen",
+                               "./ITHACAoutput/l2error"); */
 
     // Reduced Matrices
     auto start_matrix = std::chrono::high_resolution_clock::now();
-    example.projectSUP("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
+    example.projectPPE("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
     auto finish_matrix = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_matrix = finish_matrix - start_matrix;
     std::cout << "elapsed_matrix: " << elapsed_matrix.count() << " seconds.";
@@ -223,7 +281,7 @@ int main(int argc, char* argv[])
     // Set values of the reduced stuff
     reduced.nu = 0.0001;
     reduced.tstart = 0;
-    reduced.finalTime = 10;
+    reduced.finalTime = 0.25;
     reduced.dt = 0.0005;
     reduced.maxIter = 100;
     reduced.tolerance = 0.0001;
@@ -247,7 +305,7 @@ int main(int argc, char* argv[])
 	    reduced.tauU = tauInit;
         }
 
-        reduced.solveOnline_sup(vel_now, 0, 1);
+        reduced.solveOnline_PPE(vel_now, 0, 1);
 	//reduced.solveOnline_sup(vel_now, k, par_on.rows());
     auto finish_ROM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
@@ -255,7 +313,7 @@ int main(int argc, char* argv[])
     std::cout << std::endl;
 
     auto start_ROM_REC = std::chrono::high_resolution_clock::now();
-    reduced.reconstruct_sup("./ITHACAoutput/ReconstructionSUP", 20);
+    reduced.reconstruct_sup("./ITHACAoutput/ReconstructionPPE", 10);
 
     auto finish_ROM_REC = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_ROM_REC = finish_ROM_REC - start_ROM_REC;
@@ -263,10 +321,6 @@ int main(int argc, char* argv[])
     std::cout << std::endl;
     //}
    
-
-exit(0);
-}
-
  /*   // Performing full order simulation for second parameter set - temp_BC
     tutorialLID HFonline2(argc, argv);
     HFonline2.Pnumber = 1;
@@ -284,16 +338,14 @@ exit(0);
     HFonline2.writeEvery = 0.01;
     // Reconstruct the online solution
     HFonline2.onlineSolveFull(par_on, 1,
-                              "./ITHACAoutput/HFonline2");
-    // Reading in the high-fidelity solutions for the parameter set
-    // for which the offline solve has been performed
+                              "./ITHACAoutput/HFonline2");*/
+    // Reading high-fidelity solutions for the parameter set
+    // for which the offline solve has been performed (skipping IC)
     example.onlineSolveRead("./ITHACAoutput/Offline/");
-    // Reading in the high-fidelity solutions for the second parameter set
-    example.onlineSolveRead("./ITHACAoutput/HFonline2/");
     // Calculate error between online- and corresponding full order solution
-    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
+    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields_min_IC(
                                          example.Ufield_on, reduced.UREC);
-    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields(
+    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields_min_IC(
                                          example.Pfield_on, reduced.PREC);
     //Export the matrix containing the error
     ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
@@ -301,7 +353,7 @@ exit(0);
     ITHACAstream::exportMatrix(L2errorMatrixP, "L2errorMatrixP", "eigen",
                                "./ITHACAoutput/l2error");
 exit(0);
-} */
+} 
 
 
 

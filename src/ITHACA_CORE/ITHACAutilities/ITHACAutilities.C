@@ -371,6 +371,30 @@ Eigen::MatrixXd ITHACAutilities::error_listfields(PtrList<TypeField>&
 }
 
 template<class TypeField>
+Eigen::MatrixXd ITHACAutilities::error_listfields_min_IC(PtrList<TypeField>&
+        fields1, PtrList<TypeField>& fields2)
+{
+    Eigen::VectorXd err;
+
+    if (fields1.size() != fields2.size())
+    {
+        Info << "The two fields do not have the same size, code will abort" << endl;
+        exit(0);
+    }
+
+    err.resize(fields1.size()-1, 1);
+
+    for (label k = 0; k < fields1.size()-1; k++)
+    {
+        err(k, 0) = error_fields(fields1[k+1], fields2[k+1]);
+        Info << " Error is " << err[k] << endl;
+    }
+
+    return err;
+}
+
+
+template<class TypeField>
 Eigen::MatrixXd ITHACAutilities::error_listfields(
     PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields1,
     PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields2,
@@ -386,6 +410,28 @@ Eigen::MatrixXd ITHACAutilities::error_listfields(
     for (label k = 0; k < fields1.size(); k++)
     {
         err(k, 0) = error_fields(fields1[k], fields2[k], Volumes[k]);
+        Info << " Error is " << err[k] << endl;
+    }
+
+    return err;
+}
+
+template<class TypeField>
+Eigen::MatrixXd ITHACAutilities::error_listfields_min_IC(
+    PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields1,
+    PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields2,
+    PtrList<volScalarField>& Volumes)
+{
+    M_Assert(fields1.size() == fields2.size(),
+             "The two fields do not have the same size, code will abort");
+    M_Assert(fields1.size() == Volumes.size(),
+             "The volumes field and the two solution fields do not have the same size, code will abort");
+    Eigen::VectorXd err;
+    err.resize(fields1.size()-1, 1);
+
+    for (label k = 0; k < fields1.size()-1; k++)
+    {
+        err(k, 0) = error_fields(fields1[k+1], fields2[k+1], Volumes[k+1]);
         Info << " Error is " << err[k] << endl;
     }
 
@@ -1351,6 +1397,23 @@ template Eigen::MatrixXd ITHACAutilities::error_listfields(
     PtrList<volScalarField>& fields1,
     PtrList<volScalarField>& fields2);
 template Eigen::MatrixXd ITHACAutilities::error_listfields(
+    PtrList<volVectorField>& fields1,
+    PtrList<volVectorField>& fields2);
+
+template Eigen::MatrixXd ITHACAutilities::error_listfields_min_IC(
+    PtrList<GeometricField<scalar, fvPatchField, volMesh>>& fields1,
+    PtrList<GeometricField<scalar, fvPatchField, volMesh>>& fields2,
+    PtrList<volScalarField>& Volumes);
+template Eigen::MatrixXd ITHACAutilities::error_listfields_min_IC(
+    PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields1,
+    PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields2,
+    PtrList<volScalarField>& Volumes);
+
+
+template Eigen::MatrixXd ITHACAutilities::error_listfields_min_IC(
+    PtrList<volScalarField>& fields1,
+    PtrList<volScalarField>& fields2);
+template Eigen::MatrixXd ITHACAutilities::error_listfields_min_IC(
     PtrList<volVectorField>& fields1,
     PtrList<volVectorField>& fields2);
 

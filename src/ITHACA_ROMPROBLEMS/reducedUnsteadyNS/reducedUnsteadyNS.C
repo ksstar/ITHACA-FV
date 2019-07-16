@@ -291,7 +291,7 @@ Info << "bug10" << endl;
         Eigen::VectorXd res(y);
         res.setZero();
         hnls.solve(y);
-Info << "bug11" << endl;
+
         if (problem->bcMethod == "lift")
         {
             for (label j = 0; j < N_BC; j++)
@@ -299,7 +299,7 @@ Info << "bug11" << endl;
                 y(j) = vel_now(j, 0);
             }
         }
-Info << "bug12" << endl;
+
         newton_object_sup.operator()(y, res);
         newton_object_sup.y_old = y;
         Info << "Time = " << time << endl;
@@ -323,10 +323,10 @@ Info << "bug12" << endl;
     // Save the current solution
     ITHACAstream::exportMatrix(online_sol, "red_coeff", "python",
        "./ITHACAoutput/red_coeff/" + name(NParaSet) + "/");
-    ITHACAstream::exportMatrix(online_sol, "red_coeff", "matlab",
-       "./ITHACAoutput/red_coeff/" + name(NParaSet)  + "/");
-    ITHACAstream::exportMatrix(online_sol, "red_coeff", "eigen",
-       "./ITHACAoutput/red_coeff/" + name(NParaSet)  + "/");
+   // ITHACAstream::exportMatrix(online_sol, "red_coeff", "matlab",
+     //  "./ITHACAoutput/red_coeff/" + name(NParaSet)  + "/");
+   // ITHACAstream::exportMatrix(online_sol, "red_coeff", "eigen",
+     //  "./ITHACAoutput/red_coeff/" + name(NParaSet)  + "/");
     return online_sol;
 }
 
@@ -356,16 +356,8 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, lab
     y.resize(Nphi_u + Nphi_p, 1);
     y.setZero();
     // Set Initial Conditions
-    // y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[startSnap], Umodes);
-    // y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap], Pmodes);
-    y.head(Nphi_u) = ITHACAutilities::get_coeffs(Usnapshots[startSnap], LUmodes);
-    y.tail(Nphi_p) = ITHACAutilities::get_coeffs(Psnapshots[startSnap], problem->Pmodes);
-
-    // Change initial condition for the lifting function
-    for (label j = 0; j < N_BC; j++)
-    {
-        y(j) = vel_now(j, 0);
-    }
+    y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[0], LUmodes);
+    y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0], problem->Pmodes);
 
     // Set some properties of the newton object
     newton_object_PPE.nu = nu;
@@ -384,10 +376,9 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, lab
     Eigen::MatrixXd tmp_sol(Nphi_u + Nphi_p + 1, 1);
     tmp_sol(0) = time;
     tmp_sol.col(0).tail(y.rows()) = y;
+
     online_sol.col(0) = tmp_sol;
-
-   
-
+  
     // Create nonlinear solver object
     Eigen::HybridNonLinearSolver<newton_unsteadyNS_PPE> hnls(newton_object_PPE);
     // Set output colors for fancy output
@@ -431,19 +422,10 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, lab
         online_sol.col(i) = tmp_sol;
     }
 
-    // Save the current solution
-    ITHACAstream::exportMatrix(online_sol, "red_coeff", "python",
-       "./ITHACAoutput/red_coeff/" + name(NParaSet) + "/");
-    ITHACAstream::exportMatrix(online_sol, "red_coeff", "matlab",
-       "./ITHACAoutput/red_coeff/" + name(NParaSet)  + "/");
     ITHACAstream::exportMatrix(online_sol, "red_coeff", "eigen",
        "./ITHACAoutput/red_coeff/" + name(NParaSet)  + "/");
     return online_sol;
  
-
-
-
-
 }
 
 // * * * * * * * * * * * * * * * Calculate penalty factor * * * * * * * * * * * * * //
@@ -602,7 +584,6 @@ int counter2 = 1 + UREC.size();
             }
 
             ITHACAstream::exportSolution(P_rec,  name(counter2), folder);
-            PREC.append(P_rec);
            
             nextwrite += printevery;
 
@@ -611,6 +592,7 @@ int counter2 = 1 + UREC.size();
             std::ofstream of(folder + "/" + name(counter2) + "/" + name(timenow));
             counter2 ++;
             UREC.append(U_rec);
+            PREC.append(P_rec);
         }
 
         counter++;
