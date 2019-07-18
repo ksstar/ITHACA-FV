@@ -76,6 +76,11 @@ ITHACAdict = new IOdictionary
 #include "createFvOptions.H"
     para = new ITHACAparameters;
     bcMethod = ITHACAdict->lookupOrDefault<word>("bcMethod", "lift");
+    M_Assert(bcMethod == "lift" || bcMethod == "penalty",
+    "The BC method can be set to lift or penalty");
+    aveMethod = ITHACAdict->lookupOrDefault<word>("aveMethod", "none");
+    M_Assert(aveMethod == "mean" || aveMethod == "none",
+    "The BC method can be set to mean or none");
     offline = ITHACAutilities::check_off();
     podex = ITHACAutilities::check_pod();
     supex = ITHACAutilities::check_sup();

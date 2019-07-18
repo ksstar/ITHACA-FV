@@ -49,10 +49,19 @@ reducedUnsteadyNS::reducedUnsteadyNS(unsteadyNS& FOMproblem)
     Nphi_u = problem->B_matrix.rows();
     Nphi_p = problem->K_matrix.cols();
 
+std::cout << "Nphi_u = " << Nphi_u << std::endl;
+
     // Create locally the velocity modes
     for (label k = 0; k < problem->liftfield.size(); k++)
     {
         LUmodes.append(problem->liftfield[k]);
+    }
+
+    if (problem->aveMethod == "mean")
+    {
+       //scalar magSumSquare = Foam::sqrt(fvc::domainIntegrate(problem->Umean[0] & problem->Umean[0]).value());
+       //LUmodes.append((problem->Umean[0]/magSumSquare));
+       LUmodes.append(problem->Umean[0]);
     }
 
     for (label k = 0; k < problem->NUmodes; k++)
@@ -64,6 +73,19 @@ reducedUnsteadyNS::reducedUnsteadyNS(unsteadyNS& FOMproblem)
     {
         LUmodes.append(problem->supmodes[k]);
     }
+
+    if (problem->aveMethod == "mean")
+    {
+       MPmodes.append(problem->Pmean[0]);
+    }
+
+    for (label k = 0; k < problem->NPmodes; k++)
+    {
+       MPmodes.append(problem->Pmodes[k]);
+    }
+
+
+std::cout << "LUmodes = " << LUmodes.size() << std::endl;
 
     newton_object_sup = newton_unsteadyNS_sup(Nphi_u + Nphi_p, Nphi_u + Nphi_p,
                         FOMproblem);
@@ -194,12 +216,12 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
         cc = a_tmp.transpose() * problem->C_matrix[i] * a_tmp;
         fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i);
 
-  	//if (problem->bcMethod == "penalty")
-        //{
-        //    fvec(i) += (penaltyU.row(i) * tauU(0,0))(0, 0);
-	//}
+  	if (problem->bcMethod == "penalty")
+        {
+            fvec(i) += (penaltyU.row(i) * tauU(0,0))(0, 0);
+	}
     }
-;
+
     for (label j = 0; j < Nphi_p; j++)
     {
         label k = j + Nphi_u;
@@ -254,14 +276,14 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd& vel_now, lab
     y.resize(Nphi_u + Nphi_p,  1);
     y.setZero();
     y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[0], LUmodes);
-    y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0], problem->Pmodes);
+    y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0], MPmodes);
 
     // Set some properties of the newton objects
     newton_object_sup.nu = nu;
     newton_object_sup.y_old = y;
     newton_object_sup.dt = dt;
     newton_object_sup.BC.resize(N_BC);
-    newton_object.tauU = tauU;
+    newton_object_sup.tauU = tauU;
 
     for (label j = 0; j < N_BC; j++)
     {
@@ -283,7 +305,7 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd& vel_now, lab
     Color::Modifier red(Color::FG_RED);
     Color::Modifier green(Color::FG_GREEN);
     Color::Modifier def(Color::FG_DEFAULT);
-Info << "bug10" << endl;
+
   // Start the time loop
     for (label i = 1; i < online_sol.cols(); i++)
     {
@@ -339,7 +361,8 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, lab
     std::cout << "################## Online solve N° " << NParaSet <<
     " ##################" << std::endl;
     std::cout << "Solving for the parameter: " << vel_now << std::endl;
-    // Count number of time steps
+
+     // Count number of time steps
     int counter = 0;
     time = tstart;
 
@@ -355,15 +378,15 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, lab
     // Create and resize the solution vector
     y.resize(Nphi_u + Nphi_p, 1);
     y.setZero();
-    // Set Initial Conditions
     y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[0], LUmodes);
-    y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0], problem->Pmodes);
-
+    y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0], MPmodes);
+   
     // Set some properties of the newton object
     newton_object_PPE.nu = nu;
     newton_object_PPE.y_old = y;
     newton_object_PPE.dt = dt;
     newton_object_PPE.BC.resize(N_BC);
+    newton_object_PPE.tauU = tauU;
 
     for (label j = 0; j < N_BC; j++)
     {
@@ -389,8 +412,10 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, lab
       // Start the time loop
     for (label i = 1; i < online_sol.cols(); i++)
     {
+
         time = time + dt;
         Eigen::VectorXd res(y);
+
         res.setZero();
         hnls.solve(y);
 
@@ -443,13 +468,9 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_sup(Eigen::MatrixXd& vel_now, Eigen::
     {
         std::cout << "diff: " << abs((vel_now - valBC).sum()) << std::endl;
         std::cout << "valBC: " << valBC << std::endl;
-std::cout << "valBC0: " << valBC0 << std::endl;
+        std::cout << "valBC0: " << valBC0 << std::endl;
 
-        if ((valBC - valBC0).sum() == 0)
-        {
-            tauIter = tauIter;
-        }
-        else
+        if ((valBC - valBC0).sum() != 0)
         {
             for (label j = 0; j < N_BC; j++)
             {
@@ -464,6 +485,9 @@ std::cout << "valBC0: " << valBC0 << std::endl;
                 tauIter(j,0) = tauIter(j,0) - (valBC(j,0) - vel_now(j,0))/Jacobian(0,0);
             }
         }
+        else
+        {  
+        }
 
         std::cout << "Solving for penalty factor(s): " << tauIter << std::endl;
 
@@ -475,8 +499,7 @@ std::cout << "valBC0: " << valBC0 << std::endl;
         y.resize(Nphi_u + Nphi_p, 1);
         y.setZero();
         y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[0],LUmodes);
-        y.tail(Nphi_p) =  ITHACAutilities::get_coeffs(problem->Pfield[0],problem->Pmodes);
-        
+        y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0],MPmodes);
 
     // Set some properties of the newton object
         newton_object_sup.nu = nu;
@@ -486,10 +509,8 @@ std::cout << "valBC0: " << valBC0 << std::endl;
         newton_object_sup.tauU = tauIter;
 
     // Change initial condition for the lifting function
- 
         newton_object_sup.BC(0) = vel_now(0, 0);
-      
-
+ 
     // Create nonlinear solver object
         Eigen::HybridNonLinearSolver<newton_unsteadyNS_sup> hnls(newton_object_sup);
     // Set output colors for fancy output
@@ -553,6 +574,127 @@ std::cout << "valBC0: " << valBC0 << std::endl;
 }
 
 
+
+
+Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit)
+{
+    // initialize new value on boundaries
+    Eigen::MatrixXd valBC = Eigen::MatrixXd::Zero(vel_now.rows(),1);
+    // initialize old values on boundaries
+    Eigen::MatrixXd valBC0 = Eigen::MatrixXd::Zero(vel_now.rows(),1);
+
+    tauIter = tauInit;         
+    int Iter = 0;
+
+    while (abs((vel_now - valBC).sum()) > tolerance && Iter < maxIter)
+    {
+        //std::cout << "diff: " << abs((vel_now - valBC).sum()) << std::endl;
+        //std::cout << "valBC: " << valBC << std::endl;
+
+        if ((valBC - valBC0).sum() != 0)
+        {
+            for (label j = 0; j < N_BC; j++)
+            {
+                Eigen::MatrixXd Jacobian = Eigen::MatrixXd::Zero(Nphi_u, 1);
+
+                Jacobian = vel_now(j,0)* problem->bcVelVec[j] - 
+                    problem->bcVelMat[j]* y.head(Nphi_u) ;
+
+                std::cout << "Jacobian: " << Jacobian(0,0) << std::endl;
+
+                tauIter(j,0) = tauIter(j,0) - (valBC(j,0) - vel_now(j,0))/Jacobian(0,0);
+            }
+        }
+        else
+        {
+        }
+
+        std::cout << "Solving for penalty factor(s): " << tauIter << std::endl;
+
+    //  Set the old boundary value to the current value
+        valBC0  = valBC;
+
+    // Count the number of iterations
+        Iter ++;
+
+        y.resize(Nphi_u + Nphi_p, 1);
+        y.setZero();
+        y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[0],LUmodes);
+        y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0],MPmodes);
+      
+    // Set some properties of the newton object
+        newton_object_PPE.nu = nu;
+        newton_object_PPE.y_old = y;
+        newton_object_PPE.dt = dt;
+        newton_object_PPE.BC.resize(N_BC);
+        newton_object_PPE.tauU = tauIter;
+
+    // Set boundary conditions
+        for (label j = 0; j < N_BC; j++)
+        {
+            newton_object_PPE.BC(j) = vel_now(j, 0);
+        }
+     
+    // Create nonlinear solver object
+        Eigen::HybridNonLinearSolver<newton_unsteadyNS_PPE> hnls(newton_object_PPE);
+    // Set output colors for fancy output
+        Color::Modifier red(Color::FG_RED);
+        Color::Modifier green(Color::FG_GREEN);
+        Color::Modifier def(Color::FG_DEFAULT);
+
+    // Set initially for convergence check
+        Eigen::VectorXd res(y);
+        res.setZero();
+
+    // Start the time loop
+        for (label i = 1; i < timeSteps; i++)
+        {
+            Eigen::VectorXd res(y);
+            res.setZero();
+            hnls.solve(y);
+
+            newton_object_PPE.operator()(y, res);
+            newton_object_PPE.y_old = y;
+
+            if (res.norm() < 1e-5)
+            {
+                std::cout << green << "|F(x)| = " << res.norm() << " - Minimun reached in " <<
+                hnls.iter << " iterations " << def << std::endl << std::endl;
+            }
+            else
+            {
+                std::cout << red << "|F(x)| = " << res.norm() << " - Minimun reached in " <<
+                hnls.iter << " iterations " << def << std::endl << std::endl;
+            }
+            volVectorField U_rec("U_rec", LUmodes[0] * 0);
+            for (label j = 0; j < Nphi_u; j++)
+            {
+                U_rec += LUmodes[j] * y(j);
+            }
+
+            for (label k = 0; k < problem->inletIndex.rows(); k++)
+            {
+                 label BCind = problem->inletIndex(k,0);
+		 label BCcomp = problem->inletIndex(k,1);
+                 valBC(0,0) = U_rec.boundaryFieldRef()[BCind][0].component(BCcomp);
+            }
+            std::cout << "valBC: "<< valBC << std::endl; 
+        } 
+
+        // Check whether solution has been converged
+        if (res.norm() > 1e-5)
+        {
+            std::cout << "Penalty method has failed" << std::endl;
+            exit(0);
+        }
+        
+    }
+
+    std::cout  << "tauIter: "<< tauIter << std::endl;
+
+    return tauIter;
+}
+
 // * * * * * * * * * * * * * * * Reconstruct fields * * * * * * * * * * * * * //
 void reducedUnsteadyNS::reconstruct_PPE(fileName folder, int printevery)
 {
@@ -576,11 +718,11 @@ int counter2 = 1 + UREC.size();
 
             ITHACAstream::exportSolution(U_rec,  name(counter2), folder);
 
-            volScalarField P_rec("P_rec", problem->Pmodes[0] * 0);
+            volScalarField P_rec("P_rec", MPmodes[0] * 0);
 
             for (label j = 0; j < Nphi_p; j++)
             {
-                    P_rec += problem->Pmodes[j] * online_sol(j + Nphi_u + 1, i);
+                    P_rec += MPmodes[j] * online_sol(j + Nphi_u + 1, i);
             }
 
             ITHACAstream::exportSolution(P_rec,  name(counter2), folder);
@@ -619,14 +761,15 @@ for (label i = 0; i < online_sol.cols(); i++)
                 U_rec += LUmodes[j] * online_sol(j + 1, i);
             }
 
+
             ITHACAstream::exportSolution(U_rec,  name(counter2), folder);
 
  
-            volScalarField P_rec("P_rec", problem->Pmodes[0] * 0);
+            volScalarField P_rec("P_rec", MPmodes[0] * 0);
 
             for (label j = 0; j < Nphi_p; j++)
             {
-                P_rec += problem->Pmodes[j] * online_sol(j + Nphi_u + 1, i);
+                P_rec += MPmodes[j] * online_sol(j + Nphi_u + 1, i);
             }
 
             ITHACAstream::exportSolution(P_rec,  name(counter2), folder);

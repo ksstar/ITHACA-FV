@@ -43,6 +43,7 @@ SourceFiles
 #include "pisoControl.H"
 #include "fvOptions.H"
 #include "reductionProblem.H"
+//#include "ITHACAPOD.H"
 #include "ITHACAstream.H"
 #include "ITHACAparameters.H"
 #if OPENFOAM >= 1812
@@ -108,6 +109,9 @@ class steadyNS: public reductionProblem
 
         /// List of pointers containing the total number of lift, supremizer and velocity modes
         Modes<vector> L_U_SUPmodes;
+
+        /// List of pointers containing the total number of lift, supremizer and velocity modes
+        Modes<scalar> M_Pmodes;
 
         /// Tolerance for the residual of the stationary problems, there is the same tolerance for velocity and pressure
         scalar tolerance;
@@ -234,6 +238,17 @@ class steadyNS: public reductionProblem
 
         /// Boundary Method
         word bcMethod;
+
+        /// Averaged Method
+        word aveMethod;
+
+        PtrList<volVectorField> Umean;
+
+	PtrList<volScalarField> Pmean;
+
+ 	PtrList<volVectorField> Usub;
+
+        PtrList<volScalarField> Psub;
 
         // Functions
 

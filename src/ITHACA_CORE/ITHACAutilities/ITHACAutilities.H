@@ -686,6 +686,32 @@ class ITHACAutilities
                                   label BC_ind, List<type_f>& value,
                                   List<type_f>& grad, List<scalar>& valueFrac);
 
+        //--------------------------------------------------------------------------
+        /// Compute the average of a list of vector fields
+        ///
+        /// @param[in]  snapshotsU  a PtrList of volVectorField snapshots.
+        /// @param[out] mean      a PtrList of mean vector field.
+        ///
+        static void getAverage(PtrList<volVectorField>& snapshotsU,
+                             PtrList<volVectorField>& mean,PtrList<volVectorField>& sub);
+
+	//--------------------------------------------------------------------------
+        /// Compute the average of a list of scalar fields
+        ///
+        /// @param[in]  snapshotsU  a PtrList of volVectorField snapshots.
+        /// @param[out] mean      a PtrList of mean vector field.
+        ///
+        static void getAverage(PtrList<volScalarField>& snapshotsP,
+        PtrList<volScalarField>& mean,PtrList<volScalarField>& sub);
+
+        //--------------------------------------------------------------------------
+        /// @brief   	Compute the time-average field
+        ///
+        /// @param[in]  snapshotsP    a PtrList of snapshots.
+        /// @param[out] Pmean         a PtrList of time-averaged field.
+	template<class Field_type>
+        static void getAverage(PtrList<Field_type>& snapshotsP, PtrList<Field_type>& Pmean, PtrList<Field_type>& Psub);
+
         ///
         /// @brief      Gets the indices from coordinates of a given box.
         ///

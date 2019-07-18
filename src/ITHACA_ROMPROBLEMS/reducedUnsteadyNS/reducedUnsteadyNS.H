@@ -53,8 +53,8 @@ struct newton_unsteadyNS_sup: public newton_argument<double>
         newton_unsteadyNS_sup(int Nx, int Ny,
                               unsteadyNS& problem): newton_argument<double>(Nx, Ny),
             problem(&problem),
-            Nphi_u(problem.NUmodes + problem.liftfield.size() + problem.NSUPmodes),
-            Nphi_p(problem.NPmodes),
+            Nphi_u(problem.NUmodes + problem.liftfield.size() + problem.Umean.size() + problem.NSUPmodes),
+            Nphi_p(problem.NPmodes + problem.Pmean.size()),
             N_BC(problem.inletIndex.rows())
         {}
 
@@ -70,6 +70,9 @@ struct newton_unsteadyNS_sup: public newton_argument<double>
         Eigen::VectorXd y_old;
         Eigen::VectorXd BC;
         Eigen::MatrixXd tauU;
+
+	word bcMethod;
+	word aveMethod;
 };
 
 
@@ -81,8 +84,8 @@ struct newton_unsteadyNS_PPE: public newton_argument<double>
         newton_unsteadyNS_PPE(int Nx, int Ny,
                               unsteadyNS& problem): newton_argument<double>(Nx, Ny),
             problem(&problem),
-            Nphi_u(problem.NUmodes + problem.liftfield.size()),
-            Nphi_p(problem.NPmodes),
+            Nphi_u(problem.NUmodes + problem.liftfield.size() + problem.Umean.size()), //should be size Umean
+            Nphi_p(problem.NPmodes + problem.Pmean.size()),
             N_BC(problem.inletIndex.rows())
         {}
 
@@ -98,6 +101,9 @@ struct newton_unsteadyNS_PPE: public newton_argument<double>
         Eigen::VectorXd y_old;
         Eigen::VectorXd BC;
 	Eigen::MatrixXd tauU;
+
+	word bcMethod;
+	word aveMethod;
 };
 
 
@@ -148,20 +154,20 @@ class reducedUnsteadyNS: public reducedSteadyNS
 	/// List of pointers to store the modes for velocity
         PtrList<volVectorField> LUmodes;
 
+        /// List of pointers to store the modes for pressure
+        PtrList<volScalarField> MPmodes;
+
  	/// List of Eigen matrices to store current online solution for momentum equation
         Eigen::MatrixXd online_sol;
 
 	/// Penalty Factor temperature
         Eigen::MatrixXd tauIter;
 
-/// Maximum number of iterations to be done for the computation of the penalty factor
+        /// Maximum number of iterations to be done for the computation of the penalty factor
         scalar maxIter;
 
-
-
-/// Tolerance for the residual of the boundary values, there is the same tolerance for velocity and temperature
+        /// Tolerance for the residual of the boundary values, there is the same tolerance for velocity and temperature
         scalar tolerance;
-
 
         /// Pointer to the FOM problem
         unsteadyNS* problem;
@@ -208,6 +214,8 @@ class reducedUnsteadyNS: public reducedSteadyNS
 
 
  Eigen::MatrixXd penalty_sup(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit);
+
+Eigen::MatrixXd penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit);
 
 
 };

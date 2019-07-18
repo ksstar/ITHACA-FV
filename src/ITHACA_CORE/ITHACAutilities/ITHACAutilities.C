@@ -313,8 +313,19 @@ template<class TypeField>
 double ITHACAutilities::error_fields(TypeField& field1,
                                      TypeField& field2)
 {
-    double err = L2norm(field1 - field2) / L2norm(field1);
-    return err;
+    if (L2norm(field1) == 0)
+    {
+        double err = L2norm(field1 - field2) / L2norm(field2);
+
+       return err;
+    }
+    else
+    {
+        double err = L2norm(field1 - field2) / L2norm(field1);
+
+      return err;
+    }
+   
 }
 
 template<>
@@ -1313,6 +1324,69 @@ void ITHACAutilities::assignMixedBC(
         valueFracTpatch = valueFrac;
     }
 }
+
+
+void ITHACAutilities::getAverage(PtrList<volVectorField>& snapshotsU,PtrList<volVectorField>& mean, PtrList<volVectorField>& sub)
+{
+volVectorField Umean(snapshotsU[0].name(), snapshotsU[0]*0);
+
+forAll(Umean.boundaryField(), patchi)
+{
+    Umean[patchi] = vector(0,0,0);
+}
+
+    for (auto i = 0; i < snapshotsU.size(); i++)
+    {
+	Umean += (snapshotsU[i]/(snapshotsU.size()));
+	for (int j = 0; j < Umean.boundaryField().size(); j++)
+	{
+	    for (int k = 0; k < Umean.boundaryField()[j].size(); k++)
+	    {
+		Umean.boundaryFieldRef()[j][k] += (snapshotsU[i].boundaryFieldRef()[j][k]);
+	    }
+	}
+    }
+
+    Umean.boundaryFieldRef() = Umean.boundaryFieldRef()/(snapshotsU.size()+1);
+    mean.append(Umean);
+    
+    for (auto i = 0; i < snapshotsU.size(); i++)
+    {
+	volVectorField Usub(snapshotsU[0].name(), snapshotsU[i] - mean[0]);
+	sub.append(Usub);
+    }
+}
+
+void ITHACAutilities::getAverage(PtrList<volScalarField>& snapshotsP,PtrList<volScalarField>& mean,PtrList<volScalarField>& sub)
+{
+volScalarField Pmean(snapshotsP[0].name(), snapshotsP[0]*0);
+
+forAll(Pmean.boundaryField(), patchi)
+{
+    Pmean[patchi] = 0;
+}
+    for (auto i = 0; i < snapshotsP.size(); i++)
+    {
+	Pmean += (snapshotsP[i]/(snapshotsP.size()));
+
+	for (int j = 0; j < Pmean.boundaryField().size(); j++)
+	{
+	    for (int k = 0; k < Pmean.boundaryField()[j].size(); k++)
+	    {
+		Pmean.boundaryFieldRef()[j][k] += (snapshotsP[i].boundaryFieldRef()[j][k]);
+	    }
+	}
+    }
+    Pmean.boundaryFieldRef() = Pmean.boundaryFieldRef()/(snapshotsP.size()+1);
+    mean.append(Pmean);
+
+    for (auto i = 0; i < snapshotsP.size(); i++)
+    {
+	volScalarField Psub(snapshotsP[0].name(), snapshotsP[i] - mean[0]);
+	sub.append(Psub);
+    }
+}
+
 
 template<typename type_f>
 List<int> ITHACAutilities::getIndicesFromBox(
