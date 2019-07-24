@@ -73,6 +73,7 @@ struct newton_unsteadyNS_sup: public newton_argument<double>
 
 	word bcMethod;
 	word aveMethod;
+        word timedepbcMethod;
 };
 
 
@@ -104,6 +105,7 @@ struct newton_unsteadyNS_PPE: public newton_argument<double>
 
 	word bcMethod;
 	word aveMethod;
+        word timedepbcMethod;
 };
 
 

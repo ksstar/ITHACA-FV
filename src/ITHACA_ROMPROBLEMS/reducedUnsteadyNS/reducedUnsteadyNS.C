@@ -82,9 +82,6 @@ reducedUnsteadyNS::reducedUnsteadyNS(unsteadyNS& FOMproblem)
        MPmodes.append(problem->Pmodes[k]);
     }
 
-
-std::cout << "LUmodes = " << LUmodes.size() << std::endl;
-
     newton_object_sup = newton_unsteadyNS_sup(Nphi_u + Nphi_p, Nphi_u + Nphi_p,
                         FOMproblem);
     newton_object_PPE = newton_unsteadyNS_PPE(Nphi_u + Nphi_p, Nphi_u + Nphi_p,
@@ -207,7 +204,11 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     for (label i = 0; i < Nphi_u; i++)
     {
 
-        cc = a_tmp.transpose() * problem->C_matrix[i] * a_tmp;
+      //  cc = a_tmp.transpose() * problem->C_matrix[i] * a_tmp;
+cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+                i) * a_tmp;
+
+
         fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i);
 
   	if (problem->bcMethod == "penalty")
@@ -376,6 +377,15 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, lab
     y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[0], LUmodes);
     y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0], MPmodes);
    
+    if (problem->bcMethod == "lift")
+    {
+    	// Change initial condition for the lifting function
+    	for (label j = 0; j < N_BC; j++)
+    	{
+        	y(j) = vel_now(j, 0);
+     	}
+    }
+
     // Set some properties of the newton object
     newton_object_PPE.nu = nu;
     newton_object_PPE.y_old = y;
@@ -387,7 +397,6 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, lab
     {
             newton_object_PPE.BC(j) = vel_now(j, 0);
     }
-   
 
     // Set the initial time
     time = tstart;

@@ -359,72 +359,94 @@ int main(int argc, char* argv[])
     // Generate equispaced samples inside the parameter range
     example.genEquiPar();
 
-    example.Dim = 2;
-  
+   // if (example.bcMethod == "lift")
+  //  {
+    ///    example.inletIndex.resize(2, 2); 
+   //     example.inletIndex(0, 0) = 2;  // Patch inlet 1
+   //     example.inletIndex(0, 1) = 0;  
+   //     example.inletIndex(1, 0) = 3;  // Patch inlet 2
+  //      example.inletIndex(1, 1) = 0;  
 
-
-if (example.bcMethod == "lift")
-{
-    example.inletIndex.resize(2, 2); // rows: total number of patches // columns total number of direction (2D = 3, 3D = 4)
-    example.inletIndex(0, 0) = 2;  // Patch inlet 1
-    example.inletIndex(0, 1) = 0;  // Patch inlet 1: x-direction
-    example.inletIndex(1, 0) = 3;  // Patch inlet 1: y-direction
-    example.inletIndex(1, 1) = 0;  // Patch inlet 2
-
-}
-else
-{
-      // Set the inlet boundaries where we have non homogeneous boundary conditions
-    example.inletIndex.resize(4, 2); // rows: total number of patches // columns total number of direction (2D = 3, 3D = 4)
-    example.inletIndex(0, 0) = 2;  // Patch inlet 1
-    example.inletIndex(0, 1) = 0;  // Patch inlet 1: x-direction
-    example.inletIndex(1, 0) = 2;  // Patch inlet 1: y-direction
-    example.inletIndex(1, 1) = 1;  // Patch inlet 2
-    example.inletIndex(2, 0) = 3;  // Patch inlet 2: x-direction
-    example.inletIndex(2, 1) = 0;  // Patch inlet 2: y-direction
-    example.inletIndex(3, 0) = 3;  // Patch inlet 2: x-direction
-    example.inletIndex(3, 1) = 1;  // Patch inlet 2: y-direction
-}
-
-
+   // }
+   // else
+  //  {
+        // Set the inlet boundaries where we have non homogeneous boundary conditions
+        example.inletIndex.resize(4, 2); // rows: total number of patches 
+        example.inletIndex(0, 0) = 2;  // Patch inlet 1
+        example.inletIndex(0, 1) = 0;  // Patch inlet 1: x-direction
+        example.inletIndex(1, 0) = 2;  // Patch inlet 1: y-direction
+        example.inletIndex(1, 1) = 1;  // Patch inlet 2
+        example.inletIndex(2, 0) = 3;  // Patch inlet 2: x-direction
+        example.inletIndex(2, 1) = 0;  // Patch inlet 2: y-direction
+        example.inletIndex(3, 0) = 3;  // Patch inlet 2: x-direction
+        example.inletIndex(3, 1) = 1;  // Patch inlet 2: y-direction
+  //  }
 
     // Time parameters
     example.startTime = 0;
-    example.finalTime = 3;
+    example.finalTime = 12;
     example.timeStep = 0.0005;
     example.writeEvery = 0.03;
 
-    int totalPeriods = 1;
+    int totalPeriods = 4;
+example.Dim = 2;
 
     // Period 1: for 0 IC to steady state for U1=V1=U2=V2 = 1 m/s --> 3seconds
     Eigen::VectorXd option1 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-1,-1);
     Eigen::VectorXd option1b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,1);
-
+    Eigen::VectorXd option1c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-0.35355,-0.35335);
+    Eigen::VectorXd option1d = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.35355,0.35355);
     // Period 2: Linear decrease to 50% --> 3seconds
-    Eigen::VectorXd option2 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.5);
-
-    // Period 3: Linear increase to 50% --> 3seconds
+    Eigen::VectorXd option2 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-1,-0.35355);
+    Eigen::VectorXd option2b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.35355);
+    Eigen::VectorXd option2c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.5);
+   
+    // Period 3: Linear increase to 50% --> 3seconds);
     Eigen::VectorXd option3 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.5,1);
+    Eigen::VectorXd option3b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-0.35355,-1);
+    Eigen::VectorXd option3c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.35355,1);
 
-
-    //example.timeBCoff.setSize(example.inletIndex.rows());
 
     example.timeBCoff.resize(example.inletIndex.rows(), option1.size()*totalPeriods);
+    //example.timeBCoff.row(0) = option1.col(0);  //Patch inlet 1: x-direction
+   // example.timeBCoff.row(1) = option1.col(0);  // Patch inlet 1: y-direction
 
-    //for (label j = 0; j < example.inletIndex.rows(); j++)
-    ///{
-    //    example.timeBCoff[j].resize(example.inletIndex.rows(), option1.size()*totalPeriods);
-    //}
-
-     example.timeBCoff.row(0) = option1.col(0);  //Patch inlet 1: x-direction
-     example.timeBCoff.row(1) = option1.col(0);  // Patch inlet 1: y-direction
-
-if (example.bcMethod == "penalty")
-{
-     example.timeBCoff.row(2) = option1.col(0); //Patch inlet 2: x-direction
-     example.timeBCoff.row(3) = option1b.col(0);  //Patch inlet 4: x-direction
-}
+   // if (example.bcMethod == "penalty")
+   // {
+   //      example.timeBCoff.row(2) = option1.col(0); //Patch inlet 2: x-direction
+   //      example.timeBCoff.row(3) = option1b.col(0);  //Patch inlet 4: x-direction
+   // }
  
+
+   // if (example.bcMethod == "penalty" && example.timedepbcMethod == "yes")
+  //  {  //1st Period
+         example.timeBCoff.row(0).head(option1.size()) = option1.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(1).head(option1.size()) = option1.col(0);  // Patch inlet 1: y-direction
+         example.timeBCoff.row(2).head(option1.size()) = option2.col(0); //Patch inlet 2: x-direction
+         example.timeBCoff.row(3).head(option1.size()) = option2b.col(0);  //Patch inlet 4: x-direction
+
+         //2nd Period
+         example.timeBCoff.row(0).segment(option1.size(),option1.size()) = option2.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(1).segment(option1.size(),option1.size()) = option2.col(0);  // Patch inlet 1: y-direction
+         example.timeBCoff.row(2).segment(option1.size(),option1.size()) = option1c.col(0); //Patch inlet 2: x-direction
+         example.timeBCoff.row(3).segment(option1.size(),option1.size()) = option1d.col(0);  //Patch inlet 4: x-direction
+
+         //3rd Period
+         example.timeBCoff.row(0).segment(2*option1.size(),option1.size()) = option1c.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(1).segment(2*option1.size(),option1.size()) = option1c.col(0);  // Patch inlet 1: y-direction
+         example.timeBCoff.row(2).segment(2*option1.size(),option1.size()) = option3b.col(0); //Patch inlet 2: x-direction
+         example.timeBCoff.row(3).segment(2*option1.size(),option1.size()) = option3c.col(0);  //Patch inlet 4: x-direction
+
+         //4th Period
+         example.timeBCoff.row(0).tail(option1.size()) = option3b.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(1).tail(option1.size()) = option3b.col(0);  // Patch inlet 1: y-direction
+         example.timeBCoff.row(2).tail(option1.size()) = option1.col(0); //Patch inlet 2: x-direction
+         example.timeBCoff.row(3).tail(option1.size()) = option1b.col(0);  //Patch inlet 4: x-direction
+
+
+   // }
+
+
 
 
     // Perform The Offline Solve;
@@ -494,15 +516,6 @@ if (example.bcMethod == "penalty")
     std::chrono::duration<double> elapsed_POD = finish_POD - start_POD;
     std::cout << "elapsed_POD: " << elapsed_POD.count() << " seconds.";
     std::cout << std::endl;
-
- /*  // Solve the supremizer problem
-    auto start_sup = std::chrono::high_resolution_clock::now();
-    example.solvesupremizer("modes");
-    auto finish_sup = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_sup = finish_sup - start_sup;
-    std::cout << "elapsed_sup: " << elapsed_sup.count() << " seconds.";
-    std::cout << std::endl; */
-
 
     // PPE method
     NmodesSUPproj = 0;
@@ -621,26 +634,25 @@ if (example.bcMethod == "penalty")
     // Set values of the reduced stuff
     reduced.nu = 0.01;
     reduced.tstart = 0;
-    reduced.finalTime = 3;
+    reduced.finalTime = 12;
     reduced.dt = 0.0005;
     reduced.maxIter = 500;
     reduced.tolerance = 1e-7;
     reduced.timeSteps = 3;
 
 
-Eigen::MatrixXd vel_now;
+    Eigen::MatrixXd vel_now;
 
-if (example.bcMethod == "lift")
-{
-     vel_now.resize(2,1);
-     vel_now(0,0) = 1;
-
-     vel_now(1,0) = 1;
-}
-else
-{
-     vel_now = example.timeBCoff;
-}
+    if (example.bcMethod == "lift")
+    {
+         vel_now.resize(2,1);
+         vel_now(0,0) = 1;
+         vel_now(1,0) = 1;
+    }
+    else
+    {
+         vel_now = example.timeBCoff;
+    }
 
     if (example.bcMethod == "penalty")
     {
@@ -651,7 +663,6 @@ else
             reduced.tauU = tauInit;
     }
    
-
     // Set the online temperature BC and solve reduced model
     for (label k = 0; k < (1); k++)
     {
