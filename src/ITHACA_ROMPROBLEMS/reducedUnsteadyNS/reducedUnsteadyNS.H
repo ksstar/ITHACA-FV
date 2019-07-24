@@ -185,6 +185,8 @@ class reducedUnsteadyNS: public reducedSteadyNS
         ///
         Eigen::MatrixXd solveOnline_PPE(Eigen::MatrixXd& vel_now, label NParaSet = 0,label startSnap = 0);
 
+        Eigen::MatrixXd solveOnline_PPE_Time_dep(Eigen::MatrixXd& vel_now, label NParaSet = 0,label startSnap = 0);
+
         /// Method to perform an online solve using a supremizer stabilisation method
         ///
         /// @param[in]  vel_now   The vector of online velocity. It is defined in
@@ -216,6 +218,8 @@ class reducedUnsteadyNS: public reducedSteadyNS
  Eigen::MatrixXd penalty_sup(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit);
 
 Eigen::MatrixXd penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit);
+
+Eigen::MatrixXd penalty_PPE_time(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit);
 
 
 };

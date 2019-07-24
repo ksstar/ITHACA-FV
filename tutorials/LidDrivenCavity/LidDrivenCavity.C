@@ -62,13 +62,13 @@ class tutorialLID: public unsteadyNS
             }
             else
             {
-                for (label i = 0; i < par_BC.cols(); i++)
+                for (label i = 0; i < par_BC.rows(); i++)
                 {
 		    U = U0;
 		    p = P0;
-                    inl[0] = par_BC(0, i);
+                    inl[inletIndex(0,i+1)] = par_BC(i, 0);
                     mu_now[0] = mu(0, 0);
-                    assignBC(U, inletIndex(0,0), inl);
+                    assignBC(U, inletIndex(i,0), inl);
                     truthSolve(mu_now);
 	            restart();
                 }
@@ -91,15 +91,15 @@ class tutorialLID: public unsteadyNS
             {
                 mkDir(folder);
                 ITHACAutilities::createSymLink(folder);
-                label i = para_set_BC;
+                label k = para_set_BC;
 
-	        for (label i = 0; i < par_BC.cols(); i++)
+	        for (label i = 0; i < par_BC.rows(); i++)
                 {
 		    U = U0;
 		    p = P0;
-                    inl[0] = par_BC(0, i);
+                    inl[inletIndex(0,i+1)] = par_BC(i, k);
                     mu_now[0] = mu(0, 0);
-                    assignBC(U, inletIndex(0,0), inl);
+                    assignBC(U, inletIndex(i,0), inl);
                     truthSolve(mu_now, folder);
 	            restart();
                 }
@@ -232,6 +232,15 @@ int main(int argc, char* argv[])
     std::cout << "elapsed_POD: " << elapsed_POD.count() << " seconds.";
     std::cout << std::endl;
 
+ /*  // Solve the supremizer problem
+    auto start_sup = std::chrono::high_resolution_clock::now();
+    example.solvesupremizer("modes");
+    auto finish_sup = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_sup = finish_sup - start_sup;
+    std::cout << "elapsed_sup: " << elapsed_sup.count() << " seconds.";
+    std::cout << std::endl; */
+
+
     // PPE method
     NmodesSUPproj = 0;
 
@@ -241,7 +250,7 @@ int main(int argc, char* argv[])
     auto finish_matrix = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_matrix = finish_matrix - start_matrix;
     std::cout << "elapsed_matrix: " << elapsed_matrix.count() << " seconds.";
-    std::cout << std::endl;
+    std::cout << std::endl; 
 
 /*
 // Create a list with number of modes for which the projection needs to be performed
@@ -349,43 +358,47 @@ int main(int argc, char* argv[])
     // Set values of the reduced stuff
     reduced.nu = 0.0001;
     reduced.tstart = 0;
-    reduced.finalTime = 10;
+    reduced.finalTime = 2;
     reduced.dt = 0.0005;
     reduced.maxIter = 100;
-    reduced.tolerance = 0.000001;
-    reduced.timeSteps = 3;
+    reduced.tolerance = 1e-6;
+    reduced.timeSteps = 10;
 
-    auto start_ROM = std::chrono::high_resolution_clock::now();
-    // Set the online temperature BC and solve reduced model
-    for (label k = 0; k < (par_on.cols()); k++)
+    Eigen::MatrixXd vel_now(1, 1);
+    vel_now(0, 0) = 1.2;
+ //vel_now(0, 0) = par_on(0,1);
+
+    if (example.bcMethod == "penalty")
     {
-        Eigen::MatrixXd vel_now(2, 1);
-        vel_now(0, 0) = par_on(0,k);
-
-        if (example.bcMethod == "penalty" && k == 0)
-        {
             // set initial quess for penalty factors
-	    Eigen::MatrixXd tauInit(vel_now.rows(),1);
-            tauInit << 1e-8;
+	    Eigen::MatrixXd tauInit(1,1);
+            tauInit << 1e-2;
             reduced.tauU = reduced.penalty_PPE(vel_now, tauInit);
-        }
-
-        reduced.solveOnline_PPE(vel_now, k);
-
-    auto finish_ROM = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
-    std::cout << "elapsed_ROM: " << elapsed_ROM.count() << " seconds.";
-    std::cout << std::endl;
-
-    auto start_ROM_REC = std::chrono::high_resolution_clock::now();
-    reduced.reconstruct_sup("./ITHACAoutput/ReconstructionPPE", 20);
-
-    auto finish_ROM_REC = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_ROM_REC = finish_ROM_REC - start_ROM_REC;
-    std::cout << "elapsed_ROM_REC: " << elapsed_ROM_REC.count() << " seconds.";
-    std::cout << std::endl;
+            //reduced.tauU = tauInit;
     }
    
+// exit(0);
+    // Set the online temperature BC and solve reduced model
+    for (label k = 0; k < (1); k++)
+    {
+	auto start_ROM = std::chrono::high_resolution_clock::now();
+        //vel_now(0, 0) = par_on(0,k);
+        vel_now(0, 0) = 1.2;
+        reduced.solveOnline_PPE(vel_now, k);
+        auto finish_ROM = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
+        std::cout << "elapsed_ROM: " << elapsed_ROM.count() << " seconds.";
+        std::cout << std::endl;
+
+        auto start_ROM_REC = std::chrono::high_resolution_clock::now();
+        reduced.reconstruct_sup("./ITHACAoutput/ReconstructionPPE", 20);
+        auto finish_ROM_REC = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed_ROM_REC = finish_ROM_REC - start_ROM_REC;
+        std::cout << "elapsed_ROM_REC: " << elapsed_ROM_REC.count() << " seconds.";
+        std::cout << std::endl;
+    }
+
+/*   
     // Performing full order simulation for second parameter set 
     tutorialLID HFonline2(argc, argv);
     HFonline2.Pnumber = 1;
@@ -424,9 +437,9 @@ int main(int argc, char* argv[])
     HFonline3.writeEvery = 0.01;
     // Reconstruct the online solution
     HFonline3.onlineSolveFull(par_on, 2,
-                              "./ITHACAoutput/HFonline3");
+                              "./ITHACAoutput/HFonline3"); */
 
-    // Reading high-fidelity solutions for the parameter set
+ /*   // Reading high-fidelity solutions for the parameter set
     // for which the offline solve has been performed (skipping IC)
     example.onlineSolveRead("./ITHACAoutput/Offline/");
     // Reading in the high-fidelity solutions for the second parameter set
@@ -467,18 +480,12 @@ int main(int argc, char* argv[])
 
     ITHACAstream::exportMatrix(PostP, "PostP", "eigen", "./ITHACAoutput/PostProcess");
 
-
-exit(0);
+*/
+exit(0); 
 } 
 
 
 
-    /* // Solve the supremizer problem
-    auto start_sup = std::chrono::high_resolution_clock::now();
-    example.solvesupremizer("modes");
-    auto finish_sup = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_sup = finish_sup - start_sup;
-    std::cout << "elapsed_sup: " << elapsed_sup.count() << " seconds.";
-    std::cout << std::endl; */
+  
 
 

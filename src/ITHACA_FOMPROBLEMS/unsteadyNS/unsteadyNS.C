@@ -81,6 +81,9 @@ ITHACAdict = new IOdictionary
     aveMethod = ITHACAdict->lookupOrDefault<word>("aveMethod", "none");
     M_Assert(aveMethod == "mean" || aveMethod == "none",
     "The BC method can be set to mean or none");
+    timedepbcMethod = ITHACAdict->lookupOrDefault<word>("timedepbcMethod", "no");
+    M_Assert(timedepbcMethod == "yes" || timedepbcMethod == "no",
+    "The BC method can be set to yes or no");
     offline = ITHACAutilities::check_off();
     podex = ITHACAutilities::check_pod();
     supex = ITHACAutilities::check_sup();
@@ -106,16 +109,52 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
     runTime.setTime(Times[1], 1);
     runTime.setDeltaT(timeStep);
     nextWrite = startTime;
+
+  /*  if (timedepbcMethod == "yes" )
+    {
+
+	for (label i = 0; i < timeBCoff.size(); i++)
+	{
+	    Vector<double> inl(0, 0, 0);
+
+	     for (label j = 0; j < timeBCoff[i].rows(); j++)
+	     {            
+                inl[inletIndex(i,j+1)] = timeBCoff[i](j, 0);
+	     }
+
+	     assignBC(U, inletIndex(i, 0), inl);
+	}
+	
+    }*/
+
+   if (timedepbcMethod == "yes" )
+    {
+
+	for (label i = 0; i < inletIndex.rows()/Dim; i++)
+	{
+	    Vector<double> inl(0, 0, 0);
+
+	     for (label j = 0; j < Dim; j++)
+	     {            
+                inl[j] = timeBCoff(i*Dim+j, 0);
+	     }
+
+	     assignBC(U, inletIndex(Dim*i, 0), inl);
+	}
+	
+    }
+
     // Initialize Nsnapshots
-    ITHACAstream::exportSolution(U, name(counter), "./ITHACAoutput/Offline/");
-    ITHACAstream::exportSolution(p, name(counter), "./ITHACAoutput/Offline/");
-    std::ofstream of("./ITHACAoutput/Offline/" + name(counter) + "/" +
+    ITHACAstream::exportSolution(U, name(counter), folder);
+    ITHACAstream::exportSolution(p, name(counter), folder);
+    std::ofstream of(folder + name(counter) + "/" +
                      runTime.timeName());
     Ufield.append(U);
     Pfield.append(p);
     counter++;
     nextWrite += writeEvery;
     
+int counter2 = 1;
 
     // Start the time loop
     while (runTime.run())
@@ -123,10 +162,31 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
 #include "readTimeControls.H"
 #include "CourantNo.H"
 #include "setDeltaT.H"
-        runTime.setEndTime(finalTime + timeStep);
+        runTime.setEndTime(finalTime);
         runTime++;
         
 	Info << "Time = " << runTime.timeName() << nl << endl;
+
+
+ 	if (timedepbcMethod == "yes" )
+        {
+
+	   for (label i = 0; i < inletIndex.rows()/Dim; i++)
+	   {
+	        Vector<double> inl(0, 0, 0);
+
+	        for (label j = 0; j < Dim; j++)
+	        {            
+                   inl[j] = timeBCoff(i*Dim+j, 0);
+	        }
+
+	         assignBC(U, inletIndex(Dim*i, 0), inl);
+	    }
+
+           counter2 ++;
+	
+       }
+
         
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())

@@ -99,11 +99,16 @@ class unsteadyNS: public steadyNS
         /// maxDeltaT
         scalar maxDeltaT;
 
+	// Values for each time step of time-dependent BCs
+        Eigen::MatrixXd timeBCoff;
+
 	/// List of pointers used to form the temperature snapshots matrix
         PtrList<volScalarField> Pfield_on;
 
         /// List of pointers used to form the temperature snapshots matrix
         PtrList<volVectorField> Ufield_on;
+
+	int Dim = 3;
 
 
         // Functions
@@ -115,6 +120,15 @@ class unsteadyNS: public steadyNS
         /// the Parameters folder.
         ///
         void truthSolve(List<scalar> mu_now, fileName folder = "./ITHACAoutput/Offline/");
+
+        //--------------------------------------------------------------------------
+        /// @brief      Perform a truthsolve
+        /// @param[in]  mu_now  The actual value of the parameter for this truthSolve. Used only
+        /// to construct mu_interp matrix which is written out in the Offline folder, also for par file in
+        /// the Parameters folder.
+        ///
+        //void truthSolve(List<scalar> mu_now, Eigen::MatrixXd timeBCoff, fileName folder = "./ITHACAoutput/Offline/");
+
 
         //--------------------------------------------------------------------------
         /// Function to check if the solution must be exported.

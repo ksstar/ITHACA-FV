@@ -242,6 +242,9 @@ class steadyNS: public reductionProblem
         /// Averaged Method
         word aveMethod;
 
+        /// Method: time dependent BCs
+        word timedepbcMethod;
+
         PtrList<volVectorField> Umean;
 
 	PtrList<volScalarField> Pmean;
@@ -401,6 +404,17 @@ class steadyNS: public reductionProblem
         /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the BC3 using a PPE approach.
         ///
         Eigen::MatrixXd pressure_BC3(label NPmodes, label NUmodes);
+
+
+        //--------------------------------------------------------------------------
+        /// @brief      Term given by the time-dependent boundary condition using a PPE approach
+        ///
+        /// @param[in]  NPmodes  The number of pressure modes.
+        /// @param[in]  NUmodes  The number of velocity modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for term using a PPE approach.
+        ///
+        Eigen::MatrixXd pressure_force(label NPmodes, label NUmodes);
 
         //--------------------------------------------------------------------------
         /// @brief      Boundary integral modes on boundary used by the penaly method
