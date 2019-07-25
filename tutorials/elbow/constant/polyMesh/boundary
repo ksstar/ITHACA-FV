@@ -15,46 +15,39 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-6
+5
 (
     wall-4
     {
         type            wall;
         inGroups        1(wall);
-        nFaces          100;
-        startFace       1300;
-    }
-    velocity-inlet-5
-    {
-        type            patch;
-        nFaces          8;
-        startFace       1400;
-    }
-    velocity-inlet-6
-    {
-        type            patch;
-        nFaces          4;
-        startFace       1408;
+        nFaces          226;
+        startFace       4262;
     }
     pressure-outlet-7
     {
         type            patch;
-        nFaces          8;
-        startFace       1412;
+        nFaces          20;
+        startFace       4488;
     }
-    wall-8
+    velocity-inlet-6
     {
-        type            wall;
-        inGroups        1(wall);
-        nFaces          34;
-        startFace       1420;
+        type            patch;
+        nFaces          10;
+        startFace       4508;
+    }
+    velocity-inlet-5
+    {
+        type            patch;
+        nFaces          20;
+        startFace       4518;
     }
     frontAndBackPlanes
     {
         type            empty;
         inGroups        1(empty);
-        nFaces          1836;
-        startFace       1454;
+        nFaces          4400;
+        startFace       4538;
     }
 )
 

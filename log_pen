@@ -1,0 +1,25 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  6
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+Build  : 6
+Exec   : LidDrivenCavity
+Date   : Jul 04 2019
+Time   : 11:31:57
+Host   : "cfdclu17.ugent.be"
+PID    : 10250
+I/O    : uncollated
+Case   : /cfdfile2/data/fm/sabrina/ITHACA-FV
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 10)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Reading field p
+
+Create time
+

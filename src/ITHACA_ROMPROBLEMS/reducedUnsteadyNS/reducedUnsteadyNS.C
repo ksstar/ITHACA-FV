@@ -168,6 +168,7 @@ int newton_unsteadyNS_sup::df(const Eigen::VectorXd& x,
 int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
                                       Eigen::VectorXd& fvec) const
 {
+
     Eigen::VectorXd a_dot(Nphi_u);
     Eigen::VectorXd a_tmp(Nphi_u);
     Eigen::VectorXd b_tmp(Nphi_p);
@@ -188,6 +189,10 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     Eigen::VectorXd M3 = problem->D_matrix * b_tmp;
     // BC PPE
     Eigen::VectorXd M7 = problem->BC3_matrix * a_tmp * nu;
+    // BC PPE - penalty method
+   // Eigen::VectorXd M8 = problem->PF_matrix * a_tmp;
+
+
     // Penalty term
     Eigen::MatrixXd penaltyU = Eigen::MatrixXd::Zero(Nphi_u, N_BC);
 
@@ -204,8 +209,7 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     for (label i = 0; i < Nphi_u; i++)
     {
 
-      //  cc = a_tmp.transpose() * problem->C_matrix[i] * a_tmp;
-cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+      cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
                 i) * a_tmp;
 
 
@@ -224,7 +228,15 @@ cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
     {
         label k = j + Nphi_u;
         gg = a_tmp.transpose() * problem->G_matrix[j] * a_tmp;
+	//std::cout << "M8(j,0): " << M8(j,0) << std::endl;
         fvec(k) = M3(j, 0) + gg(0, 0) - M7(j, 0);
+	
+       // if (problem->timedepbcMethod == "yes")
+       // {
+	//    fvec(k) += (problem->T_matrix(0,j) * a_dot(j));
+	//}
+
+
     }
 
     if (problem->bcMethod == "lift")

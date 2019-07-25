@@ -789,7 +789,7 @@ void ITHACAutilities::assignONE(volScalarField& s, List<int>& L)
 // Assign a BC for a vector field
 void ITHACAutilities::assignBC(volScalarField& s, label BC_ind, double& value)
 {
-    if (s.boundaryField()[BC_ind].type() == "fixedValue")
+    if (s.boundaryField()[BC_ind].type() == "fixedValue" || s.boundaryField()[BC_ind].type() == "calculated")
     {
         for (label i = 0; i < s.boundaryField()[BC_ind].size(); i++)
         {
@@ -851,7 +851,7 @@ void ITHACAutilities::assignBC(volScalarField& s, label BC_ind, double& value)
 void ITHACAutilities::assignBC(volScalarField& s, label BC_ind,
                                List<double> value)
 {
-    if (s.boundaryField()[BC_ind].type() == "fixedValue")
+    if (s.boundaryField()[BC_ind].type() == "fixedValue" || s.boundaryField()[BC_ind].type() == "calculated")
     {
         s.boundaryFieldRef()[BC_ind] = value;
     }
@@ -878,7 +878,8 @@ void ITHACAutilities::assignBC(volVectorField& s, label BC_ind,
                                Vector<double>& value)
 {
     if (s.boundaryField()[BC_ind].type() == "fixedValue"
-            || s.boundaryField()[BC_ind].type() == "processor")
+            || s.boundaryField()[BC_ind].type() == "processor" 
+	    || s.boundaryField()[BC_ind].type() == "calculated")
     {
         for (label i = 0; i < s.boundaryField()[BC_ind].size(); i++)
         {
@@ -1326,6 +1327,38 @@ void ITHACAutilities::assignMixedBC(
 }
 
 
+template<typename type_f>
+void ITHACAutilities::normalizeFields(
+    PtrList<GeometricField<type_f, fvPatchField, volMesh>>& fields)
+{
+    Eigen::MatrixXd eigenFields = Foam2Eigen::PtrList2Eigen(fields);
+    List<Eigen::MatrixXd> eigenFieldsBC = Foam2Eigen::PtrList2EigenBC(fields);
+
+    for (label i = 0; i < fields.size(); i++)
+    {
+        double norm = L2norm(fields[i]);
+        GeometricField<type_f, fvPatchField, volMesh> tmp(fields[0].name(),
+                fields[0] * 0);
+        Eigen::VectorXd vec = eigenFields.col(i) / norm;
+        tmp = Foam2Eigen::Eigen2field(tmp, vec);
+
+        // Adjusting boundary conditions
+        for (int k = 0; k < tmp.boundaryField().size(); k++)
+        {
+            Eigen::MatrixXd vec = eigenFieldsBC[k].col(i) / norm;
+            ITHACAutilities::assignBC(tmp, k, vec);
+        }
+
+        fields.set(i, tmp);
+    }
+}
+
+template void ITHACAutilities::normalizeFields(
+    PtrList<GeometricField<scalar, fvPatchField, volMesh>>& fields);
+template void ITHACAutilities::normalizeFields(
+    PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields);
+
+
 void ITHACAutilities::getAverage(PtrList<volVectorField>& snapshotsU,PtrList<volVectorField>& mean, PtrList<volVectorField>& sub)
 {
 volVectorField Umean(snapshotsU[0].name(), snapshotsU[0]*0);
@@ -1349,6 +1382,8 @@ forAll(Umean.boundaryField(), patchi)
 
     Umean.boundaryFieldRef() = Umean.boundaryFieldRef()/(snapshotsU.size()+1);
     mean.append(Umean);
+
+    //normalizeFields(mean);
     
     for (auto i = 0; i < snapshotsU.size(); i++)
     {
@@ -1378,7 +1413,10 @@ forAll(Pmean.boundaryField(), patchi)
 	}
     }
     Pmean.boundaryFieldRef() = Pmean.boundaryFieldRef()/(snapshotsP.size()+1);
+
+    
     mean.append(Pmean);
+   // normalizeFields(mean);
 
     for (auto i = 0; i < snapshotsP.size(); i++)
     {

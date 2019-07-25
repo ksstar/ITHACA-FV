@@ -27,9 +27,9 @@ NmodesPproj 10;
 NmodesSUPout 20;
 NmodesSUPproj 10;
 
-bcMethod lift;
-aveMethod none;
-timedepbcMethod no;
+bcMethod penalty;
+aveMethod mean;
+timedepbcMethod yes;
 
 // Output format to save market vectors.
 OutPrecision 20;

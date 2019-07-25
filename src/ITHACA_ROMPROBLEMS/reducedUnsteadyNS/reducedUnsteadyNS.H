@@ -85,7 +85,7 @@ struct newton_unsteadyNS_PPE: public newton_argument<double>
         newton_unsteadyNS_PPE(int Nx, int Ny,
                               unsteadyNS& problem): newton_argument<double>(Nx, Ny),
             problem(&problem),
-            Nphi_u(problem.NUmodes + problem.liftfield.size() + problem.Umean.size()), //should be size Umean
+            Nphi_u(problem.NUmodes + problem.liftfield.size() + problem.Umean.size() + problem.NSUPmodes), //should be size Umean
             Nphi_p(problem.NPmodes + problem.Pmean.size()),
             N_BC(problem.inletIndex.rows())
         {}

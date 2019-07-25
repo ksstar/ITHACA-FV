@@ -1545,7 +1545,8 @@ PtrList<GeometricField<T, fvPatchField, volMesh>> ITHACAPOD::DEIMmodes(
              endl;
     }
 
-    ITHACAPOD::normalizeBases(Bases);
+    //ITHACAPOD::normalizeBases(Bases);
+    ITHACAutilities::normalizeFields(Bases);
 
     for (label i = 0; i < Bases.size(); i++)
     {

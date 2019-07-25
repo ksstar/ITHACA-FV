@@ -152,6 +152,12 @@ class steadyNS: public reductionProblem
         /// Laplacian term PPE
         Eigen::MatrixXd D_matrix;
 
+        /// Pressure forces term PPE
+        Eigen::MatrixXd PF_matrix;
+
+        /// Time derivative boundary
+        Eigen::MatrixXd T_matrix;
+
         /// Divergence of momentum PPE
         List <Eigen::MatrixXd> G_matrix;
 
@@ -364,7 +370,7 @@ class steadyNS: public reductionProblem
         ///
         /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the divergence of conv. term (used only with a PPE approach).
         ///
-        List < Eigen::MatrixXd > div_momentum(label NUmodes, label NPmodes);
+        List < Eigen::MatrixXd > div_momentum(label NUmodes, label NPmodes, label NSUPmodes);
 
         //--------------------------------------------------------------------------
         /// Laplacian of pressure term (PPE approach)
@@ -415,6 +421,16 @@ class steadyNS: public reductionProblem
         /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for term using a PPE approach.
         ///
         Eigen::MatrixXd pressure_force(label NPmodes, label NUmodes);
+
+//--------------------------------------------------------------------------
+        /// @brief      Term given by the time-dependent boundary condition using a PPE approach
+        ///
+        /// @param[in]  NPmodes  The number of pressure modes.
+        /// @param[in]  NUmodes  The number of velocity modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for term using a PPE approach.
+        ///
+        Eigen::MatrixXd time_derivative_boundary(label NPmodes, label NUmodes);
 
         //--------------------------------------------------------------------------
         /// @brief      Boundary integral modes on boundary used by the penaly method

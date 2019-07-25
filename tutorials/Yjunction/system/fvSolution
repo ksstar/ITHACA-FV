@@ -48,6 +48,20 @@ solvers
         relTol          0;
     }
 
+    Usup
+    {
+	    solver           GAMG;
+        tolerance        1e-7;
+        relTol           0.001;
+        smoother         GaussSeidel;
+        nPreSweeps       0;
+        nPostSweeps      2;
+        cacheAgglomeration on;
+        agglomerator     faceAreaPair;
+        nCellsInCoarsestLevel 10;
+        mergeLevels      1;
+    }
+
     Phi
     {
         $p;

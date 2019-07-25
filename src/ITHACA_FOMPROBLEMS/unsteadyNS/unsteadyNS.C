@@ -177,7 +177,7 @@ int counter2 = 1;
 
 	        for (label j = 0; j < Dim; j++)
 	        {            
-                   inl[j] = timeBCoff(i*Dim+j, 0);
+                   inl[j] = timeBCoff(i*Dim+j, counter2);
 	        }
 
 	         assignBC(U, inletIndex(Dim*i, 0), inl);

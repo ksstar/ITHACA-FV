@@ -1,12 +1,6 @@
 reducedProblem/reducedProblem.C
 reducedUnsteadyNS/reducedUnsteadyNS.C
-reducedUnsteadyBB/reducedUnsteadyBB.C
-ReducedUnsteadyNSTurb/ReducedUnsteadyNSTurb.C
-reducedUnsteadyNST/reducedUnsteadyNST.C
-reducedUnsteadyNSTturb/reducedUnsteadyNSTturb.C
 reducedSteadyNS/reducedSteadyNS.C
-ReducedSteadyNSTurb/ReducedSteadyNSTurb.C
 reducedLaplacian/reducedLaplacian.C
-reducedSimpleSteadyNS/reducedSimpleSteadyNS.C
 
 LIB = $(FOAM_USER_LIBBIN)/libITHACA_ROMPROBLEMS

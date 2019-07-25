@@ -62,20 +62,13 @@ class tutorialY: public unsteadyNS
             }
             else
             {
-                //for (label i = 0; i < par_BC.rows(); i++)
-                //{
 		    U = U0;
 		    p = P0;
-                    //inl[inletIndex(0,i+1)] = par_BC(i, 0);
                     mu_now[0] = mu(0, 0);
-                    //assignBC(U, inletIndex(i,0), inl);
                     truthSolve(mu_now);
 	            restart();
-                //}
             }
         }
-
-
 
 	void onlineSolveFull(Eigen::MatrixXd par_BC, label para_set_BC, fileName folder)
         {
@@ -86,6 +79,8 @@ class tutorialY: public unsteadyNS
 
             if (ITHACAutilities::check_folder(folder))
             {
+		ITHACAstream::read_fields(Ufield_on, U, folder);
+                ITHACAstream::read_fields(Pfield_on, p, folder);
             }
             else
             {
@@ -93,17 +88,11 @@ class tutorialY: public unsteadyNS
                 ITHACAutilities::createSymLink(folder);
                 label k = para_set_BC;
 
-	        for (label i = 0; i < par_BC.rows(); i++)
-                {
-		    U = U0;
-		    p = P0;
-                    inl[inletIndex(0,i+1)] = par_BC(i, k);
-                    mu_now[0] = mu(0, 0);
-                    assignBC(U, inletIndex(i,0), inl);
-                    truthSolve(mu_now, folder);
-	            restart();
-                }
-
+		U = U0;
+		p = P0;
+                mu_now[0] = mu(0, 0);
+                truthSolve(mu_now, folder);
+	        restart();
             }
         }
 
@@ -359,17 +348,17 @@ int main(int argc, char* argv[])
     // Generate equispaced samples inside the parameter range
     example.genEquiPar();
 
-   // if (example.bcMethod == "lift")
-  //  {
-    ///    example.inletIndex.resize(2, 2); 
-   //     example.inletIndex(0, 0) = 2;  // Patch inlet 1
-   //     example.inletIndex(0, 1) = 0;  
-   //     example.inletIndex(1, 0) = 3;  // Patch inlet 2
-  //      example.inletIndex(1, 1) = 0;  
+    if (example.bcMethod == "lift")
+    {
+        example.inletIndex.resize(2, 2); 
+        example.inletIndex(0, 0) = 2;  // Patch inlet 1
+        example.inletIndex(0, 1) = 0;  
+        example.inletIndex(1, 0) = 3;  // Patch inlet 2
+        example.inletIndex(1, 1) = 0;  
 
-   // }
-   // else
-  //  {
+   }
+   else
+    {
         // Set the inlet boundaries where we have non homogeneous boundary conditions
         example.inletIndex.resize(4, 2); // rows: total number of patches 
         example.inletIndex(0, 0) = 2;  // Patch inlet 1
@@ -380,7 +369,7 @@ int main(int argc, char* argv[])
         example.inletIndex(2, 1) = 0;  // Patch inlet 2: y-direction
         example.inletIndex(3, 0) = 3;  // Patch inlet 2: x-direction
         example.inletIndex(3, 1) = 1;  // Patch inlet 2: y-direction
-  //  }
+    }
 
     // Time parameters
     example.startTime = 0;
@@ -389,7 +378,7 @@ int main(int argc, char* argv[])
     example.writeEvery = 0.03;
 
     int totalPeriods = 4;
-example.Dim = 2;
+    example.Dim = 2;
 
     // Period 1: for 0 IC to steady state for U1=V1=U2=V2 = 1 m/s --> 3seconds
     Eigen::VectorXd option1 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-1,-1);
@@ -400,6 +389,7 @@ example.Dim = 2;
     Eigen::VectorXd option2 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-1,-0.35355);
     Eigen::VectorXd option2b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.35355);
     Eigen::VectorXd option2c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.5);
+    Eigen::VectorXd option2d = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.5);
    
     // Period 3: Linear increase to 50% --> 3seconds);
     Eigen::VectorXd option3 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.5,1);
@@ -418,8 +408,8 @@ example.Dim = 2;
    // }
  
 
-   // if (example.bcMethod == "penalty" && example.timedepbcMethod == "yes")
-  //  {  //1st Period
+   if (example.bcMethod == "penalty" && example.timedepbcMethod == "yes")
+   {     //1st Period
          example.timeBCoff.row(0).head(option1.size()) = option1.col(0);  //Patch inlet 1: x-direction
          example.timeBCoff.row(1).head(option1.size()) = option1.col(0);  // Patch inlet 1: y-direction
          example.timeBCoff.row(2).head(option1.size()) = option2.col(0); //Patch inlet 2: x-direction
@@ -442,12 +432,13 @@ example.Dim = 2;
          example.timeBCoff.row(1).tail(option1.size()) = option3b.col(0);  // Patch inlet 1: y-direction
          example.timeBCoff.row(2).tail(option1.size()) = option1.col(0); //Patch inlet 2: x-direction
          example.timeBCoff.row(3).tail(option1.size()) = option1b.col(0);  //Patch inlet 4: x-direction
-
-
-   // }
-
-
-
+    }
+    else if (example.bcMethod == "lift" && example.timedepbcMethod == "yes")
+    {
+         //1st Period
+         example.timeBCoff.row(0).head(option1.size()) = option1.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(1).head(option1.size()) = option1.col(0);  // Patch inlet 1: y-direction
+    }
 
     // Perform The Offline Solve;
     example.offlineSolve(par_off);
@@ -519,6 +510,16 @@ example.Dim = 2;
 
     // PPE method
     NmodesSUPproj = 0;
+
+    // Solve the supremizer problem
+/*    auto start_sup = std::chrono::high_resolution_clock::now();
+    example.solvesupremizer("modes");
+    auto finish_sup = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_sup = finish_sup - start_sup;
+    std::cout << "elapsed_sup: " << elapsed_sup.count() << " seconds.";
+    std::cout << std::endl; */
+
+
 
     // Reduced Matrices
     auto start_matrix = std::chrono::high_resolution_clock::now();
@@ -634,24 +635,35 @@ example.Dim = 2;
     // Set values of the reduced stuff
     reduced.nu = 0.01;
     reduced.tstart = 0;
-    reduced.finalTime = 12;
+    reduced.finalTime = 3;
     reduced.dt = 0.0005;
     reduced.maxIter = 500;
     reduced.tolerance = 1e-7;
     reduced.timeSteps = 3;
 
-
     Eigen::MatrixXd vel_now;
+    vel_now = example.timeBCoff;
 
-    if (example.bcMethod == "lift")
+    // Parameter set 1:
+    Eigen::VectorXd option4a = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-1,-0.42426);
+    Eigen::VectorXd option4b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.42426);
+    Eigen::VectorXd option4c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.6);
+
+
+    if (example.bcMethod == "penalty")
     {
-         vel_now.resize(2,1);
-         vel_now(0,0) = 1;
-         vel_now(1,0) = 1;
+    	// Set values BCs for each timeSetp:
+    	vel_now.resize(example.inletIndex.rows(), option1.size());
+    	vel_now.row(0).head(option1.size()) = option1.col(0);  //Patch inlet 1: x-direction
+    	vel_now.row(1).head(option1.size()) = option1.col(0);  // Patch inlet 1: y-direction
+    	vel_now.row(2).head(option1.size()) = option4a.col(0); //Patch inlet 2: x-direction
+    	vel_now.row(3).head(option1.size()) = option4b.col(0);  //Patch inlet 4: x-direction
     }
     else
     {
-         vel_now = example.timeBCoff;
+        vel_now.resize(example.inletIndex.rows(), option1.size());
+        vel_now.row(0).head(option1.size()) = option1b.col(0);  //Patch inlet 1: x-direction
+    	vel_now.row(1).head(option1.size()) = option4c.col(0);  // Patch inlet 1: y-direction
     }
 
     if (example.bcMethod == "penalty")
@@ -667,7 +679,6 @@ example.Dim = 2;
     for (label k = 0; k < (1); k++)
     {
 	auto start_ROM = std::chrono::high_resolution_clock::now();
-        //vel_now(0, 0) = par_on(0,k);
         reduced.solveOnline_PPE(vel_now, k);
         auto finish_ROM = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
@@ -682,27 +693,39 @@ example.Dim = 2;
         std::cout << std::endl;
     }
 
-/*   
+  
     // Performing full order simulation for second parameter set 
     tutorialY HFonline2(argc, argv);
     HFonline2.Pnumber = 1;
     HFonline2.Tnumber = 1;
     HFonline2.setParameters();
-    HFonline2.mu_range(0, 0) = 0.0001;
-    HFonline2.mu_range(0, 1) = 0.0001;
+    HFonline2.mu_range(0, 0) = 0.01;
+    HFonline2.mu_range(0, 1) = 0.01;
     HFonline2.genEquiPar();
-    HFonline2.inletIndex.resize(1, 2);
-    HFonline2.inletIndex(0, 0) = 0;
-    HFonline2.inletIndex(0, 1) = 0;
+    HFonline2.inletIndex.resize(4, 2); // rows: total number of patches 
+    HFonline2.inletIndex(0, 0) = 2;  // Patch inlet 1
+    HFonline2.inletIndex(0, 1) = 0;  // Patch inlet 1: x-direction
+    HFonline2.inletIndex(1, 0) = 2;  // Patch inlet 1: y-direction
+    HFonline2.inletIndex(1, 1) = 1;  // Patch inlet 2
+    HFonline2.inletIndex(2, 0) = 3;  // Patch inlet 2: x-direction
+    HFonline2.inletIndex(2, 1) = 0;  // Patch inlet 2: y-direction
+    HFonline2.inletIndex(3, 0) = 3;  // Patch inlet 2: x-direction
+    HFonline2.inletIndex(3, 1) = 1;  // Patch inlet 2: y-direction
     HFonline2.startTime = 0.0;
-    HFonline2.finalTime = 10;
+    HFonline2.finalTime = 3;
     HFonline2.timeStep = 0.0005;
-    HFonline2.writeEvery = 0.01;
+    HFonline2.writeEvery = 0.03;
+    HFonline2.Dim = 2;
+
+    // Set values BCs for each timeSetp:
+    HFonline2.timeBCoff.resize(HFonline2.inletIndex.rows(), option1.size());
+    HFonline2.timeBCoff = vel_now;
+
     // Reconstruct the online solution
-    HFonline2.onlineSolveFull(par_on, 1,
-                              "./ITHACAoutput/HFonline2");
+   // HFonline2.onlineSolveFull(par_on, 1,
+     //                         "./ITHACAoutput/HFonline2");
 
-
+/*
 
     // Performing full order simulation for second parameter set 
     tutorialY HFonline3(argc, argv);
@@ -723,18 +746,18 @@ example.Dim = 2;
     HFonline3.onlineSolveFull(par_on, 2,
                               "./ITHACAoutput/HFonline3"); */
 
- /*   // Reading high-fidelity solutions for the parameter set
+    // Reading high-fidelity solutions for the parameter set
     // for which the offline solve has been performed (skipping IC)
-    example.onlineSolveRead("./ITHACAoutput/Offline/");
+    //example.onlineSolveRead("./ITHACAoutput/Offline/");
     // Reading in the high-fidelity solutions for the second parameter set
     example.onlineSolveRead("./ITHACAoutput/HFonline2/");
     // Reading in the high-fidelity solutions for the second parameter set
-    example.onlineSolveRead("./ITHACAoutput/HFonline3/");
+    //example.onlineSolveRead("./ITHACAoutput/HFonline3/");
 
     // Calculate error between online- and corresponding full order solution
-    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields_min_IC(
+    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
                                          example.Ufield_on, reduced.UREC);
-    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields_min_IC(
+    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields(
                                          example.Pfield_on, reduced.PREC);
     //Export the matrix containing the error
     ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
@@ -744,7 +767,7 @@ example.Dim = 2;
 
 
 
-
+/*
 //Post-Process
     Eigen::MatrixXd PostP(example.Ufield_on.size(), 6); 
 
@@ -763,8 +786,8 @@ example.Dim = 2;
     }
 
     ITHACAstream::exportMatrix(PostP, "PostP", "eigen", "./ITHACAoutput/PostProcess");
-
 */
+
 exit(0); 
 } 
 
