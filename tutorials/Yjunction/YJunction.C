@@ -664,7 +664,7 @@ int main(int argc, char* argv[])
         vel_now.resize(example.inletIndex.rows(), option1.size());
         vel_now.row(0).head(option1.size()) = option1b.col(0);  //Patch inlet 1: x-direction
     	vel_now.row(1).head(option1.size()) = option4c.col(0);  // Patch inlet 1: y-direction
-    }
+    } 
 
     if (example.bcMethod == "penalty")
     {
@@ -748,9 +748,9 @@ int main(int argc, char* argv[])
 
     // Reading high-fidelity solutions for the parameter set
     // for which the offline solve has been performed (skipping IC)
-    //example.onlineSolveRead("./ITHACAoutput/Offline/");
+    // example.onlineSolveRead("./ITHACAoutput/Offline/");
     // Reading in the high-fidelity solutions for the second parameter set
-    example.onlineSolveRead("./ITHACAoutput/HFonline2/");
+     example.onlineSolveRead("./ITHACAoutput/HFonline2/");
     // Reading in the high-fidelity solutions for the second parameter set
     //example.onlineSolveRead("./ITHACAoutput/HFonline3/");
 

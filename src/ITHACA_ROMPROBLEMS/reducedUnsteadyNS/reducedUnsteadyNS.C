@@ -183,6 +183,11 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     Eigen::VectorXd M1 = problem->B_matrix * a_tmp * nu;
     // Gradient of pressure
     Eigen::VectorXd M2 = problem->K_matrix * b_tmp;
+
+    // Split K_matrix using Gauss
+   // Eigen::VectorXd M2A = problem->K1_matrix * b_tmp;
+   // Eigen::VectorXd M2B = problem->K2_matrix * b_tmp;
+
     // Mass Term
     Eigen::VectorXd M5 = problem->M_matrix * a_dot;
     // Pressure Term
@@ -190,7 +195,7 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     // BC PPE
     Eigen::VectorXd M7 = problem->BC3_matrix * a_tmp * nu;
     // BC PPE - penalty method
-   // Eigen::VectorXd M8 = problem->PF_matrix * a_tmp;
+    Eigen::VectorXd M8 = problem->PF_matrix * a_dot;
 
 
     // Penalty term
@@ -212,8 +217,8 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
       cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
                 i) * a_tmp;
 
-
-        fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i);
+        //fvec(i) = - M5(i) + M1(i) - cc(0, 0) + M2A(i) - M2B(i) ;
+        fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i) ;
 
   	if (problem->bcMethod == "penalty")
         {
@@ -228,15 +233,9 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     {
         label k = j + Nphi_u;
         gg = a_tmp.transpose() * problem->G_matrix[j] * a_tmp;
-	//std::cout << "M8(j,0): " << M8(j,0) << std::endl;
-        fvec(k) = M3(j, 0) + gg(0, 0) - M7(j, 0);
+
+        fvec(k) = M3(j, 0) + gg(0, 0) - M7(j, 0)+ M8(j,0);
 	
-       // if (problem->timedepbcMethod == "yes")
-       // {
-	//    fvec(k) += (problem->T_matrix(0,j) * a_dot(j));
-	//}
-
-
     }
 
     if (problem->bcMethod == "lift")
