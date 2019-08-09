@@ -142,6 +142,12 @@ class steadyNS: public reductionProblem
         /// Gradient of pressure matrix
         Eigen::MatrixXd K_matrix;
 
+        /// Gradient of pressure matrix - domain
+        Eigen::MatrixXd K1_matrix;
+
+        /// Gradient of pressure matrix - boundary
+        Eigen::MatrixXd K2_matrix;
+
         /// Non linear term
         List <Eigen::MatrixXd> C_matrix;
         Eigen::Tensor<double, 3 > C_tensor;
@@ -183,7 +189,6 @@ class steadyNS: public reductionProblem
 
         /// Boundary term for penalty method - matrix
         List <Eigen::MatrixXd> bcVelMat;
-
 
         // Other Variables
         /// Boolean variable to check the existence of the supremizer modes
@@ -324,6 +329,32 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the Gradient of pressure term.
         ///
         Eigen::MatrixXd pressure_gradient_term(label NUmodes, label NPmodes,
+                                               label NSUPmodes);
+
+
+        //--------------------------------------------------------------------------
+        /// Gradient of pressure - domain
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the Gradient of pressure term.
+        ///
+        Eigen::MatrixXd pressure_term_domain(label NUmodes, label NPmodes,
+                                               label NSUPmodes);
+
+
+        //--------------------------------------------------------------------------
+        /// Gradient of pressure - boundary
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the Gradient of pressure term.
+        ///
+        Eigen::MatrixXd pressure_term_boundary(label NUmodes, label NPmodes,
                                                label NSUPmodes);
 
         //--------------------------------------------------------------------------

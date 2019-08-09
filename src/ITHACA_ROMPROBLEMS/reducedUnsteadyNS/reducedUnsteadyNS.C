@@ -206,7 +206,7 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     {
         for (label l = 0; l < N_BC; l++)
         {
-            penaltyU.col(l) = tauU(l,0) * (BC(l) * problem->bcVelVec[l] - problem->bcVelMat[l] *
+            penaltyU.col(l) = abs(tauU(l,0)) * (BC(l) * problem->bcVelVec[l] - problem->bcVelMat[l] *
                               a_tmp);
         }
     }
@@ -362,12 +362,23 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd& vel_now, lab
 
 // * * * * * * * * * * * * * * * Solve Functions PPE * * * * * * * * * * * * * //
 
-Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel_now, label NParaSet,
+Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel, label NParaSet,
                                         label startSnap)
 {
+ 
     std::cout << "################## Online solve N° " << NParaSet <<
     " ##################" << std::endl;
-    std::cout << "Solving for the parameter: " << vel_now.col(0) << std::endl;
+    std::cout << "Solving for the parameter: " << vel.col(0) << std::endl;
+
+
+    if (problem->bcMethod == "lift")
+    {
+ 	vel_now = setOnlineVelocity(vel);
+    }
+    else
+    {
+   	vel_now = vel;
+    }
 
      // Count number of time steps
     int counter = 0;
@@ -768,7 +779,10 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
     tauIter = tauInit;         
     int Iter = 0;
 
-    while (abs((vel_now.col(timeSteps-1) - valBC.col(timeSteps-1)).sum()) > tolerance && Iter < maxIter)
+	Eigen::VectorXd diffvel = vel_now.col(timeSteps-1) - valBC.col(timeSteps-1);
+
+    while (diffvel.maxCoeff() > tolerance && Iter < maxIter)
+// while (abs((vel_now.col(timeSteps-1) - valBC.col(timeSteps-1))).maxCoeff() > tolerance && Iter < maxIter)
     {
         //std::cout  << "tauIter: "<< tauIter << std::endl;
 
@@ -793,6 +807,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
         }
 
         std::cout << "Solving for penalty factor(s): " << tauIter << std::endl;
+        std::cout << "number of iterations: " << Iter << std::endl;
 
     //  Set the old boundary value to the current value
         valBC0  = valBC;
@@ -889,11 +904,12 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
 
 for (label j = 0; j < N_BC; j++)
             {
-               
-
                 tauIter(j,0) = abs(tauIter(j,0));
+diffvel(j) = abs(vel_now(j,timeSteps-1) - valBC(j,timeSteps-1));
+	
             }
     
+
 
     return tauIter;
 }
@@ -964,8 +980,12 @@ for (label i = 0; i < online_sol.cols(); i++)
                 U_rec += LUmodes[j] * online_sol(j + 1, i);
             }
 
-
             ITHACAstream::exportSolution(U_rec,  name(counter2), folder);
+
+	//    surfaceScalarField Phi_rec("Phi_rec", (linearInterpolate(LUmodes[0] ) & LUmodes[0].mesh().Sf() )* 0);
+	//    Phi_rec = linearInterpolate(U_rec ) & U_rec.mesh().Sf();
+
+	//    ITHACAstream::exportSolution(Phi_rec, name(counter2), folder);
 
  
             volScalarField P_rec("P_rec", MPmodes[0] * 0);
@@ -993,4 +1013,31 @@ for (label i = 0; i < online_sol.cols(); i++)
     }
 
 }
+
+
+Eigen::MatrixXd reducedUnsteadyNS::setOnlineVelocity(Eigen::MatrixXd vel)
+{
+    assert(problem->inletIndex.rows() == vel.rows()
+           && "Imposed boundary conditions dimensions do not match given values matrix dimensions");
+    Eigen::MatrixXd vel_scal;
+
+    vel_scal.resize(vel.rows(), vel.cols());
+
+    for (int i = 0; i < vel.cols(); i++)
+    {
+
+    	for (int k = 0; k < problem->inletIndex.rows(); k++)
+    	{
+            label p = problem->inletIndex(k, 0);
+            label l = problem->inletIndex(k, 1);
+            scalar area = gSum(problem->liftfield[0].mesh().magSf().boundaryField()[p]);
+            scalar u_lf = gSum(problem->liftfield[k].mesh().magSf().boundaryField()[p] *
+                           problem->liftfield[k].boundaryField()[p]).component(l) / area;
+            vel_scal(k, i) = vel(k, i) / abs(u_lf);
+    	}
+    }
+
+    return vel_scal;
+}
+
 // ************************************************************************* //

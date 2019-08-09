@@ -79,8 +79,8 @@ class tutorialY: public unsteadyNS
 
             if (ITHACAutilities::check_folder(folder))
             {
-		ITHACAstream::read_fields(Ufield_on, U, folder);
-                ITHACAstream::read_fields(Pfield_on, p, folder);
+		//ITHACAstream::read_fields(Ufield_on, U, folder);
+                //ITHACAstream::read_fields(Pfield_on, p, folder);
             }
             else
             {
@@ -390,7 +390,6 @@ int main(int argc, char* argv[])
     Eigen::VectorXd option2b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.35355);
     Eigen::VectorXd option2c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.5);
     Eigen::VectorXd option2d = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.5);
-   
     // Period 3: Linear increase to 50% --> 3seconds);
     Eigen::VectorXd option3 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.5,1);
     Eigen::VectorXd option3b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-0.35355,-1);
@@ -398,18 +397,10 @@ int main(int argc, char* argv[])
 
 
     example.timeBCoff.resize(example.inletIndex.rows(), option1.size()*totalPeriods);
-    //example.timeBCoff.row(0) = option1.col(0);  //Patch inlet 1: x-direction
-   // example.timeBCoff.row(1) = option1.col(0);  // Patch inlet 1: y-direction
 
-   // if (example.bcMethod == "penalty")
-   // {
-   //      example.timeBCoff.row(2) = option1.col(0); //Patch inlet 2: x-direction
-   //      example.timeBCoff.row(3) = option1b.col(0);  //Patch inlet 4: x-direction
-   // }
- 
-
-   if (example.bcMethod == "penalty" && example.timedepbcMethod == "yes")
-   {     //1st Period
+if (example.bcMethod == "penalty" && example.timedepbcMethod == "yes")
+    {   
+         //1st Period
          example.timeBCoff.row(0).head(option1.size()) = option1.col(0);  //Patch inlet 1: x-direction
          example.timeBCoff.row(1).head(option1.size()) = option1.col(0);  // Patch inlet 1: y-direction
          example.timeBCoff.row(2).head(option1.size()) = option2.col(0); //Patch inlet 2: x-direction
@@ -432,13 +423,10 @@ int main(int argc, char* argv[])
          example.timeBCoff.row(1).tail(option1.size()) = option3b.col(0);  // Patch inlet 1: y-direction
          example.timeBCoff.row(2).tail(option1.size()) = option1.col(0); //Patch inlet 2: x-direction
          example.timeBCoff.row(3).tail(option1.size()) = option1b.col(0);  //Patch inlet 4: x-direction
-    }
-    else if (example.bcMethod == "lift" && example.timedepbcMethod == "yes")
-    {
-         //1st Period
-         example.timeBCoff.row(0).head(option1.size()) = option1.col(0);  //Patch inlet 1: x-direction
-         example.timeBCoff.row(1).head(option1.size()) = option1.col(0);  // Patch inlet 1: y-direction
-    }
+}
+else
+{
+}
 
     // Perform The Offline Solve;
     example.offlineSolve(par_off);
@@ -469,6 +457,8 @@ int main(int argc, char* argv[])
 	{
             // Search the lift function
    	    example.liftSolve();
+  	    // Normalize the lifting function
+	    ITHACAutilities::normalizeFields(example.liftfield);
     	    // Create homogeneous basis functions for velocity
     	    example.computeLift(example.Ufield, example.liftfield, example.Uomfield);
     	    // Perform a POD decomposition for velocity and pressure
@@ -529,9 +519,9 @@ int main(int argc, char* argv[])
     std::cout << "elapsed_matrix: " << elapsed_matrix.count() << " seconds.";
     std::cout << std::endl; 
 
-/*
-// Create a list with number of modes for which the projection needs to be performed
-    Eigen::MatrixXd List_of_modes(NmodesOut-5, 1);
+
+/* // Create a list with number of modes for which the projection needs to be performed
+    Eigen::MatrixXd List_of_modes(NmodesOut-0, 1);
     for (int i = 0; i < List_of_modes.rows(); i++)
     {
         List_of_modes(i, 0) = i + 1;
@@ -629,50 +619,169 @@ int main(int argc, char* argv[])
 
     // Resize the modes for projection
     example.Umodes.resize(NmodesUproj);
-    example.Pmodes.resize(NmodesPproj);*/
+    example.Pmodes.resize(NmodesPproj); */
 
     reducedUnsteadyNS reduced(example);
     // Set values of the reduced stuff
     reduced.nu = 0.01;
     reduced.tstart = 0;
-    reduced.finalTime = 3;
+    reduced.finalTime = 18;
     reduced.dt = 0.0005;
-    reduced.maxIter = 500;
-    reduced.tolerance = 1e-7;
+    reduced.maxIter = 1000;
+    reduced.tolerance = 1e-6;
     reduced.timeSteps = 3;
 
     Eigen::MatrixXd vel_now;
     vel_now = example.timeBCoff;
 
-    // Parameter set 1:
-    Eigen::VectorXd option4a = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-1,-0.42426);
-    Eigen::VectorXd option4b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.42426);
-    Eigen::VectorXd option4c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.6);
+    // Parameter set u2A:
+    Eigen::VectorXd VEL2Ax = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,-1,-0.47376);
+    Eigen::VectorXd VEL2Ay = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,1,0.47376); // 1 to 0.67
+    Eigen::VectorXd VEL2AL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,1,0.67);
+
+    // Parameter set u2B:
+    Eigen::VectorXd VEL2Bx = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,-0.47376,-1);
+    Eigen::VectorXd VEL2By = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,0.47376,1);
+    Eigen::VectorXd VEL2BL = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,0.67,1);     // 0.67 to 1
+
+    // Parameter set u2C:
+    Eigen::VectorXd VEL2Cx = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,-1,-0.35355);
+    Eigen::VectorXd VEL2Cy = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,1,0.35355);
+    Eigen::VectorXd VEL2CL = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,1,0.5);   // 1 to 0.5
+
+    // Parameter set u2D:
+    Eigen::VectorXd VEL2Dx = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,-0.35355,-0.42426);
+    Eigen::VectorXd VEL2Dy = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,0.35355,0.42426);
+    Eigen::VectorXd VEL2DL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,0.5,0.6); // 0.5 to 0.6
+
+    // Parameter set u2E:
+    Eigen::VectorXd VEL2Ex = Eigen::VectorXd::LinSpaced(1.0/example.timeStep,-0.42426,-0.42426);
+    Eigen::VectorXd VEL2Ey = Eigen::VectorXd::LinSpaced(1.0/example.timeStep,0.42426,0.42426);
+    Eigen::VectorXd VEL2EL = Eigen::VectorXd::LinSpaced(1.0/example.timeStep,0.6,0.6); // 0.6 to 0.6
+
+    // Parameter set u2F:
+    Eigen::VectorXd VEL2Fx = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,-0.42426,-0.50912);
+    Eigen::VectorXd VEL2Fy = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,0.42426,0.50912);
+    Eigen::VectorXd VEL2FL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,0.6,0.72); // 0.6 to 0.6
+
+    // Parameter set u1A:
+    Eigen::VectorXd VEL1Ax = Eigen::VectorXd::LinSpaced(2.0/example.timeStep+1,-1,-0.67175);
+    Eigen::VectorXd VEL1AL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep+1,1,0.67175);
+//    Eigen::VectorXd VEL1AL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep+1,1,0.95); // 1 to 0.95
+
+    // Parameter set u1B:
+    Eigen::VectorXd VEL1Bx = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,-0.67175,-0.50912);
+    Eigen::VectorXd VEL1BL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,0.67175,0.50912);
+   // Eigen::VectorXd VEL1BL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,0.95,0.72); // 0.95 to 0.72
+
+    // Parameter set u1C:
+    Eigen::VectorXd VEL1Cx = Eigen::VectorXd::LinSpaced(1.0/example.timeStep,-0.50912,-0.50912);
+    Eigen::VectorXd VEL1CL = Eigen::VectorXd::LinSpaced(1.0/example.timeStep,0.50912,0.50912); 
+  //  Eigen::VectorXd VEL1CL = Eigen::VectorXd::LinSpaced(1.0/example.timeStep,0.72,0.72);
+
+    // Parameter set u1D:
+    Eigen::VectorXd VEL1Dx = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,-0.50912,-0.35355);
+    Eigen::VectorXd VEL1DL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,0.50912,0.35355);
+  //  Eigen::VectorXd VEL1DL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,0.72,0.5);
+
+    // Parameter set u1E:
+    Eigen::VectorXd VEL1Ex = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,-0.35355,-0.58690);
+    Eigen::VectorXd VEL1EL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,0.35355,0.58690);
+  //  Eigen::VectorXd VEL1EL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,0.5,0.83);
+
+    // Parameter set u1F:
+    Eigen::VectorXd VEL1Fx = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,-0.58690,-0.63640);
+    Eigen::VectorXd VEL1FL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,0.58690,0.63640);
+ //   Eigen::VectorXd VEL1FL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,0.83,0.90);
+
+    // Parameter set u1G:
+    Eigen::VectorXd VEL1Gx = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,-0.63640,-0.50912);
+    Eigen::VectorXd VEL1GL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,0.63640,0.50912);
+ //   Eigen::VectorXd VEL1GL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,0.90,0.72);
+
+// Parameter set u1G:
+    Eigen::VectorXd VEL1Hx = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,-0.50912,-0.67175);
+    Eigen::VectorXd VEL1HL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,0.50912,0.67175);
 
 
-    if (example.bcMethod == "penalty")
-    {
-    	// Set values BCs for each timeSetp:
-    	vel_now.resize(example.inletIndex.rows(), option1.size());
-    	vel_now.row(0).head(option1.size()) = option1.col(0);  //Patch inlet 1: x-direction
-    	vel_now.row(1).head(option1.size()) = option1.col(0);  // Patch inlet 1: y-direction
-    	vel_now.row(2).head(option1.size()) = option4a.col(0); //Patch inlet 2: x-direction
-    	vel_now.row(3).head(option1.size()) = option4b.col(0);  //Patch inlet 4: x-direction
+
+vel_now.resize(example.inletIndex.rows(), 36001);
+
+    if (example.bcMethod == "penalty" && example.timedepbcMethod == "yes")
+    {   
+        
+
+        // section A
+    	vel_now.row(0).head(VEL1Ax.size()) = VEL1Ax.col(0);  
+    	vel_now.row(1).head(VEL1Ax.size()) = VEL1Ax.col(0);  
+    	vel_now.row(2).head(VEL2Ax.size()) = VEL2Ax.col(0); 
+    	vel_now.row(3).head(VEL2Ay.size()) = VEL2Ay.col(0);  
+        // section B
+        vel_now.row(0).segment(VEL1Ax.size(),VEL1Bx.size()) = VEL1Bx.col(0);  
+        vel_now.row(1).segment(VEL1Ax.size(),VEL1Bx.size()) = VEL1Bx.col(0);  
+        vel_now.row(2).segment(VEL2Ax.size(),VEL2Bx.size()) = VEL2Bx.col(0); 
+        vel_now.row(3).segment(VEL2Ay.size(),VEL2By.size()) = VEL2By.col(0);  
+        // section C
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size(),VEL1Cx.size()) = VEL1Cx.col(0);  
+        vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size(),VEL1Cx.size()) = VEL1Cx.col(0);  
+        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size(),VEL2Cx.size()) = VEL2Cx.col(0); 
+        vel_now.row(3).segment(VEL2Ay.size()+VEL2By.size(),VEL2Cy.size()) = VEL2Cy.col(0);  
+        // section D
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size(),VEL1Dx.size()) = VEL1Dx.col(0);  
+        vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size(),VEL1Dx.size()) = VEL1Dx.col(0);  
+        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size()+VEL2Cx.size(),VEL2Dx.size()) = VEL2Dx.col(0); 
+        vel_now.row(3).segment(VEL2Ay.size()+VEL2By.size()+VEL2Cy.size(),VEL2Dy.size()) = VEL2Dy.col(0);  
+   	// section E
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size(),VEL1Ex.size()) = VEL1Ex.col(0);  
+        vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size(),VEL1Ex.size()) = VEL1Ex.col(0);  
+        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size()+VEL2Cx.size()+VEL2Dx.size(),VEL2Ex.size()) = VEL2Ex.col(0); 
+        vel_now.row(3).segment(VEL2Ax.size()+VEL2Bx.size()+VEL2Cx.size()+VEL2Dx.size(),VEL2Ey.size()) = VEL2Ey.col(0);  
+	// section F
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size(),VEL1Fx.size()) = VEL1Fx.col(0);  
+        vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size(),VEL1Fx.size()) = VEL1Fx.col(0);
+        vel_now.row(2).tail(VEL2Fx.size()) = VEL2Fx.col(0); 
+        vel_now.row(3).tail(VEL2Fy.size()) = VEL2Fy.col(0);
+	// section G
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size()+VEL1Fx.size(),VEL1Gx.size()) = VEL1Gx.col(0);  
+        vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size()+VEL1Fx.size(),VEL1Gx.size()) = VEL1Gx.col(0);  
+        // section H
+        vel_now.row(0).tail(VEL1Hx.size()) = VEL1Hx.col(0);  
+        vel_now.row(1).tail(VEL1Hx.size()) = VEL1Hx.col(0); 
     }
-    else
+    else if (example.bcMethod == "lift" && example.timedepbcMethod == "yes")
     {
-        vel_now.resize(example.inletIndex.rows(), option1.size());
-        vel_now.row(0).head(option1.size()) = option1b.col(0);  //Patch inlet 1: x-direction
-    	vel_now.row(1).head(option1.size()) = option4c.col(0);  // Patch inlet 1: y-direction
+        //vel_now.resize(example.inletIndex.rows(), 36001);
+        // section A
+    	vel_now.row(0).head(VEL1Ax.size()) = VEL1AL.col(0);  
+    	vel_now.row(1).head(VEL2Ay.size()) = VEL2Ay.col(0); 
+        // section B
+        vel_now.row(0).segment(VEL1Ax.size(),VEL1Bx.size()) = VEL1BL.col(0);  
+        vel_now.row(1).segment(VEL2Ay.size(),VEL2By.size()) = VEL2By.col(0); 
+        // section C
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size(),VEL1Cx.size()) = VEL1CL.col(0);  
+        vel_now.row(1).segment(VEL2Ay.size()+VEL2By.size(),VEL2Cy.size()) = VEL2Cy.col(0);  
+        // section D
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size(),VEL1Dx.size()) = VEL1DL.col(0);  
+        vel_now.row(1).segment(VEL2Ay.size()+VEL2By.size()+VEL2Cy.size(),VEL2Dy.size()) = VEL2Dy.col(0);    
+   	// section E
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size(),VEL1Ex.size()) = VEL1EL.col(0);  
+        vel_now.row(1).segment(VEL2Ay.size()+VEL2By.size()+VEL2Cy.size()+VEL2Dy.size(),VEL2Ey.size()) = VEL2Ey.col(0); 
+	// section F
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size(),VEL1Fx.size()) = VEL1FL.col(0); 
+        vel_now.row(1).tail(VEL2Fy.size()) = VEL2Fy.col(0); 
+	// section G
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size()+VEL1Fx.size(),VEL1Gx.size()) = VEL1GL.col(0); 
+        // section H
+        vel_now.row(0).tail(VEL1Hx.size()) = VEL1HL.col(0);
     } 
 
     if (example.bcMethod == "penalty")
     {
             // set initial quess for penalty factors
 	    Eigen::MatrixXd tauInit(4,1);
-            tauInit << 10, 10, 10, 10;
-            //reduced.tauU = reduced.penalty_PPE_time(vel_now, tauInit);
-            reduced.tauU = tauInit;
+            tauInit << 1e-2, 1e-2, 1e-2, 1e-2;
+            reduced.tauU = reduced.penalty_PPE_time(vel_now, tauInit);
+            //reduced.tauU = tauInit;
     }
    
     // Set the online temperature BC and solve reduced model
@@ -680,6 +789,7 @@ int main(int argc, char* argv[])
     {
 	auto start_ROM = std::chrono::high_resolution_clock::now();
         reduced.solveOnline_PPE(vel_now, k);
+std::cout << "HERE" << std::endl;
         auto finish_ROM = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
         std::cout << "elapsed_ROM: " << elapsed_ROM.count() << " seconds.";
@@ -712,47 +822,24 @@ int main(int argc, char* argv[])
     HFonline2.inletIndex(3, 0) = 3;  // Patch inlet 2: x-direction
     HFonline2.inletIndex(3, 1) = 1;  // Patch inlet 2: y-direction
     HFonline2.startTime = 0.0;
-    HFonline2.finalTime = 3;
+    HFonline2.finalTime = 18;
     HFonline2.timeStep = 0.0005;
     HFonline2.writeEvery = 0.03;
     HFonline2.Dim = 2;
 
     // Set values BCs for each timeSetp:
-    HFonline2.timeBCoff.resize(HFonline2.inletIndex.rows(), option1.size());
+    //HFonline2.timeBCoff.resize(HFonline2.inletIndex.rows(), option1.size());
     HFonline2.timeBCoff = vel_now;
 
     // Reconstruct the online solution
-   // HFonline2.onlineSolveFull(par_on, 1,
-     //                         "./ITHACAoutput/HFonline2");
-
-/*
-
-    // Performing full order simulation for second parameter set 
-    tutorialY HFonline3(argc, argv);
-    HFonline3.Pnumber = 1;
-    HFonline3.Tnumber = 1;
-    HFonline3.setParameters();
-    HFonline3.mu_range(0, 0) = 0.0001;
-    HFonline3.mu_range(0, 1) = 0.0001;
-    HFonline3.genEquiPar();
-    HFonline3.inletIndex.resize(1, 2);
-    HFonline3.inletIndex(0, 0) = 0;
-    HFonline3.inletIndex(0, 1) = 0;
-    HFonline3.startTime = 0.0;
-    HFonline3.finalTime = 10;
-    HFonline3.timeStep = 0.0005;
-    HFonline3.writeEvery = 0.01;
-    // Reconstruct the online solution
-    HFonline3.onlineSolveFull(par_on, 2,
-                              "./ITHACAoutput/HFonline3"); */
+    HFonline2.onlineSolveFull(par_on, 1,
+                             "./ITHACAoutput/HFonline2");
 
     // Reading high-fidelity solutions for the parameter set
     // for which the offline solve has been performed (skipping IC)
     // example.onlineSolveRead("./ITHACAoutput/Offline/");
     // Reading in the high-fidelity solutions for the second parameter set
-     example.onlineSolveRead("./ITHACAoutput/HFonline2/");
-    // Reading in the high-fidelity solutions for the second parameter set
-    //example.onlineSolveRead("./ITHACAoutput/HFonline3/");
+    example.onlineSolveRead("./ITHACAoutput/HFonline2/");
 
     // Calculate error between online- and corresponding full order solution
     Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
@@ -766,27 +853,25 @@ int main(int argc, char* argv[])
                                "./ITHACAoutput/l2error");
 
 
-
-/*
 //Post-Process
-    Eigen::MatrixXd PostP(example.Ufield_on.size(), 6); 
+    Eigen::MatrixXd PostP(example.Ufield_on.size(), 2); 
 
     for (label i = 0; i < example.Ufield_on.size(); i++)
     {
 	PostP(i, 0) =  0.5*fvc::domainIntegrate(example.Ufield_on[i] & example.Ufield_on[i]).value();
 	
 	// min/max Outlet (patch 1) velocity
-	PostP(i, 1) = max(example.Ufield_on[i].boundaryField()[1].component(0) );
-        PostP(i, 2) = min(example.Ufield_on[i].boundaryField()[1].component(0) );
+	//PostP(i, 1) = max(example.Ufield_on[i].boundaryField()[1].component(0) );
+       // PostP(i, 2) = min(example.Ufield_on[i].boundaryField()[1].component(0) );
 
-	PostP(i, 3) = 0.5*fvc::domainIntegrate(reduced.UREC[i] & reduced.UREC[i]).value();
-	PostP(i, 4) = max(reduced.UREC[i].boundaryField()[1].component(0) );
-        PostP(i, 5) = min(reduced.UREC[i].boundaryField()[1].component(0) );
+	PostP(i, 1) = 0.5*fvc::domainIntegrate(reduced.UREC[i] & reduced.UREC[i]).value();
+	//PostP(i, 4) = max(reduced.UREC[i].boundaryField()[1].component(0) );
+       // PostP(i, 5) = min(reduced.UREC[i].boundaryField()[1].component(0) );
 	
     }
 
     ITHACAstream::exportMatrix(PostP, "PostP", "eigen", "./ITHACAoutput/PostProcess");
-*/
+
 
 exit(0); 
 } 

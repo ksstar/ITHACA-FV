@@ -407,8 +407,8 @@ void steadyNS::projectPPE(fileName folder, label NU, label NP, label NSUP)
     C_tensor = convective_term_tens(NUmodes, NPmodes, NSUPmodes);
     M_matrix = mass_term(NUmodes, NPmodes, NSUPmodes);
     K_matrix = pressure_gradient_term(NUmodes, NPmodes, NSUPmodes);
-    K1_matrix = pressure_term_domain(NUmodes, NPmodes, NSUPmodes);
-    K2_matrix = pressure_term_boundary(NUmodes, NPmodes, NSUPmodes);
+    //K1_matrix = pressure_term_domain(NUmodes, NPmodes, NSUPmodes);
+    //K2_matrix = pressure_term_boundary(NUmodes, NPmodes, NSUPmodes);
     D_matrix = laplacian_pressure(NPmodes);
     G_matrix = div_momentum(NUmodes, NPmodes, NSUPmodes);
     //BC1_matrix = pressure_BC1(NUmodes, NPmodes);
@@ -422,10 +422,6 @@ void steadyNS::projectPPE(fileName folder, label NU, label NP, label NSUP)
             bcVelMat = bcVelocityMat(NUmodes, NSUPmodes);
     }
 
-    //if (timedepbcMethod == "yes")
-    //{
-      //  T_matrix = time_derivative_boundary(NUmodes, NPmodes);
-    //}
 }
 
 void steadyNS::projectSUP(fileName folder, label NU, label NP, label NSUP)

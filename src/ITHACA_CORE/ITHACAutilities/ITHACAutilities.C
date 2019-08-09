@@ -1336,16 +1336,22 @@ void ITHACAutilities::normalizeFields(
 
     for (label i = 0; i < fields.size(); i++)
     {
+
         double norm = L2norm(fields[i]);
+
         GeometricField<type_f, fvPatchField, volMesh> tmp(fields[0].name(),
                 fields[0] * 0);
+
         Eigen::VectorXd vec = eigenFields.col(i) / norm;
+std::cout << "HereD" << std::endl;
         tmp = Foam2Eigen::Eigen2field(tmp, vec);
 
         // Adjusting boundary conditions
         for (int k = 0; k < tmp.boundaryField().size(); k++)
         {
+
             Eigen::MatrixXd vec = eigenFieldsBC[k].col(i) / norm;
+
             ITHACAutilities::assignBC(tmp, k, vec);
         }
 
@@ -1383,7 +1389,7 @@ forAll(Umean.boundaryField(), patchi)
     Umean.boundaryFieldRef() = Umean.boundaryFieldRef()/(snapshotsU.size()+1);
     mean.append(Umean);
 
-    //normalizeFields(mean);
+    normalizeFields(mean);
     
     for (auto i = 0; i < snapshotsU.size(); i++)
     {
@@ -1416,7 +1422,7 @@ forAll(Pmean.boundaryField(), patchi)
 
     
     mean.append(Pmean);
-   // normalizeFields(mean);
+    normalizeFields(mean);
 
     for (auto i = 0; i < snapshotsP.size(); i++)
     {

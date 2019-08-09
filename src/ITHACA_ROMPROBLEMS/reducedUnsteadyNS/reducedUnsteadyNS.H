@@ -223,6 +223,15 @@ Eigen::MatrixXd penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit);
 
 Eigen::MatrixXd penalty_PPE_time(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit);
 
+        ///
+        /// @brief      Sets the online velocity.
+        ///
+        /// @param[in]  vel   The velocity
+        ///
+        /// @return     The rescaled velocity vector
+        ///
+	Eigen::MatrixXd setOnlineVelocity(Eigen::MatrixXd vel);
+
 
 };
 

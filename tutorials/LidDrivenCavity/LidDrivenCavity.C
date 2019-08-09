@@ -119,6 +119,7 @@ class tutorialLID: public unsteadyNS
             }
         }
 
+
 };
 
 /*---------------------------------------------------------------------------*\
@@ -173,11 +174,17 @@ int main(int argc, char* argv[])
 
         if (example.aveMethod == "mean")
         { 
-            // Search the lift function
+	
+ 
+	    // Search the lift function
    	    example.liftSolve();
+
+	    // Normalize the lifting function
+	    ITHACAutilities::normalizeFields(example.liftfield);
+
     	    // Create homogeneous basis functions for velocity
     	    example.computeLift(example.Ufield, example.liftfield, example.Uomfield);
-
+	
             // Compute the average velocity and temperature fields
             ITHACAutilities::getAverage(example.Uomfield, example.Umean, example.Usub);
             ITHACAutilities::getAverage(example.Pfield, example.Pmean, example.Psub);
@@ -193,6 +200,8 @@ int main(int argc, char* argv[])
 	{
             // Search the lift function
    	    example.liftSolve();
+	    // Normalize the lifting function
+	   // ITHACAutilities::normalizeFields(example.liftfield);
     	    // Create homogeneous basis functions for velocity
     	    example.computeLift(example.Ufield, example.liftfield, example.Uomfield);
     	    // Perform a POD decomposition for velocity and pressure
@@ -252,9 +261,9 @@ int main(int argc, char* argv[])
     std::cout << "elapsed_matrix: " << elapsed_matrix.count() << " seconds.";
     std::cout << std::endl; 
 
-/*
-// Create a list with number of modes for which the projection needs to be performed
-    Eigen::MatrixXd List_of_modes(NmodesOut-5, 1);
+
+/* // Create a list with number of modes for which the projection needs to be performed
+    Eigen::MatrixXd List_of_modes(NmodesOut, 1);
     for (int i = 0; i < List_of_modes.rows(); i++)
     {
         List_of_modes(i, 0) = i + 1;
@@ -352,38 +361,36 @@ int main(int argc, char* argv[])
 
     // Resize the modes for projection
     example.Umodes.resize(NmodesUproj);
-    example.Pmodes.resize(NmodesPproj);*/
+    example.Pmodes.resize(NmodesPproj); */
 
     reducedUnsteadyNS reduced(example);
     // Set values of the reduced stuff
     reduced.nu = 0.0001;
     reduced.tstart = 0;
-    reduced.finalTime = 2;
+    reduced.finalTime = 10;
     reduced.dt = 0.0005;
     reduced.maxIter = 100;
     reduced.tolerance = 1e-6;
     reduced.timeSteps = 10;
 
     Eigen::MatrixXd vel_now(1, 1);
-    vel_now(0, 0) = 1.2;
+    vel_now(0, 0) = 1;
  //vel_now(0, 0) = par_on(0,1);
 
     if (example.bcMethod == "penalty")
     {
             // set initial quess for penalty factors
 	    Eigen::MatrixXd tauInit(1,1);
-            tauInit << 1e-2;
+            tauInit << 1e-6;
             reduced.tauU = reduced.penalty_PPE(vel_now, tauInit);
             //reduced.tauU = tauInit;
     }
-   
-// exit(0);
+
     // Set the online temperature BC and solve reduced model
     for (label k = 0; k < (1); k++)
     {
 	auto start_ROM = std::chrono::high_resolution_clock::now();
-        //vel_now(0, 0) = par_on(0,k);
-        vel_now(0, 0) = 1.2;
+        vel_now(0, 0) = 1;        
         reduced.solveOnline_PPE(vel_now, k);
         auto finish_ROM = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
@@ -439,13 +446,13 @@ int main(int argc, char* argv[])
     HFonline3.onlineSolveFull(par_on, 2,
                               "./ITHACAoutput/HFonline3"); */
 
- /*   // Reading high-fidelity solutions for the parameter set
+    // Reading high-fidelity solutions for the parameter set
     // for which the offline solve has been performed (skipping IC)
     example.onlineSolveRead("./ITHACAoutput/Offline/");
     // Reading in the high-fidelity solutions for the second parameter set
-    example.onlineSolveRead("./ITHACAoutput/HFonline2/");
+    //example.onlineSolveRead("./ITHACAoutput/HFonline2/");
     // Reading in the high-fidelity solutions for the second parameter set
-    example.onlineSolveRead("./ITHACAoutput/HFonline3/");
+   // example.onlineSolveRead("./ITHACAoutput/HFonline3/");
 
     // Calculate error between online- and corresponding full order solution
     Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields_min_IC(
@@ -462,25 +469,25 @@ int main(int argc, char* argv[])
 
 
 //Post-Process
-    Eigen::MatrixXd PostP(example.Ufield_on.size(), 6); 
+    Eigen::MatrixXd PostP(example.Ufield_on.size(), 2); 
 
     for (label i = 0; i < example.Ufield_on.size(); i++)
     {
 	PostP(i, 0) =  0.5*fvc::domainIntegrate(example.Ufield_on[i] & example.Ufield_on[i]).value();
 	
 	// min/max Outlet (patch 1) velocity
-	PostP(i, 1) = max(example.Ufield_on[i].boundaryField()[1].component(0) );
-        PostP(i, 2) = min(example.Ufield_on[i].boundaryField()[1].component(0) );
+	//PostP(i, 1) = max(example.Ufield_on[i].boundaryField()[1].component(0) );
+        //PostP(i, 2) = min(example.Ufield_on[i].boundaryField()[1].component(0) );
 
-	PostP(i, 3) = 0.5*fvc::domainIntegrate(reduced.UREC[i] & reduced.UREC[i]).value();
-	PostP(i, 4) = max(reduced.UREC[i].boundaryField()[1].component(0) );
-        PostP(i, 5) = min(reduced.UREC[i].boundaryField()[1].component(0) );
+	PostP(i, 1) = 0.5*fvc::domainIntegrate(reduced.UREC[i] & reduced.UREC[i]).value();
+	//PostP(i, 4) = max(reduced.UREC[i].boundaryField()[1].component(0) );
+        //PostP(i, 5) = min(reduced.UREC[i].boundaryField()[1].component(0) );
 	
     }
 
     ITHACAstream::exportMatrix(PostP, "PostP", "eigen", "./ITHACAoutput/PostProcess");
 
-*/
+
 exit(0); 
 } 
 
