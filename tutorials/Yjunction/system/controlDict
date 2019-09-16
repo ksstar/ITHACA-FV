@@ -49,6 +49,21 @@ adjustTimeStep  off;
 
 maxCo           5;
 
+functions
+{
+    #includeFunc  flowRatePatch(name=outlet)
+    #includeFunc  flowRatePatch(name=inlet1)
+    #includeFunc  flowRatePatch(name=inlet2)
+
+    //#includeFunc  mag(U) 
+    //#includeFunc  mag(U_rec) 
+  
+}
+
+
+
+
+
 /* functions
 {
     probes

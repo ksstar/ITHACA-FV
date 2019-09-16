@@ -34,6 +34,12 @@ License
 
 #include "reducedUnsteadyNS.H"
 
+#include <cmath> 
+#include <iomanip> 
+#include <iostream> 
+  
+using namespace std; 
+
 
 // * * * * * * * * * * * * * * * Constructors * * * * * * * * * * * * * * * * //
 
@@ -517,8 +523,6 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_sup(Eigen::MatrixXd& vel_now, Eigen::
     while (abs((vel_now - valBC).sum()) > tolerance && Iter < maxIter)
     {
         std::cout << "diff: " << abs((vel_now - valBC).sum()) << std::endl;
-        std::cout << "valBC: " << valBC << std::endl;
-        std::cout << "valBC0: " << valBC0 << std::endl;
 
         if ((valBC - valBC0).sum() != 0)
         {
@@ -635,10 +639,10 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::
 
     tauIter = tauInit;         
     int Iter = 0;
+    Eigen::VectorXd diffvel = vel_now.col(0) - valBC.col(0);
 
-    while (abs((vel_now - valBC).sum()) > tolerance && Iter < maxIter)
+    while (diffvel.maxCoeff()> tolerance && Iter < maxIter)
     {
-        //std::cout  << "tauIter: "<< tauIter << std::endl;
 
         if ((valBC - valBC0).sum() == 0)
         {
@@ -649,18 +653,14 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::
 
             for (label j = 0; j < N_BC; j++)
             {
-                Eigen::MatrixXd Jacobian = Eigen::MatrixXd::Zero(Nphi_u, 1);
 
-                Jacobian = vel_now(j,0)* problem->bcVelVec[j] - 
-                    problem->bcVelMat[j]* y.head(Nphi_u) ;
-
-                //std::cout << "Jacobian: " << Jacobian(0,0) << std::endl;
-
-                tauIter(j,0) = tauIter(j,0) - (valBC(j,0) - vel_now(j,0))/Jacobian(0,0);
+		tauIter(j,0) = 0.5*tauIter(j,0) + std::sqrt(abs(tauIter(j,0)*
+		tauIter(j,0) + 4*abs(valBC(j,0) - vel_now(j,0))));
             }
         }
 
         std::cout << "Solving for penalty factor(s): " << tauIter << std::endl;
+
 
     //  Set the old boundary value to the current value
         valBC0  = valBC;
@@ -736,13 +736,8 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::
 		 label BCcomp = problem->inletIndex(k,1);
                  valBC(k,0) = U_rec.boundaryFieldRef()[BCind][0].component(BCcomp);
             }
-           // std::cout << "valBC2: "<< valBC.col(i) << std::endl;
-
-           // std::cout << "vel_now(0,0): " << vel_now(0,0) << std::endl;
-
             
         } 
-
 
         // Check whether solution has been converged
         if (res.norm() > 1e-5)
@@ -750,18 +745,19 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::
             std::cout << "Penalty method has failed" << std::endl;
             exit(0);
         }
+
+       for (label j = 0; j < N_BC; j++)
+       {
+	    diffvel(j) = abs(vel_now(j,0) - valBC(j,0));
+       }
+
+    std::cout << "max tolerance: " << diffvel << std::endl;    
+
+	std::cout << "number of iterations: " << Iter << std::endl;
+
         
     }
 
-    //std::cout  << "tauIter: "<< tauIter << std::endl;
-
-for (label j = 0; j < N_BC; j++)
-            {
-               
-
-                tauIter(j,0) = abs(tauIter(j,0));
-            }
-    
 
     return tauIter;
 }
@@ -771,6 +767,7 @@ for (label j = 0; j < N_BC; j++)
 
 Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit)
 {
+
     // initialize new value on boundaries
     Eigen::MatrixXd valBC = Eigen::MatrixXd::Zero(N_BC,timeSteps);
     // initialize old values on boundaries
@@ -779,13 +776,12 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
     tauIter = tauInit;         
     int Iter = 0;
 
-	Eigen::VectorXd diffvel = vel_now.col(timeSteps-1) - valBC.col(timeSteps-1);
-
-    while (diffvel.maxCoeff() > tolerance && Iter < maxIter)
+    Eigen::VectorXd diffvel = vel_now.col(timeSteps-1) - valBC.col(timeSteps-1);
+ std::cout << "diffvel =  " << diffvel << std::endl;
+std::cout << "diffvel.norm() =  " << diffvel.norm() << std::endl;
+    while (diffvel.maxCoeff()> tolerance && Iter < maxIter)
 // while (abs((vel_now.col(timeSteps-1) - valBC.col(timeSteps-1))).maxCoeff() > tolerance && Iter < maxIter)
     {
-        //std::cout  << "tauIter: "<< tauIter << std::endl;
-
         if ((valBC.col(timeSteps-1) - valBC0.col(timeSteps-1)).sum() == 0)
         {
             tauIter = tauIter; 
@@ -795,15 +791,12 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
 
             for (label j = 0; j < N_BC; j++)
             {
-                Eigen::MatrixXd Jacobian = Eigen::MatrixXd::Zero(Nphi_u, 1);
 
-                Jacobian = vel_now(j,0)* problem->bcVelVec[j] - 
-                    problem->bcVelMat[j]* y.head(Nphi_u) ;
+		tauIter(j,0) = 0.5*tauIter(j,0) + std::sqrt(abs(tauIter(j,0)*tauIter(j,0) +
+				4*abs(valBC(j,timeSteps-1) - vel_now(j,timeSteps-1))));
 
-                //std::cout << "Jacobian: " << Jacobian(0,0) << std::endl;
+	    }
 
-                tauIter(j,0) = tauIter(j,0) - (valBC(j,timeSteps-1) - vel_now(j,timeSteps-1))/Jacobian(0,0);
-            }
         }
 
         std::cout << "Solving for penalty factor(s): " << tauIter << std::endl;
@@ -819,7 +812,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
         y.setZero();
         y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[0],LUmodes);
         y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[0],MPmodes);
-      
+ 
     // Set some properties of the newton object
         newton_object_PPE.nu = nu;
         newton_object_PPE.y_old = y;
@@ -832,7 +825,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
         {
             newton_object_PPE.BC(j) = vel_now(j, 0);
         }
-     
+
     // Create nonlinear solver object
         Eigen::HybridNonLinearSolver<newton_unsteadyNS_PPE> hnls(newton_object_PPE);
     // Set output colors for fancy output
@@ -871,6 +864,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
                 std::cout << red << "|F(x)| = " << res.norm() << " - Minimun reached in " <<
                 hnls.iter << " iterations " << def << std::endl << std::endl;
             }
+
             volVectorField U_rec("U_rec", LUmodes[0] * 0);
             for (label j = 0; j < Nphi_u; j++)
             {
@@ -882,12 +876,9 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
                  label BCind = problem->inletIndex(k,0);
 		 label BCcomp = problem->inletIndex(k,1);
                  valBC(k,i) = U_rec.boundaryFieldRef()[BCind][0].component(BCcomp);
+
             }
-           // std::cout << "valBC2: "<< valBC.col(i) << std::endl;
-
-           // std::cout << "vel_now(0,0): " << vel_now(0,0) << std::endl;
-
-            
+           
         } 
 
 
@@ -897,19 +888,17 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
             std::cout << "Penalty method has failed" << std::endl;
             exit(0);
         }
+
+    	for (label j = 0; j < N_BC; j++)
+    	{
+    		//tauIter(j,0) = abs(tauIter(j,0));
+		diffvel(j) = abs(abs(vel_now(j,timeSteps-1)) - abs(valBC(j,timeSteps-1)));
+    	}
+
+	std::cout << "max tolerance: " << diffvel << std::endl;
+        std::cout << "diffVel.norm: " << diffvel.norm() << std::endl;
         
     }
-
-    //std::cout  << "tauIter: "<< tauIter << std::endl;
-
-for (label j = 0; j < N_BC; j++)
-            {
-                tauIter(j,0) = abs(tauIter(j,0));
-diffvel(j) = abs(vel_now(j,timeSteps-1) - valBC(j,timeSteps-1));
-	
-            }
-    
-
 
     return tauIter;
 }

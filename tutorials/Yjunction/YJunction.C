@@ -361,13 +361,13 @@ int main(int argc, char* argv[])
     {
         // Set the inlet boundaries where we have non homogeneous boundary conditions
         example.inletIndex.resize(4, 2); // rows: total number of patches 
-        example.inletIndex(0, 0) = 2;  // Patch inlet 1
+        example.inletIndex(0, 0) = 1;  // Patch inlet 1
         example.inletIndex(0, 1) = 0;  // Patch inlet 1: x-direction
-        example.inletIndex(1, 0) = 2;  // Patch inlet 1: y-direction
+        example.inletIndex(1, 0) = 1;  // Patch inlet 1: y-direction
         example.inletIndex(1, 1) = 1;  // Patch inlet 2
-        example.inletIndex(2, 0) = 3;  // Patch inlet 2: x-direction
+        example.inletIndex(2, 0) = 2;  // Patch inlet 2: x-direction
         example.inletIndex(2, 1) = 0;  // Patch inlet 2: y-direction
-        example.inletIndex(3, 0) = 3;  // Patch inlet 2: x-direction
+        example.inletIndex(3, 0) = 2;  // Patch inlet 2: x-direction
         example.inletIndex(3, 1) = 1;  // Patch inlet 2: y-direction
     }
 
@@ -381,19 +381,19 @@ int main(int argc, char* argv[])
     example.Dim = 2;
 
     // Period 1: for 0 IC to steady state for U1=V1=U2=V2 = 1 m/s --> 3seconds
-    Eigen::VectorXd option1 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-1,-1);
-    Eigen::VectorXd option1b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,1);
+    Eigen::VectorXd option1 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-0.70711,-0.70711);
+    Eigen::VectorXd option1b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.70711,0.70711);
     Eigen::VectorXd option1c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-0.35355,-0.35335);
     Eigen::VectorXd option1d = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.35355,0.35355);
     // Period 2: Linear decrease to 50% --> 3seconds
-    Eigen::VectorXd option2 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-1,-0.35355);
-    Eigen::VectorXd option2b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.35355);
-    Eigen::VectorXd option2c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.5);
-    Eigen::VectorXd option2d = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,1,0.5);
+    Eigen::VectorXd option2 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-0.70711,-0.35355);
+    Eigen::VectorXd option2b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.70711,0.35355);
+    Eigen::VectorXd option2c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.70711,0.5);
+    Eigen::VectorXd option2d = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.70711,0.5);
     // Period 3: Linear increase to 50% --> 3seconds);
-    Eigen::VectorXd option3 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.5,1);
-    Eigen::VectorXd option3b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-0.35355,-1);
-    Eigen::VectorXd option3c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.35355,1);
+    Eigen::VectorXd option3 = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.5,0.70711);
+    Eigen::VectorXd option3b = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,-0.35355,-0.70711);
+    Eigen::VectorXd option3c = Eigen::VectorXd::LinSpaced((example.finalTime/totalPeriods)/example.timeStep+1,0.35355,0.70711);
 
 
     example.timeBCoff.resize(example.inletIndex.rows(), option1.size()*totalPeriods);
@@ -401,28 +401,30 @@ int main(int argc, char* argv[])
 if (example.bcMethod == "penalty" && example.timedepbcMethod == "yes")
     {   
          //1st Period
-         example.timeBCoff.row(0).head(option1.size()) = option1.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(0).head(option1.size()) = option1b.col(0);  //Patch inlet 1: x-direction
          example.timeBCoff.row(1).head(option1.size()) = option1.col(0);  // Patch inlet 1: y-direction
-         example.timeBCoff.row(2).head(option1.size()) = option2.col(0); //Patch inlet 2: x-direction
+         example.timeBCoff.row(2).head(option1.size()) = option2b.col(0); //Patch inlet 2: x-direction
          example.timeBCoff.row(3).head(option1.size()) = option2b.col(0);  //Patch inlet 4: x-direction
 
          //2nd Period
-         example.timeBCoff.row(0).segment(option1.size(),option1.size()) = option2.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(0).segment(option1.size(),option1.size()) = option2b.col(0);  //Patch inlet 1: x-direction
          example.timeBCoff.row(1).segment(option1.size(),option1.size()) = option2.col(0);  // Patch inlet 1: y-direction
-         example.timeBCoff.row(2).segment(option1.size(),option1.size()) = option1c.col(0); //Patch inlet 2: x-direction
+         example.timeBCoff.row(2).segment(option1.size(),option1.size()) = option1d.col(0); //Patch inlet 2: x-direction
          example.timeBCoff.row(3).segment(option1.size(),option1.size()) = option1d.col(0);  //Patch inlet 4: x-direction
 
          //3rd Period
-         example.timeBCoff.row(0).segment(2*option1.size(),option1.size()) = option1c.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(0).segment(2*option1.size(),option1.size()) = option1d.col(0);  //Patch inlet 1: x-direction
          example.timeBCoff.row(1).segment(2*option1.size(),option1.size()) = option1c.col(0);  // Patch inlet 1: y-direction
-         example.timeBCoff.row(2).segment(2*option1.size(),option1.size()) = option3b.col(0); //Patch inlet 2: x-direction
+         example.timeBCoff.row(2).segment(2*option1.size(),option1.size()) = option3c.col(0); //Patch inlet 2: x-direction
          example.timeBCoff.row(3).segment(2*option1.size(),option1.size()) = option3c.col(0);  //Patch inlet 4: x-direction
 
          //4th Period
-         example.timeBCoff.row(0).tail(option1.size()) = option3b.col(0);  //Patch inlet 1: x-direction
+         example.timeBCoff.row(0).tail(option1.size()) = option3c.col(0);  //Patch inlet 1: x-direction
          example.timeBCoff.row(1).tail(option1.size()) = option3b.col(0);  // Patch inlet 1: y-direction
-         example.timeBCoff.row(2).tail(option1.size()) = option1.col(0); //Patch inlet 2: x-direction
+         example.timeBCoff.row(2).tail(option1.size()) = option1b.col(0); //Patch inlet 2: x-direction
          example.timeBCoff.row(3).tail(option1.size()) = option1b.col(0);  //Patch inlet 4: x-direction
+
+
 }
 else
 {
@@ -627,27 +629,25 @@ else
     reduced.tstart = 0;
     reduced.finalTime = 18;
     reduced.dt = 0.0005;
-    reduced.maxIter = 1000;
-    reduced.tolerance = 1e-6;
-    reduced.timeSteps = 3;
+
 
     Eigen::MatrixXd vel_now;
     vel_now = example.timeBCoff;
 
     // Parameter set u2A:
-    Eigen::VectorXd VEL2Ax = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,-1,-0.47376);
-    Eigen::VectorXd VEL2Ay = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,1,0.47376); // 1 to 0.67
-    Eigen::VectorXd VEL2AL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,1,0.67);
+    Eigen::VectorXd VEL2Ax = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,-0.707110,-0.473760);
+    Eigen::VectorXd VEL2Ay = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,0.707110,0.473760); // 1 to 0.67
+    Eigen::VectorXd VEL2AL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep+1,0.707110,0.670000);
 
     // Parameter set u2B:
-    Eigen::VectorXd VEL2Bx = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,-0.47376,-1);
-    Eigen::VectorXd VEL2By = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,0.47376,1);
-    Eigen::VectorXd VEL2BL = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,0.67,1);     // 0.67 to 1
+    Eigen::VectorXd VEL2Bx = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,-0.47376,-0.70711);
+    Eigen::VectorXd VEL2By = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,0.47376,0.70711);
+    Eigen::VectorXd VEL2BL = Eigen::VectorXd::LinSpaced(4.0/example.timeStep,0.67,0.70711);     // 0.67 to 1
 
     // Parameter set u2C:
-    Eigen::VectorXd VEL2Cx = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,-1,-0.35355);
-    Eigen::VectorXd VEL2Cy = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,1,0.35355);
-    Eigen::VectorXd VEL2CL = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,1,0.5);   // 1 to 0.5
+    Eigen::VectorXd VEL2Cx = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,-0.707110,-0.353550);
+    Eigen::VectorXd VEL2Cy = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,0.707110,0.353550);
+    Eigen::VectorXd VEL2CL = Eigen::VectorXd::LinSpaced(5.0/example.timeStep,0.707110,0.50);   // 1 to 0.5
 
     // Parameter set u2D:
     Eigen::VectorXd VEL2Dx = Eigen::VectorXd::LinSpaced(2.0/example.timeStep,-0.35355,-0.42426);
@@ -665,8 +665,8 @@ else
     Eigen::VectorXd VEL2FL = Eigen::VectorXd::LinSpaced(3.0/example.timeStep,0.6,0.72); // 0.6 to 0.6
 
     // Parameter set u1A:
-    Eigen::VectorXd VEL1Ax = Eigen::VectorXd::LinSpaced(2.0/example.timeStep+1,-1,-0.67175);
-    Eigen::VectorXd VEL1AL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep+1,1,0.67175);
+    Eigen::VectorXd VEL1Ax = Eigen::VectorXd::LinSpaced(2.0/example.timeStep+1,-0.707110,-0.671750);
+    Eigen::VectorXd VEL1AL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep+1,0.707110,0.671750);
 //    Eigen::VectorXd VEL1AL = Eigen::VectorXd::LinSpaced(2.0/example.timeStep+1,1,0.95); // 1 to 0.95
 
     // Parameter set u1B:
@@ -712,40 +712,40 @@ vel_now.resize(example.inletIndex.rows(), 36001);
         
 
         // section A
-    	vel_now.row(0).head(VEL1Ax.size()) = VEL1Ax.col(0);  
+    	vel_now.row(0).head(VEL1Ax.size()) = VEL1AL.col(0);  
     	vel_now.row(1).head(VEL1Ax.size()) = VEL1Ax.col(0);  
-    	vel_now.row(2).head(VEL2Ax.size()) = VEL2Ax.col(0); 
+    	vel_now.row(2).head(VEL2Ax.size()) = VEL2Ay.col(0); 
     	vel_now.row(3).head(VEL2Ay.size()) = VEL2Ay.col(0);  
         // section B
-        vel_now.row(0).segment(VEL1Ax.size(),VEL1Bx.size()) = VEL1Bx.col(0);  
+        vel_now.row(0).segment(VEL1Ax.size(),VEL1Bx.size()) = VEL1BL.col(0);  
         vel_now.row(1).segment(VEL1Ax.size(),VEL1Bx.size()) = VEL1Bx.col(0);  
-        vel_now.row(2).segment(VEL2Ax.size(),VEL2Bx.size()) = VEL2Bx.col(0); 
+        vel_now.row(2).segment(VEL2Ax.size(),VEL2Bx.size()) = VEL2By.col(0); 
         vel_now.row(3).segment(VEL2Ay.size(),VEL2By.size()) = VEL2By.col(0);  
         // section C
-        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size(),VEL1Cx.size()) = VEL1Cx.col(0);  
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size(),VEL1Cx.size()) = VEL1CL.col(0);  
         vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size(),VEL1Cx.size()) = VEL1Cx.col(0);  
-        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size(),VEL2Cx.size()) = VEL2Cx.col(0); 
+        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size(),VEL2Cx.size()) = VEL2Cy.col(0); 
         vel_now.row(3).segment(VEL2Ay.size()+VEL2By.size(),VEL2Cy.size()) = VEL2Cy.col(0);  
         // section D
-        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size(),VEL1Dx.size()) = VEL1Dx.col(0);  
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size(),VEL1Dx.size()) = VEL1DL.col(0);  
         vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size(),VEL1Dx.size()) = VEL1Dx.col(0);  
-        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size()+VEL2Cx.size(),VEL2Dx.size()) = VEL2Dx.col(0); 
+        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size()+VEL2Cx.size(),VEL2Dx.size()) = VEL2Dy.col(0); 
         vel_now.row(3).segment(VEL2Ay.size()+VEL2By.size()+VEL2Cy.size(),VEL2Dy.size()) = VEL2Dy.col(0);  
    	// section E
-        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size(),VEL1Ex.size()) = VEL1Ex.col(0);  
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size(),VEL1Ex.size()) = VEL1EL.col(0);  
         vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size(),VEL1Ex.size()) = VEL1Ex.col(0);  
-        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size()+VEL2Cx.size()+VEL2Dx.size(),VEL2Ex.size()) = VEL2Ex.col(0); 
+        vel_now.row(2).segment(VEL2Ax.size()+VEL2Bx.size()+VEL2Cx.size()+VEL2Dx.size(),VEL2Ex.size()) = VEL2Ey.col(0); 
         vel_now.row(3).segment(VEL2Ax.size()+VEL2Bx.size()+VEL2Cx.size()+VEL2Dx.size(),VEL2Ey.size()) = VEL2Ey.col(0);  
 	// section F
-        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size(),VEL1Fx.size()) = VEL1Fx.col(0);  
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size(),VEL1Fx.size()) = VEL1FL.col(0);  
         vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size(),VEL1Fx.size()) = VEL1Fx.col(0);
-        vel_now.row(2).tail(VEL2Fx.size()) = VEL2Fx.col(0); 
+        vel_now.row(2).tail(VEL2Fx.size()) = VEL2Fy.col(0); 
         vel_now.row(3).tail(VEL2Fy.size()) = VEL2Fy.col(0);
 	// section G
-        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size()+VEL1Fx.size(),VEL1Gx.size()) = VEL1Gx.col(0);  
+        vel_now.row(0).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size()+VEL1Fx.size(),VEL1Gx.size()) = VEL1GL.col(0);  
         vel_now.row(1).segment(VEL1Ax.size()+VEL1Bx.size()+VEL1Cx.size()+VEL1Dx.size()+VEL1Ex.size()+VEL1Fx.size(),VEL1Gx.size()) = VEL1Gx.col(0);  
         // section H
-        vel_now.row(0).tail(VEL1Hx.size()) = VEL1Hx.col(0);  
+        vel_now.row(0).tail(VEL1Hx.size()) = VEL1HL.col(0);  
         vel_now.row(1).tail(VEL1Hx.size()) = VEL1Hx.col(0); 
     }
     else if (example.bcMethod == "lift" && example.timedepbcMethod == "yes")
@@ -775,15 +775,27 @@ vel_now.resize(example.inletIndex.rows(), 36001);
         vel_now.row(0).tail(VEL1Hx.size()) = VEL1HL.col(0);
     } 
 
+    reduced.maxIter = 100;
+    reduced.tolerance = 1e-5;
+    reduced.timeSteps = 2;
+
+
+    auto start_penalty = std::chrono::high_resolution_clock::now();
     if (example.bcMethod == "penalty")
     {
             // set initial quess for penalty factors
 	    Eigen::MatrixXd tauInit(4,1);
-            tauInit << 1e-2, 1e-2, 1e-2, 1e-2;
+            tauInit <<  1e-6,1e-6,1e-6,1e-6; 
             reduced.tauU = reduced.penalty_PPE_time(vel_now, tauInit);
             //reduced.tauU = tauInit;
+	
     }
-   
+    auto finish_penalty = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_penalty = finish_penalty - start_penalty;
+    std::cout << "elapsed_penalty: " << elapsed_penalty.count() << " seconds.";
+    std::cout << std::endl;  
+//exit(0); 
+
     // Set the online temperature BC and solve reduced model
     for (label k = 0; k < (1); k++)
     {
@@ -813,13 +825,13 @@ std::cout << "HERE" << std::endl;
     HFonline2.mu_range(0, 1) = 0.01;
     HFonline2.genEquiPar();
     HFonline2.inletIndex.resize(4, 2); // rows: total number of patches 
-    HFonline2.inletIndex(0, 0) = 2;  // Patch inlet 1
+    HFonline2.inletIndex(0, 0) = 1;  // Patch inlet 1
     HFonline2.inletIndex(0, 1) = 0;  // Patch inlet 1: x-direction
-    HFonline2.inletIndex(1, 0) = 2;  // Patch inlet 1: y-direction
+    HFonline2.inletIndex(1, 0) = 1;  // Patch inlet 1: y-direction
     HFonline2.inletIndex(1, 1) = 1;  // Patch inlet 2
-    HFonline2.inletIndex(2, 0) = 3;  // Patch inlet 2: x-direction
+    HFonline2.inletIndex(2, 0) = 2;  // Patch inlet 2: x-direction
     HFonline2.inletIndex(2, 1) = 0;  // Patch inlet 2: y-direction
-    HFonline2.inletIndex(3, 0) = 3;  // Patch inlet 2: x-direction
+    HFonline2.inletIndex(3, 0) = 2;  // Patch inlet 2: x-direction
     HFonline2.inletIndex(3, 1) = 1;  // Patch inlet 2: y-direction
     HFonline2.startTime = 0.0;
     HFonline2.finalTime = 18;

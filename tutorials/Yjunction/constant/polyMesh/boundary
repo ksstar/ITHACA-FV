@@ -17,35 +17,35 @@ FoamFile
 
 5
 (
-    outlet
+    walls
     {
         type            patch;
-        nFaces          30;
+        nFaces          532;
         startFace       21958;
-    }
-    frontAndBack
-    {
-        type            empty;
-        nFaces          26092;
-        startFace       21988;
     }
     inlet1
     {
         type            patch;
         nFaces          30;
-        startFace       48080;
+        startFace       22490;
     }
     inlet2
     {
         type            patch;
         nFaces          30;
-        startFace       48110;
+        startFace       22520;
     }
-    walls
+    outlet
     {
-        type            wall;
-        nFaces          532;
-        startFace       48140;
+        type            patch;
+        nFaces          30;
+        startFace       22550;
+    }
+    frontAndBack
+    {
+        type            empty;
+        nFaces          26092;
+        startFace       22580;
     }
 )
 

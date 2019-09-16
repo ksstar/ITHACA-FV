@@ -412,6 +412,17 @@ class ITHACAstream
         ///
         static void printProgress(double percentage);
 
+    	//--------------------------------------------------------------------------
+	/// Function to export volScalarFields
+	///
+	/// @param[in] field The field you want to export.
+	/// @param[in] folder The folder where you want to save the field.
+	/// @param[in] fieldname The name you want to give to the file.
+	///
+	static void exportFields(PtrList<surfaceScalarField>& field, word folder,
+		word fieldname);
+
+
 };
 
 namespace Foam
@@ -760,6 +771,8 @@ void ITHACAstream::ReadDenseMatrixList(List<MatrixType>& m, word folder,
         m.append(A);
     }
 }
+
+
 
 
 

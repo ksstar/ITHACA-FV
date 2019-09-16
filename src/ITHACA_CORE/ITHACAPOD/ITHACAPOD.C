@@ -1244,6 +1244,7 @@ void ITHACAPOD::getModes(PtrList<volVectorField>& snapshots,
         {
             modesEigBC[i] = (SnapMatrixBC[i] * eigenVectoreig) *
                             eigenValueseigLam.asDiagonal();
+            std::cout << "SnapMatrixBC[i]: " << SnapMatrixBC[i] << std::endl;
         }
 
         for (label i = 0; i < modes.size(); i++)

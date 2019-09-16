@@ -140,6 +140,10 @@ class reducedSteadyNS: public reducedProblem
         /// Pointer to the FOM problem
         steadyNS* problem;
 
+
+        /// Online inlet velocity vector
+	Eigen::MatrixXd vel_now;
+
         /// Number of velocity modes
         int Nphi_u;
 

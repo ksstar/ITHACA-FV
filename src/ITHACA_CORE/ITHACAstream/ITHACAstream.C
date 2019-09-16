@@ -658,3 +658,15 @@ void ITHACAstream::printProgress(double percentage)
         fflush (stdout);
     }
 }
+
+void ITHACAstream::exportFields(PtrList<surfaceScalarField>& field, word folder,
+word fieldname)
+{
+    ITHACAutilities::createSymLink(folder);
+
+    for (label j = 0; j < field.size() ; j++)
+    {
+  	exportSolution(field[j], name(j + 1), folder, fieldname);
+    }
+}
+
