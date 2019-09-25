@@ -387,6 +387,7 @@ Eigen::MatrixXd reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd& vel, label N
     }
 
      // Count number of time steps
+    //int counter = 0;
     int counter = 0;
     time = tstart;
 
@@ -628,8 +629,6 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_sup(Eigen::MatrixXd& vel_now, Eigen::
 }
 
 
-
-
 Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::MatrixXd& tauInit)
 {
     // initialize new value on boundaries
@@ -638,7 +637,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::
     Eigen::MatrixXd valBC0 = Eigen::MatrixXd::Zero(N_BC,1);
 
     tauIter = tauInit;         
-    int Iter = 0;
+    int Iter = 1;
     Eigen::VectorXd diffvel = vel_now.col(0) - valBC.col(0);
 
     while (diffvel.maxCoeff()> tolerance && Iter < maxIter)
@@ -653,20 +652,17 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::
 
             for (label j = 0; j < N_BC; j++)
             {
-
-		tauIter(j,0) = 0.5*tauIter(j,0) + std::sqrt(abs(tauIter(j,0)*
-		tauIter(j,0) + 4*abs(valBC(j,0) - vel_now(j,0))));
+		//tauIter(j,0) = -0.5*tauIter(j,0) + 0.5*std::sqrt(abs(tauIter(j,0)*tauIter(j,0) +
+				//4*abs(valBC(j,0) - vel_now(j,0))));
+		//tauIter(j,0) = tauIter(j,0)*Iter;
+		tauIter(j,0) = tauIter(j,0)*diffvel(j)/tolerance;
             }
         }
 
         std::cout << "Solving for penalty factor(s): " << tauIter << std::endl;
 
-
     //  Set the old boundary value to the current value
         valBC0  = valBC;
-
-    // Count the number of iterations
-        Iter ++;
 
         y.resize(Nphi_u + Nphi_p, 1);
         y.setZero();
@@ -739,6 +735,22 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::
             
         } 
 
+           std::cout << "valBC: "<< valBC << std::endl;
+
+	    for (label j = 0; j < N_BC; j++)
+            {
+		  diffvel(j) = abs(abs(vel_now(j,0)) - abs(valBC(j,0)));
+            }
+
+
+	std::cout << "max tolerance: " << diffvel << std::endl;
+        std::cout << "Iterations: " << Iter << std::endl;
+
+
+        // Count the number of iterations
+        Iter ++;
+
+
         // Check whether solution has been converged
         if (res.norm() > 1e-5)
         {
@@ -746,18 +758,11 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now, Eigen::
             exit(0);
         }
 
-       for (label j = 0; j < N_BC; j++)
-       {
-	    diffvel(j) = abs(vel_now(j,0) - valBC(j,0));
-       }
-
-    std::cout << "max tolerance: " << diffvel << std::endl;    
-
-	std::cout << "number of iterations: " << Iter << std::endl;
-
         
     }
 
+std::cout << "Final penalty factor(s): " << tauIter << std::endl;
+std::cout << "Iterations: " << Iter-1 << std::endl;
 
     return tauIter;
 }
@@ -776,11 +781,10 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE_time(Eigen::MatrixXd& vel_now, Ei
     tauIter = tauInit;         
     int Iter = 0;
 
-    Eigen::VectorXd diffvel = vel_now.col(timeSteps-1) - valBC.col(timeSteps-1);
+    Eigen::VectorXd diffvel =  (vel_now.col(timeSteps-1) - valBC.col(timeSteps-1));
+    diffvel = diffvel.cwiseAbs();
  std::cout << "diffvel =  " << diffvel << std::endl;
-std::cout << "diffvel.norm() =  " << diffvel.norm() << std::endl;
     while (diffvel.maxCoeff()> tolerance && Iter < maxIter)
-// while (abs((vel_now.col(timeSteps-1) - valBC.col(timeSteps-1))).maxCoeff() > tolerance && Iter < maxIter)
     {
         if ((valBC.col(timeSteps-1) - valBC0.col(timeSteps-1)).sum() == 0)
         {
@@ -792,8 +796,7 @@ std::cout << "diffvel.norm() =  " << diffvel.norm() << std::endl;
             for (label j = 0; j < N_BC; j++)
             {
 
-		tauIter(j,0) = 0.5*tauIter(j,0) + std::sqrt(abs(tauIter(j,0)*tauIter(j,0) +
-				4*abs(valBC(j,timeSteps-1) - vel_now(j,timeSteps-1))));
+		tauIter(j,0) = tauIter(j,0)*diffvel(j)/tolerance;
 
 	    }
 
@@ -804,9 +807,6 @@ std::cout << "diffvel.norm() =  " << diffvel.norm() << std::endl;
 
     //  Set the old boundary value to the current value
         valBC0  = valBC;
-
-    // Count the number of iterations
-        Iter ++;
 
         y.resize(Nphi_u + Nphi_p, 1);
         y.setZero();
@@ -878,8 +878,15 @@ std::cout << "diffvel.norm() =  " << diffvel.norm() << std::endl;
                  valBC(k,i) = U_rec.boundaryFieldRef()[BCind][0].component(BCcomp);
 
             }
-           
+
         } 
+
+    	for (label j = 0; j < N_BC; j++)
+    	{
+		diffvel(j) = abs(abs(vel_now(j,timeSteps-1)) - abs(valBC(j,timeSteps-1)));
+    	}
+
+	std::cout << "max error: " << diffvel.maxCoeff() << std::endl;
 
 
         // Check whether solution has been converged
@@ -889,16 +896,13 @@ std::cout << "diffvel.norm() =  " << diffvel.norm() << std::endl;
             exit(0);
         }
 
-    	for (label j = 0; j < N_BC; j++)
-    	{
-    		//tauIter(j,0) = abs(tauIter(j,0));
-		diffvel(j) = abs(abs(vel_now(j,timeSteps-1)) - abs(valBC(j,timeSteps-1)));
-    	}
-
-	std::cout << "max tolerance: " << diffvel << std::endl;
-        std::cout << "diffVel.norm: " << diffvel.norm() << std::endl;
+        // Count the number of iterations
+        Iter ++;
         
     }
+
+std::cout << "Final penalty factor(s): " << tauIter << std::endl;
+std::cout << "Iterations: " << Iter-1 << std::endl;
 
     return tauIter;
 }

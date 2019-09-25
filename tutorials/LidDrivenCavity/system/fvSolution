@@ -39,7 +39,7 @@ solvers
     {
         solver          smoothSolver;
         smoother        symGaussSeidel;
-        tolerance       1e-06;
+        tolerance       1e-05;
         relTol          0;
     }
 
@@ -72,7 +72,7 @@ solvers
 
 PIMPLE
 {
-    nNonOrthogonalCorrectors 2;
+    nNonOrthogonalCorrectors 0;
     nCorrectors 2;
     pRefCell        0;
     pRefValue       0;
@@ -88,7 +88,7 @@ SIMPLE
 PISO
 {
     nCorrectors     2;
-    nNonOrthogonalCorrectors 2;
+    nNonOrthogonalCorrectors 0;
     pRefCell        0;
     pRefValue 0;
 }

@@ -27,7 +27,7 @@ NmodesPproj 10;
 NmodesSUPout 20;
 NmodesSUPproj 10;
 
-bcMethod penalty;
+bcMethod lift;
 aveMethod none;
 timedepbcMethod yes;
 

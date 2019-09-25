@@ -1165,6 +1165,7 @@ List< Eigen::MatrixXd > steadyNS::bcVelocityVec(label NUmodes,
  
     label BCsize = NUmodes + NSUPmodes + Umean.size();
     List < Eigen::MatrixXd > bcVelVec(inletIndex.rows());
+fvMesh& mesh = _mesh();
 
     for (label j = 0; j < inletIndex.rows(); j++)
     {
@@ -1175,12 +1176,14 @@ List< Eigen::MatrixXd > steadyNS::bcVelocityVec(label NUmodes,
     {
         label BCind = inletIndex(k, 0);
         label BCcomp = inletIndex(k, 1);
+	scalar area = gSum(mesh.magSf().boundaryField()[BCind].component(BCcomp));
 
         for (label i = 0; i < BCsize; i++)
         {
+	
 
-	   bcVelVec[k](i, 0) = gSum(L_U_SUPmodes[i].boundaryField()[BCind]).component(
-                                    BCcomp);
+	   bcVelVec[k](i, 0) = gSum(L_U_SUPmodes[i].boundaryField()[BCind].component(
+                                    BCcomp));
 
         }
     }
@@ -1197,6 +1200,7 @@ List< Eigen::MatrixXd > steadyNS::bcVelocityMat(label NUmodes,
     label BCsize = NUmodes + NSUPmodes + Umean.size();
     label BCUsize = inletIndex.rows();
     List < Eigen::MatrixXd > bcVelMat(BCUsize);
+   fvMesh& mesh = _mesh();
 
     for (label j = 0; j < inletIndex.rows(); j++)
     {
@@ -1210,10 +1214,12 @@ List< Eigen::MatrixXd > steadyNS::bcVelocityMat(label NUmodes,
 
         for (label i = 0; i < BCsize; i++)
         {
+
+	     scalar area = gSum(mesh.magSf().boundaryField()[BCind].component(BCcomp));
             for (label j = 0; j < BCsize; j++)
             {
-			bcVelMat[k](i, j) = gSum(L_U_SUPmodes[i].boundaryField()[BCind].component(BCcomp) *
-                                         L_U_SUPmodes[j].boundaryField()[BCind].component(BCcomp));
+			bcVelMat[k](i, j) = gSum((L_U_SUPmodes[i].boundaryField()[BCind].component(BCcomp)) *
+                                         (L_U_SUPmodes[j].boundaryField()[BCind].component(BCcomp)));
             }
         }
     }

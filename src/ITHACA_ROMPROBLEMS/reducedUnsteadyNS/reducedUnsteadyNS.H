@@ -165,6 +165,9 @@ class reducedUnsteadyNS: public reducedSteadyNS
 	/// Penalty Factor temperature
         Eigen::MatrixXd tauIter;
 
+	/// Penalty Factor temperature
+        Eigen::MatrixXd tauInit;
+
         /// Maximum number of iterations to be done for the computation of the penalty factor
         scalar maxIter;
 

@@ -230,9 +230,9 @@ int main(int argc, char* argv[])
 	{
             // Perform a POD decomposition for velocity and pressure
             ITHACAPOD::getModes(example.Ufield, example.Umodes, example.podex, 0, 0,
-                        NmodesOut);
+                        NmodesUout);
             ITHACAPOD::getModes(example.Pfield, example.Pmodes, example.podex, 0, 0,
-                        NmodesOut);
+                        NmodesPout);
 	}
     }
 
@@ -240,6 +240,8 @@ int main(int argc, char* argv[])
     std::chrono::duration<double> elapsed_POD = finish_POD - start_POD;
     std::cout << "elapsed_POD: " << elapsed_POD.count() << " seconds.";
     std::cout << std::endl;
+
+exit(0);
 
  /*  // Solve the supremizer problem
     auto start_sup = std::chrono::high_resolution_clock::now();
@@ -370,22 +372,28 @@ int main(int argc, char* argv[])
     reduced.finalTime = 10;
     reduced.dt = 0.0005;
     reduced.maxIter = 100;
-    reduced.tolerance = 1e-6;
-    reduced.timeSteps = 10;
+    reduced.tolerance = 1e-5;
+    reduced.timeSteps = 5;
 
     Eigen::MatrixXd vel_now(1, 1);
     vel_now(0, 0) = 1;
- //vel_now(0, 0) = par_on(0,1);
 
+    auto start_penalty = std::chrono::high_resolution_clock::now();
     if (example.bcMethod == "penalty")
     {
             // set initial quess for penalty factors
-	    Eigen::MatrixXd tauInit(1,1);
-            tauInit << 1e-6;
-            reduced.tauU = reduced.penalty_PPE(vel_now, tauInit);
-            //reduced.tauU = tauInit;
+	    reduced.tauInit = Eigen::MatrixXd::Zero(1,1);
+            reduced.tauInit << 1e-6;
+            reduced.tauU = reduced.penalty_PPE(vel_now, reduced.tauInit);
+            //reduced.tauU = reduced.tauInit;
     }
 
+    auto finish_penalty = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_penalty = finish_penalty - start_penalty;
+    std::cout << "elapsed_penalty: " << elapsed_penalty.count() << " seconds.";
+    std::cout << std::endl;  
+
+//exit(0);
     // Set the online temperature BC and solve reduced model
     for (label k = 0; k < (1); k++)
     {
@@ -397,6 +405,7 @@ int main(int argc, char* argv[])
         std::cout << "elapsed_ROM: " << elapsed_ROM.count() << " seconds.";
         std::cout << std::endl;
 
+//exit(0);
         auto start_ROM_REC = std::chrono::high_resolution_clock::now();
         reduced.reconstruct_sup("./ITHACAoutput/ReconstructionPPE", 20);
         auto finish_ROM_REC = std::chrono::high_resolution_clock::now();
@@ -405,84 +414,24 @@ int main(int argc, char* argv[])
         std::cout << std::endl;
     }
 
-/*   
-    // Performing full order simulation for second parameter set 
-    tutorialLID HFonline2(argc, argv);
-    HFonline2.Pnumber = 1;
-    HFonline2.Tnumber = 1;
-    HFonline2.setParameters();
-    HFonline2.mu_range(0, 0) = 0.0001;
-    HFonline2.mu_range(0, 1) = 0.0001;
-    HFonline2.genEquiPar();
-    HFonline2.inletIndex.resize(1, 2);
-    HFonline2.inletIndex(0, 0) = 0;
-    HFonline2.inletIndex(0, 1) = 0;
-    HFonline2.startTime = 0.0;
-    HFonline2.finalTime = 10;
-    HFonline2.timeStep = 0.0005;
-    HFonline2.writeEvery = 0.01;
-    // Reconstruct the online solution
-    HFonline2.onlineSolveFull(par_on, 1,
-                              "./ITHACAoutput/HFonline2");
-
-
-
-    // Performing full order simulation for second parameter set 
-    tutorialLID HFonline3(argc, argv);
-    HFonline3.Pnumber = 1;
-    HFonline3.Tnumber = 1;
-    HFonline3.setParameters();
-    HFonline3.mu_range(0, 0) = 0.0001;
-    HFonline3.mu_range(0, 1) = 0.0001;
-    HFonline3.genEquiPar();
-    HFonline3.inletIndex.resize(1, 2);
-    HFonline3.inletIndex(0, 0) = 0;
-    HFonline3.inletIndex(0, 1) = 0;
-    HFonline3.startTime = 0.0;
-    HFonline3.finalTime = 10;
-    HFonline3.timeStep = 0.0005;
-    HFonline3.writeEvery = 0.01;
-    // Reconstruct the online solution
-    HFonline3.onlineSolveFull(par_on, 2,
-                              "./ITHACAoutput/HFonline3"); */
-
-    // Reading high-fidelity solutions for the parameter set
-    // for which the offline solve has been performed (skipping IC)
-    example.onlineSolveRead("./ITHACAoutput/Offline/");
-    // Reading in the high-fidelity solutions for the second parameter set
-    //example.onlineSolveRead("./ITHACAoutput/HFonline2/");
-    // Reading in the high-fidelity solutions for the second parameter set
-   // example.onlineSolveRead("./ITHACAoutput/HFonline3/");
-
     // Calculate error between online- and corresponding full order solution
     Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields_min_IC(
-                                         example.Ufield_on, reduced.UREC);
+                                         example.Ufield, reduced.UREC);
     Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields_min_IC(
-                                         example.Pfield_on, reduced.PREC);
+                                         example.Pfield, reduced.PREC);
     //Export the matrix containing the error
     ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
                                "./ITHACAoutput/l2error");
     ITHACAstream::exportMatrix(L2errorMatrixP, "L2errorMatrixP", "eigen",
                                "./ITHACAoutput/l2error");
 
-
-
-
 //Post-Process
-    Eigen::MatrixXd PostP(example.Ufield_on.size(), 2); 
+    Eigen::MatrixXd PostP(example.Ufield.size(), 2); 
 
-    for (label i = 0; i < example.Ufield_on.size(); i++)
+    for (label i = 0; i < example.Ufield.size(); i++)
     {
-	PostP(i, 0) =  0.5*fvc::domainIntegrate(example.Ufield_on[i] & example.Ufield_on[i]).value();
-	
-	// min/max Outlet (patch 1) velocity
-	//PostP(i, 1) = max(example.Ufield_on[i].boundaryField()[1].component(0) );
-        //PostP(i, 2) = min(example.Ufield_on[i].boundaryField()[1].component(0) );
-
-	PostP(i, 1) = 0.5*fvc::domainIntegrate(reduced.UREC[i] & reduced.UREC[i]).value();
-	//PostP(i, 4) = max(reduced.UREC[i].boundaryField()[1].component(0) );
-        //PostP(i, 5) = min(reduced.UREC[i].boundaryField()[1].component(0) );
-	
+	PostP(i, 0) = 0.5*fvc::domainIntegrate(example.Ufield[i] & example.Ufield[i]).value();
+	PostP(i, 1) = 0.5*fvc::domainIntegrate(reduced.UREC[i] & reduced.UREC[i]).value();	
     }
 
     ITHACAstream::exportMatrix(PostP, "PostP", "eigen", "./ITHACAoutput/PostProcess");
