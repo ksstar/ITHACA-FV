@@ -254,6 +254,10 @@ class ITHACAPOD
                              PtrList<volScalarField>& Volumes, bool podex, bool supex = 0, bool sup = 0,
                              int nmodes = 0);
 
+	template<class Field_type>
+	static void getModesVelBasis(PtrList<Field_type>& snapshotsF, PtrList<Field_type>& modes, PtrList<volVectorField>& snapshots, 
+                             bool podex, bool supex = 0, bool sup = 0, int nmodes = 0);
+
 };
 
 template<>
@@ -276,6 +280,7 @@ void ITHACAPOD::exportBases(PtrList<volVectorField>& snapshots,
 template<>
 void ITHACAPOD::exportBases(PtrList<volScalarField>& snapshots,
                             PtrList<volScalarField>& bases, bool sup);
+
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -76,8 +76,8 @@ unsteadyNS::unsteadyNS(int argc, char* argv[])
 #include "createFvOptions.H"
     para = new ITHACAparameters;
     bcMethod = ITHACAdict->lookupOrDefault<word>("bcMethod", "lift");
-    M_Assert(bcMethod == "lift" || bcMethod == "penalty",
-             "The BC method must be set to lift or penalty in ITHACAdict");
+    M_Assert(bcMethod == "lift" || bcMethod == "penalty" || bcMethod == "penaltyP",
+             "The BC method must be set to lift or penalty(P) in ITHACAdict");
     timedepbcMethod = ITHACAdict->lookupOrDefault<word>("timedepbcMethod", "no");
     M_Assert(timedepbcMethod == "yes" || timedepbcMethod == "no",
              "The BC method can be set to yes or no");

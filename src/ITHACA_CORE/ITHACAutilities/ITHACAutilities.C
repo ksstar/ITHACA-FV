@@ -331,7 +331,7 @@ double ITHACAutilities::error_fields(TypeField& field1,
 {
     double err;
 
-    if (L2norm(field1) <= 1e-6)
+    if (L2norm(field1) <= 1e-10)
     {
         err = 0;
     }

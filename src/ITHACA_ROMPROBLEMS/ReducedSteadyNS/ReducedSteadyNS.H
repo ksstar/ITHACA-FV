@@ -161,8 +161,11 @@ class reducedSteadyNS: public reducedProblem
         /// Counter to count the online solutions
         int count_online_solve = 1;
 
-        /// Penalty Factor
+        /// Penalty Factor - Velocity
         Eigen::MatrixXd tauU;
+
+	/// Penalty Factor - Pressure
+        Eigen::MatrixXd taup;
 
         // Functions
 

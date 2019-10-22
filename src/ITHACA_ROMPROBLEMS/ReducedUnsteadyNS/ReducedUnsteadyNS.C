@@ -100,8 +100,10 @@ int newton_unsteadyNS_sup::operator()(const Eigen::VectorXd& x,
     Eigen::VectorXd M5 = problem->M_matrix * a_dot;
     // Pressure Term
     Eigen::VectorXd M3 = problem->P_matrix * a_tmp;
-    // Penalty term
+    // Penalty term - Velocity
     Eigen::MatrixXd penaltyU = Eigen::MatrixXd::Zero(Nphi_u, N_BC);
+    // Penalty term - Pressure
+    Eigen::MatrixXd penaltyP = Eigen::MatrixXd::Zero(Nphi_p, N_BC);
 
     // Term for penalty method
     if (problem->bcMethod == "penalty")
@@ -113,6 +115,16 @@ int newton_unsteadyNS_sup::operator()(const Eigen::VectorXd& x,
                                          a_tmp);
         }
     }
+
+    if (problem->bcMethod == "penaltyP")
+    	{
+            for (label l = 0; l < N_BC; l++)
+            {
+	    	penaltyP.col(l) = taup(l, 0) * (BC(l) * problem->bcPresVec[l] - 
+			       (problem->bcPresMat2[l] *  a_tmp.cwiseAbs2())
+				- problem->bcPresMat[l] * b_tmp);
+       	    }
+    	}
 
     for (label i = 0; i < Nphi_u; i++)
     {
@@ -133,6 +145,14 @@ int newton_unsteadyNS_sup::operator()(const Eigen::VectorXd& x,
     {
         label k = j + Nphi_u;
         fvec(k) = M3(j);
+
+	if (problem->bcMethod == "penaltyP")
+        {
+            for (label l = 0; l < N_BC; l++)
+            {
+                fvec(k) += penaltyP(j, l);
+            }
+        }
     }
 
     if (problem->bcMethod == "lift")
@@ -170,6 +190,7 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     // Convective terms
     Eigen::MatrixXd cc(1, 1);
     Eigen::MatrixXd gg(1, 1);
+    Eigen::MatrixXd bb(1, 1);
     // Mom Term
     Eigen::VectorXd M1 = problem->B_matrix * a_tmp * nu;
     // Gradient of pressure
@@ -178,12 +199,20 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
     Eigen::VectorXd M5 = problem->M_matrix * a_dot;
     // Pressure Term
     Eigen::VectorXd M3 = problem->D_matrix * b_tmp;
+    // Pressure Term
+  //  Eigen::VectorXd M32 = 0.5* problem->D2_matrix * a_tmp.cwiseAbs2();
     // BC PPE
     Eigen::VectorXd M7 = problem->BC3_matrix * a_tmp * nu;
     // BC PPE time-dependents BCs
+
     Eigen::VectorXd M8 = problem->BC4_matrix * a_dot;
-    // Penalty term
+  //  Eigen::VectorXd M9 = 0.5*problem->BC5_matrix * a_tmp.cwiseAbs2() ;
+  //  Eigen::VectorXd M10 = problem->BC6_matrix * b_tmp;
+
+    // Penalty term - Velocity
     Eigen::MatrixXd penaltyU = Eigen::MatrixXd::Zero(Nphi_u, N_BC);
+    // Penalty term - Pressure
+    Eigen::MatrixXd penaltyP = Eigen::MatrixXd::Zero(Nphi_p, N_BC);
 
     // Term for penalty method
     if (problem->bcMethod == "penalty")
@@ -193,6 +222,23 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
             penaltyU.col(l) = tauU(l,
                                    0) * (BC(l) * problem->bcVelVec[l] - problem->bcVelMat[l] *
                                          a_tmp);
+        }
+    }
+
+    if (problem->bcMethod == "penaltyP")
+    {
+        for (label l = 0; l < N_BC; l++)
+        {
+	    //penaltyP.col(l) = taup(l, 0) * (BC(l) * problem->bcPresVec[l] - 
+		//	       (problem->bcPresMat2[l] *  a_tmp.cwiseAbs2())
+		//		- problem->bcPresMat[l] * b_tmp);
+
+	   penaltyP.col(l) = taup(l, 0) * (BC(l) * problem->bcPresVec[l]
+				- problem->bcPresMat[l] * b_tmp);
+
+	   // penaltyP.col(l) = taup(l, 0) * (BC(l) * problem->bcPresVec[l]  		
+		//		- problem->bcPresMat[l] * b_tmp);
+
         }
     }
 
@@ -216,11 +262,24 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
         label k = j + Nphi_u;
         gg = a_tmp.transpose() * Eigen::SliceFromTensor(problem->gTensor, 0,
                 j) * a_tmp;
-        fvec(k) = M3(j, 0) + gg(0, 0) - M7(j, 0);
+	//bb = a_tmp.transpose() * Eigen::SliceFromTensor(problem->bc2Tensor, 0,
+          //      j) * a_tmp;
+
+	fvec(k) = M3(j, 0) + gg(0, 0) - M7(j, 0) ;
+
+	//fvec(k) = M3(j, 0) + gg(0, 0) - M32(j, 0) - M7(j, 0) -bb(0,0)-M8(j, 0) - M10(j,0) + M9(j,0);
 
         if (problem->timedepbcMethod == "yes")
         {
-            fvec(k) += M8(j, 0);
+            fvec(k) += (M8(j, 0));
+        }
+
+        if (problem->bcMethod == "penaltyP")
+        {
+            for (label l = 0; l < N_BC; l++)
+            {
+                fvec(k) += penaltyP(j, l);
+            }
         }
     }
 
@@ -266,7 +325,7 @@ void reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd vel,
     {
         vel_now = setOnlineVelocity(vel);
     }
-    else if (problem->bcMethod == "penalty")
+    else if (problem->bcMethod == "penalty"||problem->bcMethod == "penaltyP")
     {
         vel_now = vel;
     }
@@ -296,6 +355,7 @@ void reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd vel,
     newton_object_sup.dt = dt;
     newton_object_sup.BC.resize(N_BC);
     newton_object_sup.tauU = tauU;
+    newton_object_sup.taup = taup;
 
     for (label j = 0; j < N_BC; j++)
     {
@@ -407,6 +467,7 @@ void reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd vel,
 void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
                                         label startSnap)
 {
+
     M_Assert(exportEvery >= dt,
              "The time step dt must be smaller than exportEvery.");
     M_Assert(storeEvery >= dt,
@@ -423,11 +484,10 @@ void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
     {
         vel_now = setOnlineVelocity(vel);
     }
-    else if (problem->bcMethod == "penalty")
+    else if (problem->bcMethod == "penalty"||problem->bcMethod == "penaltyP")
     {
         vel_now = vel;
     }
-
     // Create and resize the solution vector
     y.resize(Nphi_u + Nphi_p, 1);
     y.setZero();
@@ -438,7 +498,6 @@ void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
                      Pmodes);
     int nextStore = 0;
     int counter2 = 0;
-
     // Change initial condition for the lifting function
     if (problem->bcMethod == "lift")
     {
@@ -454,6 +513,7 @@ void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
     newton_object_PPE.dt = dt;
     newton_object_PPE.BC.resize(N_BC);
     newton_object_PPE.tauU = tauU;
+    newton_object_PPE.taup = taup;
 
     for (label j = 0; j < N_BC; j++)
     {
@@ -482,7 +542,7 @@ void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
     Color::Modifier red(Color::FG_RED);
     Color::Modifier green(Color::FG_GREEN);
     Color::Modifier def(Color::FG_DEFAULT);
-
+Info << "HERE 7 " << endl;
     // Start the time loop
     while (time < finalTime)
     {
@@ -496,7 +556,7 @@ void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
                 newton_object_PPE.BC(j) = vel_now(j, counter);
             }
         }
-
+Info << "HERE 8 " << endl;
         Eigen::VectorXd res(y);
         res.setZero();
         hnls.solve(y);

@@ -147,6 +147,7 @@ class steadyNS: public reductionProblem
 
         /// Laplacian term PPE
         Eigen::MatrixXd D_matrix;
+	Eigen::MatrixXd D2_matrix;
 
         /// Divergence of momentum PPE
         List <Eigen::MatrixXd> G_matrix;
@@ -168,6 +169,9 @@ class steadyNS: public reductionProblem
 
         /// PPE BC4
         Eigen::MatrixXd BC4_matrix;
+
+	Eigen::MatrixXd BC5_matrix;
+	Eigen::MatrixXd BC6_matrix;
         ///@}
         //
 
@@ -177,11 +181,19 @@ class steadyNS: public reductionProblem
         /// Pressure forces
         Eigen::MatrixXd nMatrix;
 
-        /// Boundary term for penalty method - vector
+        /// Velocity boundary term for penalty method - vector
         List <Eigen::MatrixXd> bcVelVec;
 
-        /// Boundary term for penalty method - matrix
+        /// Velocity boundary term for penalty method - matrix
         List <Eigen::MatrixXd> bcVelMat;
+
+	/// Pressure boundary term for penalty method - vector
+        List <Eigen::MatrixXd> bcPresVec;
+	List <Eigen::MatrixXd> bcPresVec2;
+
+        /// Pressure boundary term for penalty method - matrix
+        List <Eigen::MatrixXd> bcPresMat;
+	List <Eigen::MatrixXd> bcPresMat2;
 
 
         // Other Variables
@@ -375,6 +387,7 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the laplacian of pressure.
         ///
         Eigen::MatrixXd laplacian_pressure(label NPmodes);
+	Eigen::MatrixXd laplacian_pressure2(label NUmodes, label NPmodes);
 
         //--------------------------------------------------------------------------
         /// @brief      Term N° 1 given by the additional boundary condition using a PPE approach
@@ -384,7 +397,7 @@ class steadyNS: public reductionProblem
         ///
         /// @return     reduced matrix in Eigen::MatrixXd format for the BC1 using a PPE approach.
         ///
-        Eigen::MatrixXd pressure_BC1(label NPmodes, label NUmodes);
+        Eigen::MatrixXd pressure_BC1(label NUmodes, label NPmodes);
 
         //--------------------------------------------------------------------------
         /// @brief      Term N° 2 given by the additional boundary condition using a PPE approach
@@ -394,7 +407,7 @@ class steadyNS: public reductionProblem
         ///
         /// @return     reduced matrix in Eigen::MatrixXd format for the BC2 using a PPE approach.
         ///
-        List < Eigen::MatrixXd > pressure_BC2(label NPmodes, label NUmodes);
+        List < Eigen::MatrixXd > pressure_BC2(label NUmodes, label NPmodes);
 
         ///
         /// @brief      Term N° 2 given by the additional boundary condition using a PPE approach
@@ -404,7 +417,7 @@ class steadyNS: public reductionProblem
         ///
         /// @return     reduced tensor in Eigen::MatrixXd format for the BC2 using a PPE approach.
         ///
-        Eigen::Tensor<double, 3 > pressureBC2(label NPmodes, label NUmodes);
+        Eigen::Tensor<double, 3 > pressureBC2(label NUmodes, label NPmodes);
 
         //--------------------------------------------------------------------------
         /// @brief      Term N° 3 given by the additional boundary condition using a PPE approach
@@ -414,7 +427,7 @@ class steadyNS: public reductionProblem
         ///
         /// @return     reduced tensor in Eigen::MatrixXd format for the BC3 using a PPE approach.
         ///
-        Eigen::MatrixXd pressure_BC3(label NPmodes, label NUmodes);
+        Eigen::MatrixXd pressure_BC3(label NUmodes, label NPmodes);
 
         //--------------------------------------------------------------------------
         /// @brief      Term N° 4 given by the additional boundary condition using a PPE approach
@@ -425,10 +438,13 @@ class steadyNS: public reductionProblem
         ///
         /// @return     reduced tensor in Eigen::MatrixXd format for the BC3 using a PPE approach.
         ///
-        Eigen::MatrixXd pressure_BC4(label NPmodes, label NUmodes);
+        Eigen::MatrixXd pressure_BC4(label NUmodes, label NPmodes);
+
+	Eigen::MatrixXd pressure_BC5(label NUmodes, label NPmodes);
+	Eigen::MatrixXd pressure_BC6(label NUmodes, label NPmodes);
 
         //--------------------------------------------------------------------------
-        /// @brief      Boundary integral modes on boundary used by the penaly method
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Velocity
         ///
         /// @param[in]  NUmodes    The number of velocity modes.
         /// @param[in]  NSUPmodes  The number of supremizer modes.
@@ -438,7 +454,7 @@ class steadyNS: public reductionProblem
         List< Eigen::MatrixXd > bcVelocityVec(label NUmodes, label NSUPmodes);
 
         //--------------------------------------------------------------------------
-        /// @brief      Boundary integral modes on boundary used by the penaly method
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Velocity
         ///
         /// @param[in]  NUmodes    The number of velocity modes.
         /// @param[in]  NSUPmodes  The number of supremizer modes.
@@ -446,6 +462,38 @@ class steadyNS: public reductionProblem
         /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
         ///
         List< Eigen::MatrixXd > bcVelocityMat(label NUmodes, label NSUPmodes);
+
+	//--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Pressure
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcPressureVec(label NPmodes);
+
+//--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Pressure
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcPressureVec2(label NUmodes, label NSUPmodes);
+
+        //--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Pressure
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcPressureMat(label NPmodes);
+
+	 List< Eigen::MatrixXd > bcPressureMat2(label NUmodes, label NPmodes, label NSUPmodes);
 
         //--------------------------------------------------------------------------
         /// Function to change the viscosity

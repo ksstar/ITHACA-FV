@@ -44,6 +44,10 @@ SourceFiles
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
+#include <math.h>
+#include <iostream>
+#include <cmath>
+
 
 /// Newton object for the resolution of the reduced problem using a supremizer approach
 struct newton_unsteadyNS_sup: public newton_argument<double>
@@ -70,6 +74,7 @@ struct newton_unsteadyNS_sup: public newton_argument<double>
         Eigen::VectorXd y_old;
         Eigen::VectorXd BC;
         Eigen::MatrixXd tauU;
+	Eigen::MatrixXd taup;
 };
 
 
@@ -98,6 +103,7 @@ struct newton_unsteadyNS_PPE: public newton_argument<double>
         Eigen::VectorXd y_old;
         Eigen::VectorXd BC;
         Eigen::MatrixXd tauU;
+	Eigen::MatrixXd taup;
 };
 
 
