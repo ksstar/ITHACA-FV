@@ -479,6 +479,18 @@ void steadyNS::projectPPE(fileName folder, label NU, label NP, label NSUP)
             gTensor = divMomentum(NUmodes, NPmodes);
         }
 
+	word bc2_str = "bc2_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(
+                         NSUPmodes) + "_" + name(NPmodes) + "_t";
+
+	if (ITHACAutilities::check_file("./ITHACAoutput/Matrices/" + bc2_str))
+        {
+            ITHACAstream::ReadDenseTensor(bc2Tensor, "./ITHACAoutput/Matrices/", bc2_str);
+        }
+        else
+        {
+            bc2Tensor = pressureBC2(NUmodes, NPmodes);
+        }
+
         if (bcMethod == "penalty")
         {
             bcVelVec = bcVelocityVec(NUmodes, NSUPmodes);
@@ -486,6 +498,8 @@ void steadyNS::projectPPE(fileName folder, label NU, label NP, label NSUP)
         }
 	else if (bcMethod == "penaltyP")
 	{
+	    bcVelVec = bcVelocityVec(NUmodes, NSUPmodes);
+            bcVelMat = bcVelocityMat(NUmodes, NSUPmodes);
 	    bcPresVec = bcPressureVec(NPmodes);
             bcPresMat = bcPressureMat(NPmodes);
 	    bcPresMat2 = bcPressureMat2(NUmodes, NPmodes, NSUPmodes);
@@ -500,7 +514,7 @@ void steadyNS::projectPPE(fileName folder, label NU, label NP, label NSUP)
         D_matrix = laplacian_pressure(NPmodes);
 	D2_matrix = laplacian_pressure2(NUmodes, NPmodes);
         gTensor = divMomentum(NUmodes, NPmodes);
-	//bc2Tensor = pressureBC2(NUmodes, NPmodes);
+	bc2Tensor = pressureBC2(NUmodes, NPmodes);
         BC3_matrix = pressure_BC3(NUmodes, NPmodes);
         BC4_matrix = pressure_BC4(NUmodes, NPmodes);
 	//BC5_matrix = pressure_BC5(NUmodes, NPmodes);
@@ -516,6 +530,8 @@ void steadyNS::projectPPE(fileName folder, label NU, label NP, label NSUP)
 	    bcPresVec = bcPressureVec(NPmodes);
             bcPresMat = bcPressureMat(NPmodes);
 	    bcPresMat2 = bcPressureMat2(NUmodes, NPmodes, NSUPmodes);
+	    bcVelVec = bcVelocityVec(NUmodes, NSUPmodes);
+            bcVelMat = bcVelocityMat(NUmodes, NSUPmodes);
 	}
     }
 
@@ -532,6 +548,7 @@ void steadyNS::projectPPE(fileName folder, label NU, label NP, label NSUP)
                                    "./ITHACAoutput/Matrices/");
         ITHACAstream::exportTensor(C_tensor, "C", "python", "./ITHACAoutput/Matrices/");
         ITHACAstream::exportTensor(gTensor, "G", "python", "./ITHACAoutput/Matrices/");
+	
     }
 
     if (para->exportMatlab)
@@ -1370,16 +1387,16 @@ List< Eigen::MatrixXd > steadyNS::bcVelocityMat(label NUmodes,
 List< Eigen::MatrixXd > steadyNS::bcPressureVec(label NPmodes)
 {
     label BCsize = NPmodes;
-    List < Eigen::MatrixXd > bcPresVec(inletIndex.rows());
+    List < Eigen::MatrixXd > bcPresVec(inletIndexP.rows());
 
-    for (label j = 0; j < inletIndex.rows(); j++)
+    for (label j = 0; j < inletIndexP.rows(); j++)
     {
         bcPresVec[j].resize(BCsize, 1);
     }
 
-    for (label k = 0; k < inletIndex.rows(); k++)
+    for (label k = 0; k < inletIndexP.rows(); k++)
     {
-        label BCind = inletIndex(k, 0);
+        label BCind = inletIndexP(k, 0);
 
         for (label i = 0; i < BCsize; i++)
         {
@@ -1424,17 +1441,17 @@ List< Eigen::MatrixXd > steadyNS::bcPressureMat2(label NUmodes, label NPmodes, l
 {
     label BCsize1 = NUmodes + NSUPmodes;
     label BCsize2 = NPmodes;
-    label BCUsize = inletIndex.rows();
+    label BCUsize = inletIndexP.rows();
     List < Eigen::MatrixXd > bcPresMat2(BCUsize);
 
-    for (label j = 0; j < inletIndex.rows(); j++)
+    for (label j = 0; j < inletIndexP.rows(); j++)
     {
         bcPresMat2[j].resize(BCsize2, BCsize1);
     }
 
-    for (label k = 0; k < inletIndex.rows(); k++)
+    for (label k = 0; k < inletIndexP.rows(); k++)
     {
-        label BCind = inletIndex(k, 0);
+        label BCind = inletIndexP(k, 0);
 
         for (label i = 0; i < BCsize2; i++)
         {
@@ -1455,17 +1472,17 @@ List< Eigen::MatrixXd > steadyNS::bcPressureMat2(label NUmodes, label NPmodes, l
 List< Eigen::MatrixXd > steadyNS::bcPressureMat(label NPmodes)
 {
     label BCsize = NPmodes;
-    label BCUsize = inletIndex.rows();
+    label BCUsize = inletIndexP.rows();
     List < Eigen::MatrixXd > bcPresMat(BCUsize);
 
-    for (label j = 0; j < inletIndex.rows(); j++)
+    for (label j = 0; j < inletIndexP.rows(); j++)
     {
         bcPresMat[j].resize(BCsize, BCsize);
     }
 
-    for (label k = 0; k < inletIndex.rows(); k++)
+    for (label k = 0; k < inletIndexP.rows(); k++)
     {
-        label BCind = inletIndex(k, 0);
+        label BCind = inletIndexP(k, 0);
 
         for (label i = 0; i < BCsize; i++)
         {

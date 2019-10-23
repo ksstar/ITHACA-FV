@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
     // the offline samples for the boundary conditions
     word par_offline_BC("./timeBCoff");
     example.timeBCoff = ITHACAstream::readMatrix(par_offline_BC);
-    Eigen::MatrixXd par_on_BC;
+      Eigen::MatrixXd par_on_BC;
     word par_online_BC("./timeBCon");
     par_on_BC = ITHACAstream::readMatrix(par_online_BC);
 
@@ -107,20 +107,16 @@ int main(int argc, char* argv[])
     // Generate equispaced samples inside the parameter range
     example.genEquiPar();
 
-    // Set the inlet boundaries where we have non homogeneous boundary conditions
+    // Set the inlet boundaries where we have non homogeneous VELOCITY boundary conditions
     example.inletIndex.resize(1, 2); // rows: total number of patches
-    example.inletIndex(0, 0) = 2;  // Patch inlet 1
-    example.inletIndex(0, 1) = 2;  // Patch inlet 1: x-direction
-    //example.inletIndex(1, 0) = 1;  // Patch inlet 1: y-direction
-    //example.inletIndex(1, 1) = 1;  // Patch inlet 2
-    //example.inletIndex(2, 0) = 2;  // Patch inlet 2: x-direction
-    //example.inletIndex(2, 1) = 0;  // Patch inlet 2: y-direction
-    //example.inletIndex(3, 0) = 2;  // Patch inlet 2: x-direction
-    //example.inletIndex(3, 1) = 1;  // Patch inlet 2: y-direction
-
+    example.inletIndex(0, 0) = 2;  // Patch 2 - Inlet
+    example.inletIndex(0, 1) = 2;  // Patch 2 - Inlet : z-direction
     example.inletPatch.resize(1, 1);
-    example.inletPatch(0, 0) = example.inletIndex(0, 0);  // Patch inlet 1
-    //example.inletPatch(1, 0) = example.inletIndex(2, 0);  // Patch inlet 2
+    example.inletPatch(0, 0) = example.inletIndex(0, 0);  // Patch 2 Inlet
+
+    // Set the inlet boundaries where we have non homogeneous PRESSURE boundary conditions
+    example.inletIndexP.resize(1, 2); // rows: total number of patches
+    example.inletIndexP(0, 0) = 1;  // Patch 1 - Inlet
 
     // Time parameters
     example.startTime = 0;
@@ -143,7 +139,7 @@ int main(int argc, char* argv[])
 	//ITHACAPOD::getModesVelBasis(example.Pfield, example.Pmodes, example.Ufield,  example.podex, 0, 0,
           //           NmodesPout);
 	// Solve the supremizer problem
-  	 example.solvesupremizer("modes");
+  	 //example.solvesupremizer("modes");
     }
 
     auto finish_POD = std::chrono::high_resolution_clock::now();
@@ -153,7 +149,7 @@ int main(int argc, char* argv[])
 
     // Reduced Matrices
     auto start_matrix = std::chrono::high_resolution_clock::now();
-    example.projectSUP("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
+    example.projectPPE("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
     auto finish_matrix = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_matrix = finish_matrix - start_matrix;
     std::cout << "elapsed_matrix: " << elapsed_matrix.count() << " seconds.";
@@ -179,7 +175,7 @@ int main(int argc, char* argv[])
     {
             // Set initial quess for penalty factors
 	    reduced.tauIter = Eigen::MatrixXd::Zero(1,1);
-            reduced.tauIter <<  0.000001;
+            reduced.tauIter <<  0.01;
 	    // Solve for the penalty factors with the iterative solver
             reduced.taup = reduced.tauIter;
 //reduced.penalty_PPE(vel_now, reduced.tauIter);
@@ -191,7 +187,7 @@ int main(int argc, char* argv[])
 
     // Set the online temperature BC and solve reduced model
     auto start_ROM = std::chrono::high_resolution_clock::now();
-    reduced.solveOnline_sup(vel_now);
+    reduced.solveOnline_PPE(vel_now);
     auto finish_ROM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_ROM = finish_ROM - start_ROM;
     std::cout << "elapsed_ROM: " << elapsed_ROM.count() << " seconds.";
