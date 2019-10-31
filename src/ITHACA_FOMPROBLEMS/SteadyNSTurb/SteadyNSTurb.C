@@ -102,6 +102,8 @@ void SteadyNSTurb::truthSolve(List<scalar> mu_now)
     volScalarField& p = _p();
     volVectorField& U = _U();
     surfaceScalarField& phi = _phi();
+    phi = linearInterpolate(U) & mesh.Sf();
+    ITHACAstream::exportSolution(phi, name(counter), "./ITHACAoutput/Offline/");
     fv::options& fvOptions = _fvOptions();
     simpleControl& simple = _simple();
     IOMRFZoneList& MRF = _MRF();
@@ -472,9 +474,14 @@ void SteadyNSTurb::projectSUP(fileName folder, label NU, label NP, label NSUP,
         K_matrix = pressure_gradient_term(NUmodes, NPmodes, NSUPmodes);
         P_matrix = divergence_term(NUmodes, NPmodes, NSUPmodes);
         M_matrix = mass_term(NUmodes, NPmodes, NSUPmodes);
+ Info << "Here matrices 1"  << endl;
         btMatrix = btTurbulence(NUmodes, NSUPmodes);
+ Info << "Here matrices 2"  << endl;
         ct1Tensor = turbulenceTensor1(NUmodes, NSUPmodes, nNutModes);
+ Info << "Here matrices 3"  << endl;
         ct2Tensor = turbulenceTensor2(NUmodes, NSUPmodes, nNutModes);
+
+ Info << "Here matrices 4"  << endl;
 
         if (bcMethod == "penalty")
         {
@@ -548,12 +555,13 @@ void SteadyNSTurb::projectSUP(fileName folder, label NU, label NP, label NSUP,
     for (int i = 0; i < nNutModes; i++)
     {
         samples[i] = new SPLINTER::DataTable(1, 1);
-
+ Info << "Here matrices 5"  << endl;
         for (int j = 0; j < coeffL2.cols(); j++)
         {
-            samples[i]->addSample(mu.row(j), coeffL2(i, j));
+	     Info << "Here matrices 5a"  << endl;
+            samples[i]->addSample(mu.col(j), coeffL2(i, j)); // samples[i]->addSample(mu.row(j), coeffL2(i, j));
         }
-
+ Info << "Here matrices 6"  << endl;
         rbfSplines[i] = new SPLINTER::RBFSpline(*samples[i],
                                                 SPLINTER::RadialBasisFunctionType::GAUSSIAN);
         std::cout << "Constructing RadialBasisFunction for mode " << i + 1 << std::endl;
