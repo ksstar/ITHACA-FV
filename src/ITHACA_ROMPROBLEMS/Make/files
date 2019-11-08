@@ -5,6 +5,7 @@ ReducedUnsteadyNSTurb/ReducedUnsteadyNSTurb.C
 ReducedUnsteadyNST/ReducedUnsteadyNST.C
 ReducedUnsteadyNSTturb/ReducedUnsteadyNSTturb.C
 ReducedSteadyNS/ReducedSteadyNS.C
+ReducedSteadyBB/ReducedSteadyBB.C
 ReducedSteadyNSTurb/ReducedSteadyNSTurb.C
 ReducedLaplacian/ReducedLaplacian.C
 ReducedSimpleSteadyNS/ReducedSimpleSteadyNS.C
