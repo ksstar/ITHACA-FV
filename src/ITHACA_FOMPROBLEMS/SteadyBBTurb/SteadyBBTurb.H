@@ -82,8 +82,14 @@ class SteadyBBTurb: public SteadyBB
 	/// List of snapshots for the solution for eddy viscosity
         PtrList<volScalarField> nutFields;
 
+	/// List of snapshots for the solution for kinetic energy
+	PtrList<volScalarField> kFields;
+
         /// List of POD modes for eddy viscosity
         PtrList<volScalarField> nutModes;
+
+	/// List of POD modes for kinetic energy
+	PtrList<volScalarField> kModes;
 
         /// Create a samples for interpolation
         std::vector<SPLINTER::DataTable*> samples;
@@ -93,6 +99,13 @@ class SteadyBBTurb: public SteadyBB
 
         /// Turbulent viscosity matrix
         Eigen::MatrixXd btMatrix;
+
+	 /// Turbulent viscosity matrix
+        Eigen::MatrixXd K2_matrix;
+
+	 /// Turbulent viscosity matrix
+        Eigen::MatrixXd H_matrix4;
+	Eigen::MatrixXd H_matrix5;
 
         /// Turbulent viscosity tensor
         List <Eigen::MatrixXd> ct2Matrix;
@@ -109,22 +122,44 @@ class SteadyBBTurb: public SteadyBB
         /// Total B Matrix
         Eigen::MatrixXd bTotalMatrix;
 
+	/// Turbulent diffusivity term
+        List <Eigen::MatrixXd> S_matrix;
+
         /// The matrix of L2 projection coefficients for the eddy viscosity
         Eigen::MatrixXd coeffL2;
+	
+	/// The matrix of L2 projection coefficients for the kinetic energy
+	Eigen::MatrixXd tkeCoeffL2;
 
         /// The vector of L2 projection coefficients for the eddy viscosity snapshot
         Eigen::VectorXd nutCoeff;
 
+	/// The vector of L2 projection coefficients for the kinetic energy snapshot
+	Eigen::VectorXd kCoeff;
+
         /// The way to compute the eddy viscosity snapshots
         word viscCoeff;
 
-        /// Number of viscoisty modes used for the projection
+        /// Number of viscosity modes used for the projection
         label nNutModes;
+	
+	/// Number of kinetic energy modes used for the projection
+	label nTkeModes;
 
         /// Eddy viscosity field
         autoPtr<volScalarField> _nut;
         autoPtr<volScalarField> _nuTilda;
 
+	/// RBF functions radius
+	double e = 1;
+
+ 	/// Kinetic energy field
+	autoPtr<volScalarField> _k;
+
+ 	// Create a samples for interpolation
+        std::vector<SPLINTER::DataTable*> tkeSamples;
+        // Create a RBF splines for interpolation
+        std::vector<SPLINTER::RBFSpline*> tkeRbfSplines;
         
 	//--------------------------------------------------------------------------
         /// @brief      Perform a truthsolve
@@ -144,8 +179,8 @@ class SteadyBBTurb: public SteadyBB
         /// @param[in]  NPmodes    The number of pressure modes.
         /// @param[in]  NSUPmodes  The number of supremizer modes.
         ///
-        void projectSUP(fileName folder, label NUmodes, label NPmodes, label NTmodes,
-                        label NSUPmodes, label nNutModes);
+        void projectSUP(fileName folder, label NUmodes, label NPmodes, label NPrgh, label NTmodes,
+                        label NSUPmodes, label nNutModes, label nTkeModes, Eigen::MatrixXd para2);
 
 	//--------------------------------------------------------------------------
         ///
@@ -207,7 +242,31 @@ class SteadyBBTurb: public SteadyBB
         Eigen::Tensor<double, 3 > turbulenceTensor2(label NUmodes,
                 label NSUPmodes, label nNutModes);
 
+        ///
+        /// @brief      S added matrix for the thermal turbulence treatement
+        ///
+        /// @param[in]  NTmodes    The number of temperature modes.
+        /// @param[in]  Nnutmodes  The number of eddy viscosity modes.
+        ///
+        /// @return     S matrix for turbulence treatment
+        ///
+        List < Eigen::MatrixXd > temperature_turbulence_term(label NTmodes,
+                label nNutModes);
 
+	//--------------------------------------------------------------------------
+        /// Gradient of pressure
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the Gradient of pressure term.
+        ///
+        Eigen::MatrixXd pressure_gradient_term2(label NUmodes, label NPmodes,
+                                               label NSUPmodes);
+
+	Eigen::MatrixXd buoyant_term4(label NUmodes, label NTmodes, label NSUPmodes);
+	Eigen::MatrixXd buoyant_term5(label NUmodes, label NTmodes, label NSUPmodes);
 
 };
 

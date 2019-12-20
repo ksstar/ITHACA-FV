@@ -77,6 +77,8 @@
             U.correctBoundaryConditions();
             fvOptions.correct(U);
         }
+	
+	 i++;
     }
 
 #include "continuityErrs.H"

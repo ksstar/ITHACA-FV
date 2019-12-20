@@ -30,23 +30,23 @@ Vector<double> uresidual_v(0, 0, 0);
 scalar presidual = 1;
 scalar csolve = 0;
 
-//runTime.setTime(runTime.startTime(), 0);
+runTime.setTime(runTime.startTime(), 0);
+runTime.setEndTime(maxIter);
 
 // Variable that can be changed
 turbulence->read();
 std::ofstream res_os;
 res_os.open("./ITHACAoutput/Offline/residuals", std::ios_base::app);
-//&& residual > tolerance 
-#if OFVER == 6
 
-while (simple.loop(runTime) && residual > tolerance && csolve < maxIter  )
+#if OFVER == 6
+//simple.loop(runTime) &&
+while ( residual > tolerance && csolve < maxIter  )
 #else
 while (simple.loop() && residual > tolerance && csolve < maxIter )
 #endif
 {
-    Info << "Time = " << runTime.timeName() << nl << endl;
-
-    //Info << "residual = " << residual << nl << endl;
+    simple.loop(runTime);
+    Info << "Time = " << csolve << nl << endl;
     {
 #include "UEqn.H"
 #include "TEqn.H"
@@ -63,6 +63,7 @@ while (simple.loop() && residual > tolerance && csolve < maxIter )
 
         uresidual = C;
         residual = max(presidual, uresidual);
+	//residual = C;
 
         Info << "\nResidual: " << residual << endl << endl;
     }
@@ -78,7 +79,7 @@ res_os << residual << std::endl;
 res_os.close();
 
 runTime.setTime(runTime.startTime(), 0);
-
+runTime.setEndTime(maxIter);
 
 
 

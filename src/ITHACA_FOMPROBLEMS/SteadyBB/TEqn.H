@@ -23,6 +23,7 @@
   along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
 \*---------------------------------------------------------------------------*/
 {
+    
     alphat = turbulence->nut() / Prt;
     alphat.correctBoundaryConditions();
 

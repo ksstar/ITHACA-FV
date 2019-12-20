@@ -7,6 +7,7 @@ EXE_INC = \
     -I$(LIB_SRC)/transportModels/incompressible/viscosityModels/viscosityModel \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/triSurface/lnInclude \
     -I$(LIB_SRC)/dynamicMesh/lnInclude \
     -I$(LIB_SRC)/sampling/lnInclude \
     -I$(LIB_SRC)/fvOptions/lnInclude \
@@ -21,9 +22,11 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/laplacianProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/steadyNS \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/SteadyBB \
+    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/SteadyBBTurb \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/SteadyNSTurb \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/unsteadyNS \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/UnsteadyBB \
+    -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/UnsteadyBBTurb \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/UnsteadyNSTurb \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/unsteadyNST \
     -I$(LIB_ITHACA_SRC)/ITHACA_FOMPROBLEMS/unsteadyNSTTurb \
@@ -35,7 +38,9 @@ EXE_INC = \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedProblem \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedUnsteadyNS \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedUnsteadyBB \
+    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedUnsteadyBBTurb \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedSteadyBB \
+    -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedSteadyBBTurb \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedUnsteadyNSTurb \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedUnsteadyNSTTurb \
     -I$(LIB_ITHACA_SRC)/ITHACA_ROMPROBLEMS/ReducedUnsteadyNST \
@@ -64,6 +69,8 @@ EXE_INC = \
 
 
 EXE_LIBS = \
+    -lOpenFOAM \
+    -ltriSurface \
     -lturbulenceModels \
     -lincompressibleTransportModels \
     -lincompressibleTurbulenceModels \

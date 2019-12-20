@@ -133,6 +133,8 @@ class reductionProblem
 
 	Eigen::MatrixXi inletIndexP;
 
+	Eigen::MatrixXi inletIndexGradT;
+
         /// Matrix that contains informations about the inlet boundaries
         /// without specifing the direction
         /// Rows = Number of parametrized boundary conditions <br>

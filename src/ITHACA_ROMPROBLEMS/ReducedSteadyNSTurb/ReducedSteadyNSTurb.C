@@ -188,6 +188,8 @@ void ReducedSteadyNSTurb::solveOnlineSUP(Eigen::MatrixXd vel)
     }
 
     nutRec.append(nutTmp);
+
+
     newtonObject.nu = nu;
     hnls.solve(y);
     Eigen::VectorXd res(y);

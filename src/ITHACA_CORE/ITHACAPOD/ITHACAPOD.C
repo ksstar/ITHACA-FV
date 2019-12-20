@@ -292,7 +292,7 @@ void ITHACAPOD::getModesVelBasis(PtrList<volScalarField>& snapshotsF,
         Eigen::MatrixXd eigenVectoreig;
         modes.resize(nmodes);
         Info << "####### Performing the POD using EigenDecomposition " <<
-             snapshots[0].name() << " #######" << endl;
+             snapshotsF[0].name() << " #######" << endl;
         int ncv = snapshots.size();
         Spectra::DenseSymMatProd<double> op(_corMatrix);
         Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> esEg;

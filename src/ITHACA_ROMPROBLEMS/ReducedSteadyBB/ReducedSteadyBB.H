@@ -41,6 +41,9 @@ SourceFiles
 #include "IOmanip.H"
 #include "ReducedSteadyNS.H"
 #include "SteadyBB.H"
+#include "steadyNS.H"
+#include "surfaceInterpolation.H"
+#include "fvMesh.H"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
@@ -73,6 +76,10 @@ struct newton_steadyBB_sup: public newton_argument<double>
 
         Eigen::VectorXd bc_t;
         Eigen::VectorXd bc;
+	Eigen::VectorXd tauT;
+	Eigen::VectorXd tauU;
+	Eigen::VectorXd tauHF;
+        Eigen::MatrixXd gradient_t;
 
 };
 
@@ -126,6 +133,15 @@ class ReducedSteadyBB: public reducedSteadyNS
 
         /// DimensionedScalar Pr;
         scalar Pr;
+
+
+	Eigen::VectorXd tauT;
+	Eigen::VectorXd tauU;
+	Eigen::VectorXd tauHF;
+/// Penalty Factor determined with iterative solver
+        Eigen::VectorXd tauIter;
+
+	Eigen::MatrixXd gradient_t;
 
         /// Pointer to the FOM problem
         SteadyBB* problem;

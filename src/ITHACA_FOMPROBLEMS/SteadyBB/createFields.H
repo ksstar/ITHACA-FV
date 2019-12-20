@@ -74,7 +74,7 @@ _nut = autoPtr<volScalarField>
        );
 volScalarField& nut = _nut();
 
-_UliftBC = autoPtr<volScalarField>
+/*_UliftBC = autoPtr<volScalarField>
            (
                new volScalarField
                (
@@ -89,7 +89,7 @@ _UliftBC = autoPtr<volScalarField>
                    mesh
                )
            );
-volScalarField& UliftBC = _UliftBC();
+volScalarField& UliftBC = _UliftBC();*/
 
 // Laminar Prandtl number
 _Pr = autoPtr<dimensionedScalar>
@@ -147,7 +147,7 @@ _g = autoPtr<dimensionedVector>
          (
              "g",
              dimensionSet(0, 1, -2, 0, 0),
-             vector(0, -9.81, 0)
+             vector(-9.81, 0, 0)
          )
      );
 dimensionedVector& g = _g();
@@ -359,15 +359,15 @@ _p0 = autoPtr<volScalarField>
       );
 
 
-
 pRefCell = 0;
 pRefValue = 0.0;
+//setRefCell(p, mesh.solutionDict().subDict("SIMPLE"), pRefCell, pRefValue);
 
-//simpleControl& simple = _simple();
+
+simpleControl& simple = _simple();
 
 setRefCell
-(
-    p,
+(   p,
     p_rgh,
     simple.dict(),
     pRefCell,
@@ -376,11 +376,11 @@ setRefCell
 
 if (p_rgh.needReference())
 {
-    p += dimensionedScalar
+    p_rgh += dimensionedScalar
          (
-             "p",
+             "p_rgh",
              p.dimensions(),
-             pRefValue - getRefCellValue(p, pRefCell)
+             pRefValue - getRefCellValue(p_rgh, pRefCell)
          );
 }
 

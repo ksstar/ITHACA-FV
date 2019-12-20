@@ -1,14 +1,7 @@
 SOURCE = \
 ReducedProblem/ReducedProblem.C \
-ReducedUnsteadyNS/ReducedUnsteadyNS.C \
-ReducedUnsteadyBB/ReducedUnsteadyBB.C \
-ReducedUnsteadyNSTurb/ReducedUnsteadyNSTurb.C \
-ReducedUnsteadyNST/ReducedUnsteadyNST.C \
-ReducedUnsteadyNSTturb/ReducedUnsteadyNSTturb.C \
 ReducedSteadyNS/ReducedSteadyNS.C \
 ReducedSteadyBB/ReducedSteadyBB.C \
+ReducedSteadyBBTurb/ReducedSteadyBBTurb.C \
 ReducedSteadyNSTurb/ReducedSteadyNSTurb.C \
-ReducedLaplacian/ReducedLaplacian.C \
-ReducedSimpleSteadyNS/ReducedSimpleSteadyNS.C \
-ReducedMSR/ReducedMSR.C \
-ReducedUnsteadyMSR/ReducedUnsteadyMSR.C 
+ReducedLaplacian/ReducedLaplacian.C 

@@ -28,6 +28,7 @@ scalar uresidual = 1;
 Vector<double> uresidual_v(0, 0, 0);
 
 scalar presidual = 1;
+scalar Tresidual = 1;
 scalar csolve = 0;
 
 //runTime.setTime(runTime.startTime(), 0);
@@ -39,14 +40,14 @@ res_os.open("./ITHACAoutput/Offline/residuals", std::ios_base::app);
 //&& residual > tolerance 
 #if OFVER == 6
 
-while (simple.loop(runTime) && residual > tolerance && csolve < maxIter  )
+while (residual > tolerance && csolve < maxIter  )
 #else
 while (simple.loop() && residual > tolerance && csolve < maxIter )
 #endif
 {
-    Info << "Time = " << runTime.timeName() << nl << endl;
+    simple.loop(runTime);
+    Info << "Time = " << csolve << nl << endl;
 
-    //Info << "residual = " << residual << nl << endl;
     {
 #include "UEqn.H"
 #include "TEqn.H"
@@ -63,8 +64,8 @@ while (simple.loop() && residual > tolerance && csolve < maxIter )
 
         uresidual = C;
         residual = max(presidual, uresidual);
-
-        Info << "\nResidual: " << residual << endl << endl;
+	//Info << "\nTresidual: " << Tresidual << endl << endl;
+        //Info << "\nResidual: " << residual << endl << endl;
     }
     laminarTransport.correct();
     turbulence->correct();

@@ -23,6 +23,7 @@
   along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
 \*---------------------------------------------------------------------------*/
 {
+    //alphat = (turbulence->nut()*turbulence->nut()*Pr) / (0.85*turbulence->nut() * Pr +0.7*turbulence->nu());
     alphat = turbulence->nut() / Prt;
     alphat.correctBoundaryConditions();
 
@@ -36,7 +37,10 @@
 
     TEqn.relax();
 
-    TEqn.solve();
+    Tresidual = TEqn.solve().initialResidual();
+ 
+
+    //TEqn.solve();
 
     rhok = 1.0 - beta * (T - TRef);
 }

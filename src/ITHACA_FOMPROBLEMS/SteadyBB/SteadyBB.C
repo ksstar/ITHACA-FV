@@ -61,7 +61,7 @@ SteadyBB::SteadyBB(int argc, char* argv[])
                       mesh
                   )
               );
-    simpleControl& simple = _simple();
+   // simpleControl& simple = _simple();
 #include "createFields.H"
 #include "createFvOptions.H"
     //
@@ -104,6 +104,7 @@ void SteadyBB::truthSolve(List<scalar> mu_now, fileName folder)
     volVectorField& U = _U();
     surfaceScalarField& phi = _phi(); 
     volScalarField& p_rgh = _p_rgh();
+Info << "here1" << endl;
     volScalarField& T = _T();
     volScalarField& alphat = _alphat();
     volScalarField& rhok = _rhok();
@@ -118,6 +119,16 @@ void SteadyBB::truthSolve(List<scalar> mu_now, fileName folder)
     dimensionedScalar& Pr = _Pr();
     dimensionedScalar& Prt = _Prt();
 
+Info << "here2" << endl;
+   // ITHACAstream::exportSolution(U, name(counter), folder);
+   // ITHACAstream::exportSolution(p, name(counter), folder);
+   // ITHACAstream::exportSolution(p_rgh, name(counter), folder);
+  //  ITHACAstream::exportSolution(T, name(counter), folder);
+  //  Ufield.append(U);
+  //  Pfield.append(p);
+  //  Prghfield.append(p_rgh);
+  //  Tfield.append(T);
+
 #include "NLsolve.H"
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
@@ -131,7 +142,7 @@ void SteadyBB::truthSolve(List<scalar> mu_now, fileName folder)
 }
 
 // Method to solve the supremizer problem
-void SteadyBB::solvesupremizer(word type)
+void SteadyBB::solvesupremizerPrgh(word type)
 {
     PtrList<volScalarField> P_sup;
 
@@ -265,6 +276,141 @@ void SteadyBB::solvesupremizer(word type)
         }
     }
 }
+
+void SteadyBB::solvesupremizerP(word type)
+{
+    PtrList<volScalarField> P_sup;
+
+    if (type == "modes")
+    {
+        P_sup = Pmodes;
+    }
+    else if (type == "snapshots")
+    {
+        P_sup = Pfield;
+    }
+    else
+    {
+        std::cout << "You must specify the variable type with either snapshots or modes"
+                  << std::endl;
+        exit(0);
+    }
+
+    if (supex == 1)
+    {
+        volVectorField U = _U();
+        volVectorField Usup
+        (
+            IOobject
+            (
+                "Usup",
+                U.time().timeName(),
+                U.mesh(),
+                IOobject::NO_READ,
+                IOobject::AUTO_WRITE
+            ),
+            U.mesh(),
+            dimensionedVector("zero", U.dimensions(), vector::zero)
+        );
+
+        if (type == "snapshots")
+        {
+            ITHACAstream::read_fields(supfield, Usup, "./ITHACAoutput/supfield/");
+        }
+        else if (type == "modes")
+        {
+            ITHACAstream::read_fields(supmodes, Usup, "./ITHACAoutput/supremizer/");
+        }
+        else
+        {
+        }
+    }
+    else
+    {
+        volVectorField U = _U();
+        volVectorField Usup
+        (
+            IOobject
+            (
+                "Usup",
+                U.time().timeName(),
+                U.mesh(),
+                IOobject::NO_READ,
+                IOobject::AUTO_WRITE
+            ),
+            U.mesh(),
+            dimensionedVector("zero", U.dimensions(), vector::zero)
+        );
+        dimensionedScalar nu_fake
+        (
+            "nu_fake",
+            dimensionSet(0, 2, -1, 0, 0, 0, 0),
+            scalar(1)
+        );
+        Vector<double> v(0, 0, 0);
+
+        for (label i = 0; i < Usup.boundaryField().size(); i++)
+        {
+            ITHACAutilities::changeBCtype(Usup, "fixedValue", i);
+            assignBC(Usup, i, v);
+            assignIF(Usup, v);
+        }
+
+        if (type == "snapshots")
+        {
+            for (label i = 0; i < P_sup.size(); i++)
+            {
+                fvVectorMatrix u_sup_eqn
+                (
+                    - fvm::laplacian(nu_fake, Usup)
+                );
+                solve
+                (
+                    u_sup_eqn == fvc::grad(P_sup[i])
+                );
+                supfield.append(Usup);
+                ITHACAstream::exportSolution(Usup, name(i + 1), "./ITHACAoutput/supfield/");
+            }
+
+            int systemRet = system("ln -s ../../constant ./ITHACAoutput/supfield/constant");
+            systemRet += system("ln -s ../../0 ./ITHACAoutput/supfield/0");
+            systemRet += system("ln -s ../../system ./ITHACAoutput/supfield/system");
+
+            if (systemRet < 0)
+            {
+                Info << "System Command Failed in SteadyBB.C" << endl;
+                exit(0);
+            }
+        }
+        else
+        {
+            for (label i = 0; i < Pmodes.size(); i++)
+            {
+                fvVectorMatrix u_sup_eqn
+                (
+                    - fvm::laplacian(nu_fake, Usup)
+                );
+                solve
+                (
+                    u_sup_eqn == fvc::grad(Pmodes[i])
+                );
+                supmodes.append(Usup);
+                ITHACAstream::exportSolution(Usup, name(i + 1), "./ITHACAoutput/supremizer/");
+            }
+
+            int systemRet =
+                system("ln -s ../../constant ./ITHACAoutput/supremizer/constant");
+            systemRet += system("ln -s ../../0 ./ITHACAoutput/supremizer/0");
+            systemRet += system("ln -s ../../system ./ITHACAoutput/supremizer/system");
+
+            if (systemRet < 0)
+            {
+                Info << "System Command Failed in SteadyBB.C" << endl;
+                exit(0);
+            }
+        }
+    }
+}	
 
 
 // * * * * * * * * * * * * * * lifting function temperature * * * * * * * * * * * * * //
@@ -495,6 +641,16 @@ void SteadyBB::projectSUP(fileName folder, label NU, label NP, label NT,
         Q_matrix = convective_term_temperature(NUmodes, NTmodes, NSUPmodes);
         Y_matrix = diffusive_term_temperature(NUmodes, NTmodes, NSUPmodes);
         P_matrix = divergence_term(NUmodes, NPrghmodes, NSUPmodes);
+
+         if (bcMethod == "penalty")
+        {
+            bcTempVec = bcTemperatureVec(NTmodes);
+            bcTempMat = bcTemperatureMat(NTmodes);
+	    bcVelVec = bcVelocityVec(NUmodes, NSUPmodes);
+            bcVelMat = bcVelocityMat(NUmodes, NSUPmodes);
+            bcGradTVec = bcGradientTVec(NTmodes);
+            bcGradTMat = bcGradientTMat(NTmodes);
+        }
     }
 }
 
@@ -506,16 +662,17 @@ Eigen::MatrixXd SteadyBB::pressure_gradient_term(label NUmodes,
     label K1size = NUmodes + NSUPmodes + liftfield.size();
     label K2size = NPrghmodes;
     Eigen::MatrixXd K_matrix(K1size, K2size);
-    dimensionedVector g = _g();
 
     // Project everything
     for (label i = 0; i < K1size; i++)
     {
         for (label j = 0; j < K2size; j++)
         {
-            K_matrix(i, j) = fvc::domainIntegrate(L_U_SUPmodes[i] &
-                                                  fvc::reconstruct(fvc::snGrad(Prghmodes[j]) *
-                                                          Prghmodes[j].mesh().magSf())).value();
+            // K_matrix(i, j) = fvc::domainIntegrate(L_U_SUPmodes[i] &
+              //                                    fvc::reconstruct(fvc::snGrad(Prghmodes[j]) *
+                //                                          Prghmodes[j].mesh().magSf())).value();
+	     K_matrix(i, j) = fvc::domainIntegrate(L_U_SUPmodes[i] & fvc::grad(
+                    Prghmodes[j])).value();
         }
     }
 
@@ -552,15 +709,39 @@ Eigen::MatrixXd SteadyBB::divergence_term(label NUmodes, label NPrghmodes,
     return P_matrix;
 }
 
+Eigen::MatrixXd SteadyBB::divergence_term2(label NUmodes, label NPmodes,
+        label NSUPmodes)
+{
+    label P1size = NPmodes;
+    label P2size = NUmodes + NSUPmodes + liftfield.size();
+    Eigen::MatrixXd P_matrix2(P1size, P2size);
+
+    // Project everything
+    for (label i = 0; i < P1size; i++)
+    {
+        for (label j = 0; j < P2size; j++)
+        {
+            P_matrix2(i, j) = fvc::domainIntegrate(Pmodes[i] * fvc::div (
+                    L_U_SUPmodes[j])).value();
+        }
+    }
+
+    //Export the matrix
+    ITHACAstream::SaveDenseMatrix(P_matrix2, "./ITHACAoutput/Matrices/",
+                                  "P2_" + name(liftfield.size()) + "_" + name(NUmodes) + "_"
+                                  + name(NSUPmodes) + "_" + name(NPmodes));
+    return P_matrix2;
+}
+
 Eigen::MatrixXd SteadyBB::buoyant_term(label NUmodes, label NTmodes,
         label NSUPmodes)
 {
     label H1size = NUmodes + liftfield.size() + NSUPmodes;
     label H2size = NTmodes + liftfieldT.size() ;
     Eigen::MatrixXd H_matrix(H1size, H2size);
-    dimensionedScalar beta = _beta();
-    dimensionedScalar TRef = _TRef();
-    dimensionedVector g = _g();
+    dimensionedScalar& beta = _beta();
+    dimensionedScalar& TRef = _TRef();
+    dimensionedVector& g = _g();
     surfaceScalarField& ghf = _ghf();
 
     // Project everything
@@ -693,7 +874,294 @@ Eigen::MatrixXd SteadyBB::mass_term_temperature(label NUmodes, label NTmodes,
     return W_matrix;
 }
 
-// Method to compute the lifting function for velocity
+List< Eigen::MatrixXd > SteadyBB::bcTemperatureVec(label NTmodes)
+{
+    label BCsize = NTmodes;
+    List < Eigen::MatrixXd > bcTempVec(inletIndexT.rows());
+
+    for (label j = 0; j < inletIndexT.rows(); j++)
+    {
+        bcTempVec[j].resize(BCsize, 1);
+    }
+
+    for (label k = 0; k < inletIndexT.rows(); k++)
+    {
+        label BCind = inletIndexT(k, 0);
+
+        for (label i = 0; i < BCsize; i++)
+        {
+            bcTempVec[k](i, 0) = gSum(Tmodes[i].boundaryField()[BCind]);
+        }
+    }
+
+    ITHACAstream::exportMatrix(bcTempVec, "bcTempVec", "eigen",
+                               "./ITHACAoutput/Matrices/bcTempVec");
+    return bcTempVec;
+}
+
+List< Eigen::MatrixXd > SteadyBB::bcTemperatureMat(label NTmodes)
+{
+    label BCsize = NTmodes;
+    label BCUsize = inletIndexT.rows();
+    List < Eigen::MatrixXd > bcTempMat(BCUsize);
+
+    for (label j = 0; j < inletIndexT.rows(); j++)
+    {
+        bcTempMat[j].resize(BCsize, BCsize);
+    }
+
+    for (label k = 0; k < inletIndexT.rows(); k++)
+    {
+        label BCind = inletIndexT(k, 0);
+
+        for (label i = 0; i < BCsize; i++)
+        {
+            for (label j = 0; j < BCsize; j++)
+            {
+                bcTempMat[k](i, j) = gSum(Tmodes[i].boundaryField()[BCind] *
+                                         Tmodes[j].boundaryField()[BCind]);
+		//surfaceScalarField BC3 = fvc::interpolate(Tmodes[i]);
+            //	surfaceScalarField BC4 = fvc::snGrad(Tmodes[j]);
+		//surfaceScalarField BC5 = (BC3 * BC4) * Tmodes[j].mesh().magSf();
+			
+		//bcTempMat[k](i, j) = gSum(BC5.boundaryField()[BCind]);
+
+            }
+        }
+    }
+
+    ITHACAstream::exportMatrix(bcTempMat, "bcTempMat", "eigen",
+                               "./ITHACAoutput/Matrices/bcTempMat");
+    return bcTempMat;
+}
+
+List< Eigen::MatrixXd > SteadyBB::bcGradientTVec(label NTmodes)
+{
+    label BCsize = NTmodes;
+    List < Eigen::MatrixXd > bcGradTVec(inletIndexGradT.rows());
+
+    for (label j = 0; j < inletIndexGradT.rows(); j++)
+    {
+        bcGradTVec[j].resize(BCsize, 1);
+    }
+
+    for (label k = 0; k < inletIndexGradT.rows(); k++)
+    {
+        label BCind = inletIndexGradT(k, 0);
+
+        for (label i = 0; i < BCsize; i++)
+        {
+	    surfaceScalarField BC3 = fvc::interpolate(Tmodes[i]) * Tmodes[i].mesh().magSf();
+	    bcGradTVec[k](i, 0) = gSum(BC3.boundaryField()[BCind]);
+            //bcGradTVec[k](i, 0) = gSum(Tmodes[i].boundaryField()[BCind]);
+        }
+    }
+
+    ITHACAstream::exportMatrix(bcGradTVec, "bcTempVec", "eigen",
+                               "./ITHACAoutput/Matrices/bcGradTVec");
+    return bcGradTVec;
+}
+
+List< Eigen::MatrixXd > SteadyBB::bcGradientTMat(label NTmodes)
+{
+    label BCsize = NTmodes;
+    label BCUsize = inletIndexGradT.rows();
+    List < Eigen::MatrixXd > bcGradTMat(BCUsize);
+
+    for (label j = 0; j < inletIndexGradT.rows(); j++)
+    {
+        bcGradTMat[j].resize(BCsize, BCsize);
+    }
+
+    for (label k = 0; k < inletIndexGradT.rows(); k++)
+    {
+        label BCind = inletIndexGradT(k, 0);
+
+        for (label i = 0; i < BCsize; i++)
+        {
+            for (label j = 0; j < BCsize; j++)
+            {
+
+		surfaceScalarField BC3 = fvc::interpolate(Tmodes[i]);
+            	surfaceScalarField BC4 = fvc::snGrad(Tmodes[j]);
+		surfaceScalarField BC5 = (BC3 * BC4) * Tmodes[j].mesh().magSf();
+
+                bcGradTMat[k](i, j) = gSum(BC5.boundaryField()[BCind]);
+            }
+        }
+    }
+
+    ITHACAstream::exportMatrix(bcGradTMat, "bcGradTMat", "eigen",
+                               "./ITHACAoutput/Matrices/bcGradTMat");
+    return bcGradTMat;
+}
+
+
+List< Eigen::MatrixXd > SteadyBB::bcVelocityVec(label NUmodes,
+        label NSUPmodes)
+{
+    label BCsize = NUmodes + NSUPmodes;
+    List < Eigen::MatrixXd > bcVelVec(inletIndex.rows());
+
+    for (label j = 0; j < inletIndex.rows(); j++)
+    {
+        bcVelVec[j].resize(BCsize, 1);
+    }
+
+    for (label k = 0; k < inletIndex.rows(); k++)
+    {
+        label BCind = inletIndex(k, 0);
+        label BCcomp = inletIndex(k, 1);
+
+        for (label i = 0; i < BCsize; i++)
+        {
+
+            bcVelVec[k](i, 0) = gSum(L_U_SUPmodes[i].boundaryField()[BCind].component(
+                                         BCcomp));
+        }
+    }
+
+    ITHACAstream::exportMatrix(bcVelVec, "bcVelVec", "eigen",
+                               "./ITHACAoutput/Matrices/bcVelVec");
+    return bcVelVec;
+}
+
+List< Eigen::MatrixXd > SteadyBB::bcVelocityMat(label NUmodes,
+        label NSUPmodes)
+{
+    label BCsize = NUmodes + NSUPmodes ;
+    label BCUsize = inletIndex.rows();
+    List < Eigen::MatrixXd > bcVelMat(BCUsize);
+
+    for (label j = 0; j < inletIndex.rows(); j++)
+    {
+        bcVelMat[j].resize(BCsize, BCsize);
+    }
+
+    for (label k = 0; k < inletIndex.rows(); k++)
+    {
+        label BCind = inletIndex(k, 0);
+        label BCcomp = inletIndex(k, 1);
+
+        for (label i = 0; i < BCsize; i++)
+        {
+            for (label j = 0; j < BCsize; j++)
+            {
+                bcVelMat[k](i, j) = gSum(L_U_SUPmodes[i].boundaryField()[BCind].component(
+                                             BCcomp) *
+                                         L_U_SUPmodes[j].boundaryField()[BCind].component(BCcomp));
+            }
+        }
+    }
+
+    ITHACAstream::exportMatrix(bcVelMat, "bcVelMat", "eigen",
+                               "./ITHACAoutput/Matrices/bcVelMat");
+    return bcVelMat;
+}
+
+
+
+
+// Method to compute the lifting function
+void SteadyBB::liftSolve()
+{
+    for (label k = 0; k < inletIndex.rows(); k++)
+    {
+        Time& runTime = _runTime();
+        surfaceScalarField& phi = _phi();
+        fvMesh& mesh = _mesh();
+        volScalarField p = _p();
+        volVectorField U = _U();
+        IOMRFZoneList& MRF = _MRF();
+        label BCind = inletIndex(k, 0);
+        volVectorField Ulift("Ulift" + name(k), U);
+        instantList Times = runTime.times();
+        runTime.setTime(Times[1], 1);
+        pisoControl potentialFlow(mesh, "potentialFlow");
+        Info << "Solving a lifting Problem" << endl;
+        Vector<double> v1(0, 0, 0);
+        v1[inletIndex(k, 1)] = 1;
+        Vector<double> v0(0, 0, 0);
+
+        for (label j = 0; j < U.boundaryField().size(); j++)
+        {
+            if (j == BCind)
+            {
+                assignBC(Ulift, j, v1);
+            }
+            else if (U.boundaryField()[BCind].type() == "fixedValue")
+            {
+                assignBC(Ulift, j, v0);
+            }
+            else
+            {
+            }
+
+            assignIF(Ulift, v0);
+            phi = linearInterpolate(Ulift) & mesh.Sf();
+        }
+
+        Info << "Constructing velocity potential field Phi\n" << endl;
+        volScalarField Phi
+        (
+            IOobject
+            (
+                "Phi",
+                runTime.timeName(),
+                mesh,
+                IOobject::READ_IF_PRESENT,
+                IOobject::NO_WRITE
+            ),
+            mesh,
+            dimensionedScalar("Phi", dimLength * dimVelocity, 0),
+            p.boundaryField().types()
+        );
+        label PhiRefCell = 0;
+        scalar PhiRefValue = 0;
+        setRefCell
+        (
+            Phi,
+            potentialFlow.dict(),
+            PhiRefCell,
+            PhiRefValue
+        );
+        mesh.setFluxRequired(Phi.name());
+        runTime.functionObjects().start();
+        MRF.makeRelative(phi);
+        adjustPhi(phi, Ulift, p);
+
+        while (potentialFlow.correctNonOrthogonal())
+        {
+            fvScalarMatrix PhiEqn
+            (
+                fvm::laplacian(dimensionedScalar("1", dimless, 1), Phi)
+                ==
+                fvc::div(phi)
+            );
+            PhiEqn.setReference(PhiRefCell, PhiRefValue);
+            PhiEqn.solve();
+
+            if (potentialFlow.finalNonOrthogonalIter())
+            {
+                phi -= PhiEqn.flux();
+            }
+        }
+
+        MRF.makeAbsolute(phi);
+        Info << "Continuity error = "
+             << mag(fvc::div(phi))().weightedAverage(mesh.V()).value()
+             << endl;
+        Ulift = fvc::reconstruct(phi);
+        Ulift.correctBoundaryConditions();
+        Info << "Interpolated velocity error = "
+             << (sqrt(sum(sqr((fvc::interpolate(U) & mesh.Sf()) - phi)))
+                 / sum(mesh.magSf())).value()
+             << endl;
+        Ulift.write();
+        liftfield.append(Ulift);
+    }
+}
+/*// Method to compute the lifting function for velocity
 void SteadyBB::liftSolve()
 {
     for (label k = 0; k < inletIndex.rows(); k++)
@@ -791,7 +1259,7 @@ void SteadyBB::liftSolve()
         Ulift.write();
         liftfield.append(Ulift);
     }
-}
+}*/
 
 void SteadyBB::change_viscosity(double mu)
 {

@@ -101,7 +101,11 @@ class SteadyBB: public steadyNS
         // Dummy variables to transform simplefoam into a class
         autoPtr<volScalarField> _UliftBC;
 
-	/// Initial Pressure field (for restart purposes)
+	// Dummy variables to transform pimplefoam into a class
+        /// pimpleControl
+        autoPtr<simpleControl> _simple;
+
+	/// Initial Temperature field (for restart purposes)
         autoPtr<volScalarField> _T0;
 
         /// Initial Velocity field (for restart purposes)
@@ -118,6 +122,7 @@ class SteadyBB: public steadyNS
 
         /// Buoyancy term - PPE equation
         Eigen::MatrixXd HP_matrix;
+	 Eigen::MatrixXd P_matrix2;
 
         /// Diffusive term - energy equation
         Eigen::MatrixXd Y_matrix;
@@ -128,6 +133,24 @@ class SteadyBB: public steadyNS
 
         /// Mass Matrix - energy equation
         Eigen::MatrixXd W_matrix;
+
+	/// Temperature boundary term for penalty method - vector
+        List <Eigen::MatrixXd> bcTempVec;
+
+        /// Temperature boundary term for penalty method - matrix
+        List <Eigen::MatrixXd> bcTempMat;
+
+	/// Temperature boundary term for penalty method - vector
+        List <Eigen::MatrixXd> bcGradTVec;
+
+        /// Temperature boundary term for penalty method - matrix
+        List <Eigen::MatrixXd> bcGradTMat;
+
+	/// Velocity boundary term for penalty method - vector
+        List <Eigen::MatrixXd> bcVelVec;
+
+        /// Velocity boundary term for penalty method - matrix
+        List <Eigen::MatrixXd> bcVelMat;
 
         // Other Variables
         /// Counter used for the output of the full order solutions
@@ -183,19 +206,6 @@ class SteadyBB: public steadyNS
         /// Source Term Heat
         autoPtr<volScalarField> _S;
 
-        /// Pointers for perfoming Nested-POD Method
-        /// List of pointers used to form the Weighted nested-POD modes for             velocity field
-        PtrList<volVectorField> UModesWeighted;
-
-        /// List of pointers used to form the Weighted nested-POD modes for             pressure field
-        PtrList<volScalarField> PModesWeighted;
-
-        /// List of pointers used to form the Weighted nested-POD modes for             temperature field
-        PtrList<volScalarField> TModesWeighted;
-
-        /// List of pointers used to form the Weighted nested-POD modes for             nut-field
-        PtrList<volScalarField> NUTModesWeighted;
-
         // Functions
         /// Perform a truthsolve for parameters mu_now
         void truthSolve(List<scalar> mu_now, fileName folder = "./ITHACAoutput/Offline");
@@ -205,7 +215,16 @@ class SteadyBB: public steadyNS
         ///
         /// @param[in]  type  The type of the supremizer approach, either done on the pressure snapshots or on pressure modes.
         ///
-        void solvesupremizer(word type = "snapshots");
+        void solvesupremizerP(word type = "snapshots");
+
+	///
+        /// solve the supremizer either with the use of the shifted pressure 
+	/// snaphots or the shifted pressure modes
+        ///
+        /// @param[in]  type  The type of the supremizer approach, either done 
+	/// on the pressure snapshots or on pressure modes.
+        ///
+        void solvesupremizerPrgh(word type = "snapshots");
 
         /// Perform a lift solve for temperature
         void liftSolveT();
@@ -270,6 +289,9 @@ class SteadyBB: public steadyNS
         /// @return     reduced matrix in Eigen::MatrixXd format for the divergence term.
         ///
         Eigen::MatrixXd divergence_term(label NUmodes, label NPrghmodes,
+                                        label NSUPmodes);
+
+	Eigen::MatrixXd divergence_term2(label NUmodes, label NPmodes,
                                         label NSUPmodes);
 
         //--------------------------------------------------------------------------
@@ -344,6 +366,67 @@ class SteadyBB: public steadyNS
         ///
         Eigen::Tensor<double, 3 > convective_term_tens_temperature(label NUmodes,
                 label NTmodes, label NSUPmodes);
+
+	//--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Temperature
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcTemperatureVec(label NTmodes);
+
+        //--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Temperature
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcTemperatureMat(label NTmodes);
+
+	//--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Temperature
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcGradientTVec(label NTmodes);
+
+        //--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Temperature
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcGradientTMat(label NTmodes);
+
+	//--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Velocity
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcVelocityVec(label NUmodes, label NSUPmodes);
+
+        //--------------------------------------------------------------------------
+        /// @brief      Boundary integral modes on boundary used by the penaly method - Velocity
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced third order tensor in List <Eigen::MatrixXd> format for the penalty method.
+        ///
+        List< Eigen::MatrixXd > bcVelocityMat(label NUmodes, label NSUPmodes);
+
 
 	/// set U and P back to the values into the 0 folder
         void restart();

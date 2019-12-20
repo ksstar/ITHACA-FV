@@ -15,13 +15,97 @@
 namespace SPLINTER
 {
 
-RBFSpline::RBFSpline(const DataTable& samples, RadialBasisFunctionType type)
+
+RBFSpline::RBFSpline(const DataTable& samples, RadialBasisFunctionType type,
+		     double e)
     : RBFSpline(samples, type, false)
 {
 }
 
+/*RBFSpline::RBFSpline(const DataTable& samples, RadialBasisFunctionType type,
+	  	     double e)
+    : samples(samples),
+      normalized(false),
+      precondition(false),
+      dim(samples.getNumVariables()),
+      numSamples(samples.getNumSamples())
+{
+    if (type == RadialBasisFunctionType::THIN_PLATE_SPLINE)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new ThinPlateSpline());
+	fn->e = e;
+    }
+    else if (type == RadialBasisFunctionType::MULTIQUADRIC)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new Multiquadric());
+	fn->e = e;
+    }
+    else if (type == RadialBasisFunctionType::INVERSE_QUADRIC)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new InverseQuadric());
+	fn->e = e;
+    }
+    else if (type == RadialBasisFunctionType::INVERSE_MULTIQUADRIC)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new InverseMultiquadric());
+	fn->e = e;
+    }
+    else if (type == RadialBasisFunctionType::GAUSSIAN)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new Gaussian());
+	fn->e = e;
+    }
+    else
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new ThinPlateSpline());
+	fn->e = e;
+    }
+}*/
 RBFSpline::RBFSpline(const DataTable& samples, RadialBasisFunctionType type,
-                     bool normalized)
+                     DenseMatrix w, double e)
+    : samples(samples),
+      normalized(false),
+      precondition(false),
+      dim(samples.getNumVariables()),
+      numSamples(samples.getNumSamples())
+{
+    if (type == RadialBasisFunctionType::THIN_PLATE_SPLINE)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new ThinPlateSpline());
+	fn->e = e;
+    }
+    else if (type == RadialBasisFunctionType::MULTIQUADRIC)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new Multiquadric());
+	fn->e = e;
+    }
+    else if (type == RadialBasisFunctionType::INVERSE_QUADRIC)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new InverseQuadric());
+	fn->e = e;
+    }
+    else if (type == RadialBasisFunctionType::INVERSE_MULTIQUADRIC)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new InverseMultiquadric());
+	fn->e = e;
+    }
+    else if (type == RadialBasisFunctionType::GAUSSIAN)
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new Gaussian());
+	fn->e = e;
+    }
+    else
+    {
+        fn = std::shared_ptr<RadialBasisFunction>(new ThinPlateSpline());
+	fn->e = e;
+    }
+
+     weights = w;
+
+}
+
+RBFSpline::RBFSpline(const DataTable& samples, RadialBasisFunctionType type,
+                     bool normalized, double e)
     : samples(samples),
       normalized(normalized),
       precondition(false),
@@ -31,27 +115,34 @@ RBFSpline::RBFSpline(const DataTable& samples, RadialBasisFunctionType type,
     if (type == RadialBasisFunctionType::THIN_PLATE_SPLINE)
     {
         fn = std::shared_ptr<RadialBasisFunction>(new ThinPlateSpline());
+	fn->e = e;
     }
     else if (type == RadialBasisFunctionType::MULTIQUADRIC)
     {
         fn = std::shared_ptr<RadialBasisFunction>(new Multiquadric());
+	fn->e = e;
     }
     else if (type == RadialBasisFunctionType::INVERSE_QUADRIC)
     {
         fn = std::shared_ptr<RadialBasisFunction>(new InverseQuadric());
+	fn->e = e;
     }
     else if (type == RadialBasisFunctionType::INVERSE_MULTIQUADRIC)
     {
         fn = std::shared_ptr<RadialBasisFunction>(new InverseMultiquadric());
+	fn->e = e;
     }
     else if (type == RadialBasisFunctionType::GAUSSIAN)
     {
         fn = std::shared_ptr<RadialBasisFunction>(new Gaussian());
+	fn->e = e;
     }
     else
     {
         fn = std::shared_ptr<RadialBasisFunction>(new ThinPlateSpline());
+	fn->e = e;
     }
+
 
     /* Want to solve the linear system A*w = b,
      * where w is the vector of weights.

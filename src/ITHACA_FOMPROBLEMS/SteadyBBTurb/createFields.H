@@ -41,6 +41,30 @@ IOdictionary transportProperties
     )
 );
 
+IOdictionary gravitationalProperties
+ (
+     IOobject
+     (
+         "gravitationalProperties",
+         runTime.constant(),
+         mesh,
+         IOobject::MUST_READ_IF_MODIFIED,
+         IOobject::NO_WRITE
+     )
+ );
+
+_g = autoPtr<dimensionedVector>
+      (
+          new dimensionedVector
+          (
+              "g",
+              dimensionSet(0, 1, -2, 0, 0),
+              gravitationalProperties.lookup("g")
+          )
+      );
+dimensionedVector& g = _g();
+
+
 // Laminar viscocity [m2/s]
 _nu = autoPtr<dimensionedScalar>
       (
@@ -52,6 +76,7 @@ _nu = autoPtr<dimensionedScalar>
           )
       );
 dimensionedScalar& nu = _nu();
+
 
 // Turbulent viscocity [m2/s]
 _nut = autoPtr<volScalarField>
@@ -69,7 +94,33 @@ _nut = autoPtr<volScalarField>
                mesh
            )
        );
-//volScalarField& nut = _nut();
+volScalarField& nut = _nut();
+
+// Turbulent kinetic energy 
+_k = autoPtr<volScalarField>
+       (
+           new volScalarField
+           (
+               IOobject
+               (
+                   "k",
+                   runTime.timeName(),
+                   mesh,
+                   IOobject::MUST_READ,
+                   IOobject::AUTO_WRITE
+               ),
+               mesh
+           )
+       );
+volScalarField& k = _k();
+
+//volScalarField T0(T);
+
+//_Tnut0 = autoPtr<volScalarField>
+ //     (
+ //         new volScalarField(nut0)
+ //     );
+
 
 _UliftBC = autoPtr<volScalarField>
            (
@@ -136,18 +187,10 @@ _TRef = autoPtr<dimensionedScalar>
         );
 dimensionedScalar& TRef = _TRef();
 
-// Gravitational constant
-Info << "\nReading g" << endl;
-_g = autoPtr<dimensionedVector>
-     (
-         new dimensionedVector
-         (
-             "g",
-             dimensionSet(0, 1, -2, 0, 0),
-             vector(0, -9.81, 0)
-         )
-     );
-dimensionedVector& g = _g();
+// const uniformDimensionedVectorField& g_ = db().lookupObject<uniformDimensionedVectorField>("g");
+
+
+
 
 Info << "\nReading hRef" << endl;
 _hRef = autoPtr<dimensionedScalar>
@@ -379,8 +422,8 @@ if (p_rgh.needReference())
          );
 }*/
 
-label pRefCell = 0;
-scalar pRefValue = 0.0;
+pRefCell = 0;
+pRefValue = 0.0;
 setRefCell(p, simple.dict(), pRefCell, pRefValue);
 
 mesh.setFluxRequired(p_rgh.name());
