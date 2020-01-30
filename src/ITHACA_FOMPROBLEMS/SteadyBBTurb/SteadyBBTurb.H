@@ -81,12 +81,18 @@ class SteadyBBTurb: public SteadyBB
         // Member Functions
 	/// List of snapshots for the solution for eddy viscosity
         PtrList<volScalarField> nutFields;
+	
+	/// List of snapshots for the solution for thermal diffusivity
+        PtrList<volScalarField> alphatField;
 
 	/// List of snapshots for the solution for kinetic energy
 	PtrList<volScalarField> kFields;
 
         /// List of POD modes for eddy viscosity
         PtrList<volScalarField> nutModes;
+
+	/// List of POD modes for thermal diffusivity
+        PtrList<volScalarField> alphatModes;
 
 	/// List of POD modes for kinetic energy
 	PtrList<volScalarField> kModes;
@@ -125,11 +131,18 @@ class SteadyBBTurb: public SteadyBB
 	/// Turbulent diffusivity term
         List <Eigen::MatrixXd> S_matrix;
 
+	/// Turbulent diffusivity term
+        List <Eigen::MatrixXd> S2_matrix;
+
+
         /// The matrix of L2 projection coefficients for the eddy viscosity
         Eigen::MatrixXd coeffL2;
 	
 	/// The matrix of L2 projection coefficients for the kinetic energy
 	Eigen::MatrixXd tkeCoeffL2;
+
+	/// The matrix of L2 projection coefficients for the kinetic energy
+	Eigen::MatrixXd alphatCoeffL2;
 
         /// The vector of L2 projection coefficients for the eddy viscosity snapshot
         Eigen::VectorXd nutCoeff;
@@ -146,6 +159,9 @@ class SteadyBBTurb: public SteadyBB
 	/// Number of kinetic energy modes used for the projection
 	label nTkeModes;
 
+	/// Number of kinetic energy modes used for the projection
+	label nAlphatModes;
+
         /// Eddy viscosity field
         autoPtr<volScalarField> _nut;
         autoPtr<volScalarField> _nuTilda;
@@ -160,6 +176,11 @@ class SteadyBBTurb: public SteadyBB
         std::vector<SPLINTER::DataTable*> tkeSamples;
         // Create a RBF splines for interpolation
         std::vector<SPLINTER::RBFSpline*> tkeRbfSplines;
+
+	// Create a samples for interpolation
+        std::vector<SPLINTER::DataTable*> alphatSamples;
+        // Create a RBF splines for interpolation
+        std::vector<SPLINTER::RBFSpline*> alphatRbfSplines;
         
 	//--------------------------------------------------------------------------
         /// @brief      Perform a truthsolve
@@ -251,6 +272,17 @@ class SteadyBBTurb: public SteadyBB
         /// @return     S matrix for turbulence treatment
         ///
         List < Eigen::MatrixXd > temperature_turbulence_term(label NTmodes,
+                label nNutModes);
+
+	///
+        /// @brief      S2 added matrix for the thermal turbulence treatement
+        ///
+        /// @param[in]  NTmodes    The number of temperature modes.
+        /// @param[in]  Nnutmodes  The number of eddy viscosity modes.
+        ///
+        /// @return     S2 matrix for turbulence treatment
+        ///
+        List < Eigen::MatrixXd > temperature_turbulence_term2(label NTmodes,
                 label nNutModes);
 
 	//--------------------------------------------------------------------------

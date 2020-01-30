@@ -297,7 +297,7 @@ List <Eigen::MatrixXd> SteadyBBTurb::temperature_turbulence_term(
     label NTmodes, label nNutModes)
 {
     label Stsize = NTmodes + liftfieldT.size();
-    List <Eigen::MatrixXd> S_matrix;
+    List <Eigen::MatrixXd> matrix;
     S_matrix.setSize(Stsize);
 
     for (label j = 0; j < Stsize; j++)
@@ -323,6 +323,39 @@ List <Eigen::MatrixXd> SteadyBBTurb::temperature_turbulence_term(
     ITHACAstream::exportMatrix(S_matrix, "S_matrix", "eigen",
                                "./ITHACAoutput/Matrices/S");
     return S_matrix;
+}
+
+
+List <Eigen::MatrixXd> SteadyBBTurb::temperature_turbulence_term2(
+    label NTmodes, label nNutModes)
+{
+    label Stsize = NTmodes + liftfieldT.size();
+    List <Eigen::MatrixXd> matrix;
+    S2_matrix.setSize(Stsize);
+
+    for (label j = 0; j < Stsize; j++)
+    {
+        S2_matrix[j].resize(nNutModes, Stsize);
+    }
+
+    for (label i = 0; i < Stsize; i++)
+    {
+        Info << "Filling layer number " << i + 1 << " in the matrix S2_matrix" << endl;
+
+        for (label j = 0; j < nNutModes; j++)
+        {
+            for (label k = 0; k < Stsize; k++)
+            {
+                S2_matrix[i](j, k) = fvc::domainIntegrate(L_T_modes[i] * fvc::laplacian(
+                                        alphatModes[j], L_T_modes[k])).value();
+            }
+        }
+    }
+
+    // Export the matrix
+    ITHACAstream::exportMatrix(S2_matrix, "S2_matrix", "eigen",
+                               "./ITHACAoutput/Matrices/S2");
+    return S2_matrix;
 }
 
 /*
@@ -752,6 +785,7 @@ void SteadyBBTurb::projectSUP(fileName folder, label NU, label NP, label NPrgh, 
 	ct1Tensor = turbulenceTensor1(NUmodes, NSUPmodes, nNutModes);
 	ct2Tensor = turbulenceTensor2(NUmodes, NSUPmodes, nNutModes);
 	S_matrix = temperature_turbulence_term(NTmodes, nNutModes);
+	S2_matrix = temperature_turbulence_term2(NTmodes, nNutModes);
 	//H_matrix4 = buoyant_term4(NUmodes, NTmodes, NSUPmodes);
 	//H_matrix5 = buoyant_term5(NUmodes, NTmodes, NSUPmodes);
 
@@ -848,6 +882,28 @@ void SteadyBBTurb::projectSUP(fileName folder, label NU, label NP, label NPrgh, 
                                                 SPLINTER::RadialBasisFunctionType::GAUSSIAN);
         std::cout << "Constructing RadialBasisFunction TKE for mode " << i + 1 << std::endl;
     }*/
+
+
+  // Get the coeffs for interpolation (the orthonormal one is used because basis are orthogonal)
+  alphatCoeffL2 = ITHACAutilities::get_coeffs_ortho(alphatField,
+              alphatModes, nTkeModes);
+
+    alphatSamples.resize(nTkeModes);
+    alphatRbfSplines.resize(nTkeModes);
+    
+     for (int i = 0; i < nTkeModes; i++)
+    {
+        alphatSamples[i] = new SPLINTER::DataTable(1, 1);
+
+        for (int j = 0; j < alphatCoeffL2.cols(); j++)
+        {
+            alphatSamples[i]->addSample(para2.row(j), alphatCoeffL2(i, j)); // samples[i]->addSample(mu.row(j), coeffL2(i, j));
+        }
+
+        alphatRbfSplines[i] = new SPLINTER::RBFSpline(*alphatSamples[i],
+                                                SPLINTER::RadialBasisFunctionType::GAUSSIAN, 0, e);
+        std::cout << "Constructing RadialBasisFunction TKE for mode " << i + 1 << std::endl;
+    }
 
 
 

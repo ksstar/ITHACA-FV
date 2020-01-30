@@ -66,7 +66,8 @@ struct newtonSteadyBBTurb: public newton_argument<double>
             N_BC(problem.inletIndex.rows()),
             Nphi_prgh(problem.NPrghmodes),
             gNut(problem.nNutModes),
-	    kNut(problem.nTkeModes)
+	    kNut(problem.nTkeModes),
+	    gAlphat(problem.nTkeModes)
         {}
 
         int operator()(const Eigen::VectorXd& x, Eigen::VectorXd& fvec) const;
@@ -82,6 +83,7 @@ struct newtonSteadyBBTurb: public newton_argument<double>
         int N_BC_t;
         int Nphi_prgh;
         Eigen::VectorXd gNut;
+	Eigen::VectorXd gAlphat;
 	Eigen::VectorXd kNut;
         scalar nu;
         scalar Pr;
@@ -144,6 +146,9 @@ class ReducedSteadyBBTurb: public ReducedSteadyBB
         /// Reconstructed eddy viscosity field
         PtrList<volScalarField> nutRec;
 
+        /// Reconstructed eddy viscosity field
+        PtrList<volScalarField> alphatRec;
+
         /// Vector of eddy viscosity RBF interoplated coefficients
         Eigen::VectorXd rbfCoeff;
 
@@ -151,7 +156,7 @@ class ReducedSteadyBBTurb: public ReducedSteadyBB
 	Eigen::VectorXd tkeRbfCoeff;
 
 	/// To determine index
-	Eigen::VectorXd par_on_BC;
+	Eigen::VectorXd parOn;
 
         /// Number of viscosity modes
         int nphiNut;
@@ -162,6 +167,15 @@ class ReducedSteadyBBTurb: public ReducedSteadyBB
 	/// Turbulent Prandtl number
  	scalar Prt;
 
+	scalar h;
+
+	scalar Tref;
+
+	scalar lambda;
+
+	scalar Re;
+
+	scalar Ub;
         /// Newton Object to solve the nonlinear problem
         newtonSteadyBBTurb newtonObject;
 
@@ -187,6 +201,10 @@ class ReducedSteadyBBTurb: public ReducedSteadyBB
         ///
         void reconstructSUP(fileName folder = "./ITHACAOutput/online_rec",
                             int printEvery = 1);
+
+	void nonDimNum();
+
+	void nonDimNumOn();
 
 };
 

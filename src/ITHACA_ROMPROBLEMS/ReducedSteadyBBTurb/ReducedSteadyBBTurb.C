@@ -30,6 +30,10 @@ License
 
 #include "ReducedSteadyBBTurb.H"
 
+#include "fvc.H"
+//#include "fvm.H"
+//#include "wallFvPatch.H"
+
 // * * * * * * * * * * * * * * * Constructors * * * * * * * * * * * * * * * * //
 
 // Constructor
@@ -110,9 +114,9 @@ int newtonSteadyBBTurb::operator()(const Eigen::VectorXd& x,
     // Convective term temperature
     Eigen::MatrixXd qq(1, 1);
     Eigen::MatrixXd st(1, 1);
+    Eigen::MatrixXd st2(1, 1);
     // diffusive term temperature
     Eigen::VectorXd m6 = problem->Y_matrix * cTmp * (nu / Pr) ;
-//std::cout << "HERE 3 "  << std::endl;
     // Penalty term - Temperature
     Eigen::MatrixXd penaltyT = Eigen::MatrixXd::Zero(Nphi_t, N_BC_t+1);
     // Penalty term
@@ -132,7 +136,7 @@ int newtonSteadyBBTurb::operator()(const Eigen::VectorXd& x,
 	 bcVelVec2(l, 0) = bc.dot(Out);
     }
 
-    for (label l = 0; l < problem->NSUPmodes; l++)
+   /* for (label l = 0; l < problem->NSUPmodes; l++)
     {
 	label j = l + problem->NUmodes;
     	unsigned int size = problem->supmodes[l].boundaryField()[0].size();
@@ -142,7 +146,7 @@ int newtonSteadyBBTurb::operator()(const Eigen::VectorXd& x,
              Out(k) =  problem->supmodes[l].boundaryField()[0][k][0];
         }
 	bcVelVec2(j, 0) = bc.dot(Out);
-    }
+    }*/
 
     // Term for penalty method
     if (problem->bcMethod == "penalty")
@@ -191,9 +195,11 @@ int newtonSteadyBBTurb::operator()(const Eigen::VectorXd& x,
 	//label k = i + Nphi_u + Nphi_prgh;
 	label k = i + Nphi_u ;
         qq = aTmp.transpose() * problem->Q_matrix[i] * cTmp;
-        st = gNut.transpose() * problem->S_matrix[i] * cTmp;
+        //st = gNut.transpose() * problem->S_matrix[i] * cTmp;
+	st2 = gAlphat.transpose() * problem->S2_matrix[i] * cTmp;
 
-        fvec(k) = m6(i) - qq(0, 0) + st(0, 0) / Prt;
+        //fvec(k) = m6(i) - qq(0, 0) + st(0, 0) / Prt;
+	fvec(k) = m6(i) - qq(0, 0) + st2(0, 0) ;
 
  	if (problem->bcMethod == "penalty")
         {
@@ -246,12 +252,11 @@ void ReducedSteadyBBTurb::solveOnlineSUP(Eigen::MatrixXd vel, Eigen::MatrixXd te
     //scalar index;
     Eigen::MatrixXf::Index index;
     // find nearest neighbour
-    (par_on_BC.array()-gradient_t(0,0)).cwiseAbs().minCoeff(&index);
+    (parOn.array()-gradient_t(0,0)).cwiseAbs().minCoeff(&index);
 
     std::cout << "index = " << index << std::endl;
 
-// Set Initial Conditions
-    y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[index],
+     y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[index],
                      LUmodes);
 
     y.tail(Nphi_t) = ITHACAutilities::get_coeffs(problem->Tfield[index],
@@ -338,6 +343,21 @@ std::cout << "newtonObject.gNut(0) = " << newtonObject.gNut(0) << std::endl;
     ITHACAstream::exportSolution(nutTmp, name(count_online_solve), "./ITHACAoutput/ReconstructionSUP");
     nutRec.append(nutTmp);
 
+   for (label i = 0; i < nphiNut; i++)
+        {
+            newtonObject.gAlphat(i) = problem->alphatRbfSplines[i]->eval(gradient_t);
+	    rbfCoeff(i) = newtonObject.gAlphat(i);
+        }
+
+    volScalarField alphatTmp("alphatRec", problem->alphatModes[0] * 0);
+
+    for (label j = 0; j < nphiNut; j++)
+    {
+        alphatTmp += problem->alphatModes[j] * newtonObject.gAlphat(j);
+    }
+    ITHACAstream::exportSolution(alphatTmp, name(count_online_solve), "./ITHACAoutput/ReconstructionSUP");
+    alphatRec.append(alphatTmp);
+
     hnls.solve(y);
 //std::cout << "HERE C "  << std::endl;
     Eigen::VectorXd res(y);
@@ -415,12 +435,221 @@ void ReducedSteadyBBTurb::reconstructSUP(fileName folder, int printEvery)
             UREC.append(uRec);
 	    TREC.append(TRec);
             PREC.append(prghRec);
-	    
+
+	// Calculation local Stanton number
+    	   label stantonSize = TRec.boundaryFieldRef()[4].size();
+
+	   //Eigen::MatrixXd stantonOLD(stantonSize, 1);
+    	   Eigen::MatrixXd stanton(stantonSize, 1);
+	   Eigen::MatrixXd CoordHeater(stantonSize, 1);
+	   Eigen::MatrixXd Cf(stantonSize, 1);
+
+	   vectorField BC5 = uRec.boundaryField()[4].snGrad();
+	   for (label j = 0; j < stantonSize; j++)
+	   {
+	   	//stantonOLD(j,0) = (gradient_t(0,0) * h) / (lambda * (TRec.boundaryField()[4][j] - Tref));
+		//stantonOLD(j,0) = stantonOLD(j,0)/ (Re * Pr);
+		//stanton(j,0) = (gradient_t(0,0)*lambda*Pr) / (Ub *nu * (TRec.boundaryField()[4][j] - Tref));
+		stanton(j,0) = (gradient_t(i,0)*nu) / (Ub *lambda*Pr* (TRec.boundaryField()[4][j] - Tref));
+		CoordHeater(j,0) = TRec.mesh().boundaryMesh()[4].faceCentres()[j].x();
+		Cf(j,0) = (2*nu*-BC5[j].component(0))/(Ub*Ub)*1000;
+
+	   }
+
+	   ITHACAstream::exportMatrix(stanton, "stantonROM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	   //ITHACAstream::exportMatrix(stantonOLD, "stantonOLDROM", "eigen",
+                         //      "./ITHACAoutput/stanton/"+name(i+1));
+
+	   ITHACAstream::exportMatrix(CoordHeater, "CoordHeaterROM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	   ITHACAstream::exportMatrix(Cf, "CfROM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+
+	   label stantonLWSize = TRec.boundaryFieldRef()[3].size();
+	   Eigen::MatrixXd stantonLW(stantonLWSize, 1);
+ 	  // Eigen::MatrixXd stantonLWOLD(stantonLWSize, 1);
+	   Eigen::MatrixXd CoordLW(stantonSize, 1);
+	   Eigen::MatrixXd CfLW(stantonSize, 1);
+	   vectorField BC5LW = uRec.boundaryField()[3].snGrad();
+
+	   for (label j = 0; j < stantonLWSize; j++)
+	   {
+	   //	stantonLWOLD(j,0) = (gradient_t(0,0) * h) / (lambda * (TRec.boundaryField()[3][j] - Tref));
+		//stantonLWOLD(j,0) = stantonLWOLD(j,0)/ (Re * Pr);
+		//stantonLW(j,0) = (gradient_t(0,0)*lambda*Pr) / (Ub *nu * (TRec.boundaryField()[3][j] - Tref));
+		stantonLW(j,0) = (gradient_t(i,0)*nu) / (Ub *lambda*Pr* (TRec.boundaryField()[3][j] - Tref));
+		CoordLW(j,0) = TRec.mesh().boundaryMesh()[3].faceCentres()[j].x();
+		CfLW(j,0) = (2*nu*-BC5LW[j].component(0))/(Ub*Ub)*1000;
+	   }
+
+	  ITHACAstream::exportMatrix(stantonLW, "stantonLWROM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	//ITHACAstream::exportMatrix(stantonLWOLD, "stantonLWROMOLD", "eigen",
+                  //             "./ITHACAoutput/stanton/"+name(i+1));
+
+	  ITHACAstream::exportMatrix(CoordLW, "CoordLWROM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	ITHACAstream::exportMatrix(CfLW, "CfLWROM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+    
         }
 
         counter++;
     }
 }
+
+
+void ReducedSteadyBBTurb::nonDimNum()
+{
+    for (label i = 0; i < problem->Ufield.size(); i++)
+    {
+    	   label stantonSize = problem->Tfield[i].boundaryFieldRef()[4].size();
+
+    	   Eigen::MatrixXd stanton(stantonSize, 1);
+	   Eigen::MatrixXd stantonOLD(stantonSize, 1);
+	   Eigen::MatrixXd CoordHeater(stantonSize, 1);
+	   Eigen::MatrixXd Cf(stantonSize, 1);
+	   vectorField BC5 = problem->Ufield[i].boundaryField()[4].snGrad();
+
+	   for (label j = 0; j < stantonSize; j++)
+	   {
+	   	stantonOLD(j,0) = (gradient_t(i,0) * h) / (lambda * (problem->Tfield[i].boundaryField()[4][j] - Tref));
+		stantonOLD(j,0) = stantonOLD(j,0)/ (Re * Pr);
+	        stanton(j,0) = (gradient_t(i,0)*lambda*Pr) / (Ub *nu * (problem->Tfield[i].boundaryField()[4][j] - Tref));
+		CoordHeater(j,0) = problem->Tfield[i].mesh().boundaryMesh()[4].faceCentres()[j].x();
+		Cf(j,0) = (2*nu*-BC5[j].component(0))/(Ub*Ub)*1000;
+
+	   }
+
+	   ITHACAstream::exportMatrix(stanton, "stantonFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	   ITHACAstream::exportMatrix(stantonOLD, "stantonFOMOLD", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	   ITHACAstream::exportMatrix(CoordHeater, "CoordHeaterFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	   ITHACAstream::exportMatrix(Cf, "CfFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+
+	   label stantonLWSize = problem->Tfield[i].boundaryFieldRef()[3].size();
+	   Eigen::MatrixXd stantonLW(stantonLWSize, 1);
+	   Eigen::MatrixXd stantonLWOLD(stantonLWSize, 1);
+	   Eigen::MatrixXd CoordLW(stantonSize, 1);
+	   Eigen::MatrixXd CfLW(stantonSize, 1);
+	   vectorField BC5LW = problem->Ufield[i].boundaryField()[3].snGrad();
+
+	   for (label j = 0; j < stantonLWSize; j++)
+	   {
+	   	stantonLWOLD(j,0) = (gradient_t(i,0) * h) / (lambda * (problem->Tfield[i].boundaryField()[3][j] - Tref));
+		stantonLWOLD(j,0) = stantonLWOLD(j,0)/ (Re * Pr);
+	        stantonLW(j,0) = (gradient_t(i,0)*lambda*Pr) / (Ub *nu * (problem->Tfield[i].boundaryField()[3][j] - Tref));
+		CoordLW(j,0) = problem->Tfield[i].mesh().boundaryMesh()[3].faceCentres()[j].x();
+		CfLW(j,0) = (2*nu*-BC5LW[j].component(0))/(Ub*Ub)*1000;
+	   }
+
+
+	  ITHACAstream::exportMatrix(stantonLW, "stantonLWFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	  ITHACAstream::exportMatrix(stantonLWOLD, "stantonLWFOMOLD", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	  ITHACAstream::exportMatrix(CoordLW, "CoordLWFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	  ITHACAstream::exportMatrix(CfLW, "CfLWFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+    }
+
+}
+
+
+void ReducedSteadyBBTurb::nonDimNumOn()
+{
+
+
+    for (label i = 0; i < problem->Ufield_on.size(); i++)
+    {
+    	   label stantonSize = problem->Tfield_on[i].boundaryFieldRef()[4].size();
+
+    	   Eigen::MatrixXd stanton(stantonSize, 1);
+	   //Eigen::MatrixXd stantonOLD(stantonSize, 1);
+	   Eigen::MatrixXd CoordHeater(stantonSize, 1);
+	   Eigen::MatrixXd Cf(stantonSize, 1);
+	   vectorField BC5 = problem->Ufield_on[i].boundaryField()[4].snGrad();
+
+std::cout << "### gradient(i,0) " << gradient_t(i,0)<< " ###" << std::endl; 
+
+	   for (label j = 0; j < stantonSize; j++)
+	   {
+		
+	   	//stantonOLD(j,0) = (gradient_t(i,0) * h) / (lambda * (problem->Tfield_on[i].boundaryField()[4][j] - Tref));
+		//stantonOLD(j,0) = stantonOLD(j,0)/ (Re * Pr);
+		//stanton(j,0) = (gradient_t(j,0)*lambda*Pr) / (Ub *nu * (problem->Tfield_on[i].boundaryField()[4][j] - Tref));
+		stanton(j,0) = (gradient_t(i,0)*nu) / (Ub *lambda*Pr* (problem->Tfield_on[i].boundaryField()[4][j] - Tref));
+		CoordHeater(j,0) = problem->Tfield_on[i].mesh().boundaryMesh()[4].faceCentres()[j].x();
+		Cf(j,0) = (2*nu*-BC5[j].component(0))/(Ub*Ub)*1000;
+
+	   }
+
+	   ITHACAstream::exportMatrix(stanton, "stantonFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	   //ITHACAstream::exportMatrix(stantonOLD, "stantonFOMOLD", "eigen",
+                  //             "./ITHACAoutput/stanton/"+name(i+1));
+
+	   ITHACAstream::exportMatrix(CoordHeater, "CoordHeaterFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	   ITHACAstream::exportMatrix(Cf, "CfFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+
+	   label stantonLWSize = problem->Tfield_on[i].boundaryFieldRef()[3].size();
+	   Eigen::MatrixXd stantonLW(stantonLWSize, 1);
+	   //Eigen::MatrixXd stantonLWOLD(stantonLWSize, 1);
+	   Eigen::MatrixXd CoordLW(stantonSize, 1);
+	   Eigen::MatrixXd CfLW(stantonSize, 1);
+	   vectorField BC5LW = problem->Ufield_on[i].boundaryField()[3].snGrad();
+
+	   for (label j = 0; j < stantonLWSize; j++)
+	   {
+	   	//stantonLWOLD(j,0) = (gradient_t(i,0) * h) / (lambda * (problem->Tfield_on[i].boundaryField()[3][j] - Tref));
+		//stantonLWOLD(j,0) = stantonLWOLD(j,0)/ (Re * Pr);
+	        //stantonLW(j,0) = (gradient_t(j,0)*lambda*Pr) / (Ub *nu * (problem->Tfield_on[i].boundaryField()[3][j] - Tref));
+		stantonLW(j,0) = (gradient_t(i,0)*nu) / (Ub *lambda*Pr* (problem->Tfield_on[i].boundaryField()[3][j] - Tref));
+		
+		CoordLW(j,0) = problem->Tfield_on[i].mesh().boundaryMesh()[3].faceCentres()[j].x();
+		CfLW(j,0) = (2*nu*-BC5LW[j].component(0))/(Ub*Ub)*1000;
+	   }
+
+
+	  ITHACAstream::exportMatrix(stantonLW, "stantonLWFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	  //ITHACAstream::exportMatrix(stantonLWOLD, "stantonLWFOMOLD", "eigen",
+                          //     "./ITHACAoutput/stanton/"+name(i+1));
+
+	  ITHACAstream::exportMatrix(CoordLW, "CoordLWFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+	  ITHACAstream::exportMatrix(CfLW, "CfLWFOM", "eigen",
+                               "./ITHACAoutput/stanton/"+name(i+1));
+
+    }
+
+}
+
 
 // ************************************************************************* //
 
