@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
                                        rec_fieldU);
         Eigen::MatrixXd L2errorProjT = ITHACAutilities::error_listfields(example.Tfield,
                                        rec_fieldT);
-        L2errorProjMatrixU.col(i) = L2errorProjU;
+        L2errorPrlojMatrixU.col(i) = L2errorProjU;
         L2errorProjMatrixT.col(i) = L2errorProjT;
     }
 
