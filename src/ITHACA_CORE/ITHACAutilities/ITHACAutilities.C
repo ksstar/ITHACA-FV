@@ -512,6 +512,26 @@ Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
     return vol3;
 }
 
+template<class TypeField, class TypeField2>
+Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV_Full(
+    GeometricField<TypeField, fvPatchField, volMesh>& snapshotU, 
+    GeometricField<TypeField2, fvPatchField, volMesh>& snapshotP)
+{
+    /*Eigen::MatrixXd snapEigen = Foam2Eigen::field2EigenFull(snapshotU, snapshotP);
+    int dim = std::nearbyint(snapEigen.rows() / (snapshotU.mesh().V()).size());
+    Eigen::VectorXd volumes = Foam2Eigen::field2EigenFull(snapshotU.mesh().V(),snapshotP.mesh().V());
+    Eigen::VectorXd vol3 = volumes.replicate(dim, 1);*/
+
+    //Eigen::VectorXd snapEigen = Foam2Eigen::field2EigenFull(snapshotU, snapshotP);
+    //int dim = std::nearbyint(snapEigen.rows() / (snapshotU.mesh().V()).size());
+    //Eigen::VectorXd volumes = Foam2Eigen::field2EigenFull(snapshotU.mesh().V(),snapshotP.mesh().V());
+   // Eigen::VectorXd vol3 = volumes;
+
+Eigen::VectorXd vol3;
+
+    return vol3;
+}
+
 Eigen::VectorXd ITHACAutilities::get_coeffs(volVectorField snapshot,
         PtrList<volVectorField>& modes, int Nmodes)
 {
@@ -1646,6 +1666,10 @@ template Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
     GeometricField<scalar, fvPatchField, volMesh>& snapshot);
 template Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
     GeometricField<vector, fvPatchField, volMesh>& snapshot);
+
+template Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV_Full(
+    GeometricField<vector, fvPatchField, volMesh>& snapshotU,  
+    GeometricField<scalar, fvPatchField, volMesh>&  snapshotP);
 
 template Eigen::MatrixXd ITHACAutilities::get_coeffs(PtrList<volScalarField>
         snapshots, PtrList<volScalarField> modes, int Nmodes);

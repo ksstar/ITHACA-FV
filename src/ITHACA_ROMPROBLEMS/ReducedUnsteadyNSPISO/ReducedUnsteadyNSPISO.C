@@ -29,20 +29,20 @@ License
 \*---------------------------------------------------------------------------*/
 
 /// \file
-/// Source file of the reducedUnsteadyNS class
+/// Source file of the reducedUnsteadyNSPISO class
 
 
-#include "ReducedUnsteadyNS.H"
+#include "ReducedUnsteadyNSPISO.H"
 
 
 // * * * * * * * * * * * * * * * Constructors * * * * * * * * * * * * * * * * //
 
 // Constructor initialization
-reducedUnsteadyNS::reducedUnsteadyNS()
+reducedUnsteadyNSPISO::reducedUnsteadyNSPISO()
 {
 }
 
-reducedUnsteadyNS::reducedUnsteadyNS(unsteadyNS& FOMproblem)
+reducedUnsteadyNSPISO::reducedUnsteadyNSPISO(unsteadyNSPISO& FOMproblem)
     :
     problem(&FOMproblem)
 {
@@ -72,16 +72,16 @@ reducedUnsteadyNS::reducedUnsteadyNS(unsteadyNS& FOMproblem)
         Pmodes.append(problem->Pmodes[k]);
     }
 
-    newton_object_sup = newton_unsteadyNS_sup(Nphi_u + Nphi_p, Nphi_u + Nphi_p,
+    newton_object_sup = newton_unsteadyNSPISO_sup(Nphi_u + Nphi_p, Nphi_u + Nphi_p,
                         FOMproblem);
-    newton_object_PPE = newton_unsteadyNS_PPE(Nphi_u + Nphi_p, Nphi_u + Nphi_p,
+    newton_object_PPE = newton_unsteadyNSPISO_PPE(Nphi_u + Nphi_p, Nphi_u + Nphi_p,
                         FOMproblem);
 }
 
 // * * * * * * * * * * * * * Operators supremizer  * * * * * * * * * * * * * //
 
 // Operator to evaluate the residual for the Supremizer approach
-int newton_unsteadyNS_sup::operator()(const Eigen::VectorXd& x,
+int newton_unsteadyNSPISO_sup::operator()(const Eigen::VectorXd& x,
                                       Eigen::VectorXd& fvec) const
 {
     Eigen::VectorXd a_dot(Nphi_u);
@@ -162,10 +162,10 @@ int newton_unsteadyNS_sup::operator()(const Eigen::VectorXd& x,
 }
 
 // Operator to evaluate the Jacobian for the supremizer approach
-int newton_unsteadyNS_sup::df(const Eigen::VectorXd& x,
+int newton_unsteadyNSPISO_sup::df(const Eigen::VectorXd& x,
                               Eigen::MatrixXd& fjac) const
 {
-    Eigen::NumericalDiff<newton_unsteadyNS_sup> numDiff(*this);
+    Eigen::NumericalDiff<newton_unsteadyNSPISO_sup> numDiff(*this);
     numDiff.df(x, fjac);
     return 0;
 }
@@ -173,7 +173,7 @@ int newton_unsteadyNS_sup::df(const Eigen::VectorXd& x,
 // * * * * * * * * * * * * * * * Operators PPE * * * * * * * * * * * * * * * //
 
 // Operator to evaluate the residual for the Pressure Poisson Equation (PPE) approach
-int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
+int newton_unsteadyNSPISO_PPE::operator()(const Eigen::VectorXd& x,
                                       Eigen::VectorXd& fvec) const
 {
     Eigen::VectorXd a_dot(Nphi_u);
@@ -263,10 +263,10 @@ int newton_unsteadyNS_PPE::operator()(const Eigen::VectorXd& x,
 }
 
 // Operator to evaluate the Jacobian for the supremizer approach
-int newton_unsteadyNS_PPE::df(const Eigen::VectorXd& x,
+int newton_unsteadyNSPISO_PPE::df(const Eigen::VectorXd& x,
                               Eigen::MatrixXd& fjac) const
 {
-    Eigen::NumericalDiff<newton_unsteadyNS_PPE> numDiff(*this);
+    Eigen::NumericalDiff<newton_unsteadyNSPISO_PPE> numDiff(*this);
     numDiff.df(x, fjac);
     return 0;
 }
@@ -277,7 +277,7 @@ int newton_unsteadyNS_PPE::df(const Eigen::VectorXd& x,
 
 
 
-void reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd vel,
+void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
                                         label startSnap)
 {
     M_Assert(exportEvery >= dt,
@@ -367,7 +367,7 @@ void reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd vel,
     counter2++;
     nextStore += numberOfStores;
     // Create nonlinear solver object
-    Eigen::HybridNonLinearSolver<newton_unsteadyNS_sup> hnls(newton_object_sup);
+    Eigen::HybridNonLinearSolver<newton_unsteadyNSPISO_sup> hnls(newton_object_sup);
     // Set output colors for fancy output
     Color::Modifier red(Color::FG_RED);
     Color::Modifier green(Color::FG_GREEN);
@@ -484,7 +484,7 @@ void reducedUnsteadyNS::solveOnline_sup(Eigen::MatrixXd vel,
 
 // * * * * * * * * * * * * * * * Solve Functions PPE * * * * * * * * * * * * * //
 
-void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
+void reducedUnsteadyNSPISO::solveOnline_PPE(Eigen::MatrixXd vel,
                                         label startSnap)
 {
     M_Assert(exportEvery >= dt,
@@ -558,7 +558,7 @@ void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
     counter2++;
     nextStore += numberOfStores;
     // Create nonlinear solver object
-    Eigen::HybridNonLinearSolver<newton_unsteadyNS_PPE> hnls(newton_object_PPE);
+    Eigen::HybridNonLinearSolver<newton_unsteadyNSPISO_PPE> hnls(newton_object_PPE);
     // Set output colors for fancy output
     Color::Modifier red(Color::FG_RED);
     Color::Modifier green(Color::FG_GREEN);
@@ -643,7 +643,7 @@ void reducedUnsteadyNS::solveOnline_PPE(Eigen::MatrixXd vel,
                                "./ITHACAoutput/red_coeff");
 }
 
-Eigen::MatrixXd reducedUnsteadyNS::penalty_sup(Eigen::MatrixXd& vel_now,
+Eigen::MatrixXd reducedUnsteadyNSPISO::penalty_sup(Eigen::MatrixXd& vel_now,
         Eigen::MatrixXd& tauIter,
         label startSnap)
 {
@@ -691,7 +691,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_sup(Eigen::MatrixXd& vel_now,
         }
 
         // Create nonlinear solver object
-        Eigen::HybridNonLinearSolver<newton_unsteadyNS_sup> hnls(newton_object_sup);
+        Eigen::HybridNonLinearSolver<newton_unsteadyNSPISO_sup> hnls(newton_object_sup);
         // Set output colors for fancy output
         Color::Modifier red(Color::FG_RED);
         Color::Modifier green(Color::FG_GREEN);
@@ -764,7 +764,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_sup(Eigen::MatrixXd& vel_now,
     return tauIter;
 }
 
-Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now,
+Eigen::MatrixXd reducedUnsteadyNSPISO::penalty_PPE(Eigen::MatrixXd& vel_now,
         Eigen::MatrixXd& tauIter,
         label startSnap)
 {
@@ -812,7 +812,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now,
         }
 
         // Create nonlinear solver object
-        Eigen::HybridNonLinearSolver<newton_unsteadyNS_PPE> hnls(newton_object_PPE);
+        Eigen::HybridNonLinearSolver<newton_unsteadyNSPISO_PPE> hnls(newton_object_PPE);
         // Set output colors for fancy output
         Color::Modifier red(Color::FG_RED);
         Color::Modifier green(Color::FG_GREEN);
@@ -885,7 +885,7 @@ Eigen::MatrixXd reducedUnsteadyNS::penalty_PPE(Eigen::MatrixXd& vel_now,
     return tauIter;
 }
 
-void reducedUnsteadyNS::reconstruct_PPE(fileName folder)
+void reducedUnsteadyNSPISO::reconstruct_PPE(fileName folder)
 {
     mkDir(folder);
     ITHACAutilities::createSymLink(folder);
@@ -926,7 +926,7 @@ void reducedUnsteadyNS::reconstruct_PPE(fileName folder)
     }
 }
 
-void reducedUnsteadyNS::reconstruct_sup(fileName folder)
+void reducedUnsteadyNSPISO::reconstruct_sup(fileName folder)
 {
     mkDir(folder);
     ITHACAutilities::createSymLink(folder);
@@ -967,7 +967,7 @@ void reducedUnsteadyNS::reconstruct_sup(fileName folder)
     }
 }
 
-Eigen::MatrixXd reducedUnsteadyNS::setOnlineVelocity(Eigen::MatrixXd vel)
+Eigen::MatrixXd reducedUnsteadyNSPISO::setOnlineVelocity(Eigen::MatrixXd vel)
 {
     assert(problem->inletIndex.rows() == vel.rows()
            && "Imposed boundary conditions dimensions do not match given values matrix dimensions");

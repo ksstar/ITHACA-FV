@@ -88,6 +88,14 @@ class steadyNS: public reductionProblem
         /// List of pointers used to form the velocity snapshots matrix
         PtrList<volVectorField> Ufield;
 
+
+	PtrList<volScalarField> Pfield_on;
+        PtrList<volVectorField> Ufield_on;
+
+	PtrList<volScalarField> Udivfield;
+	PtrList<volScalarField> Phidivfield;
+        PtrList<surfaceScalarField> Phifield;
+
         /// List of pointers used to form the supremizer snapshots matrix
         PtrList<volVectorField> supfield;
 
@@ -137,6 +145,9 @@ class steadyNS: public reductionProblem
 
         /// Gradient of pressure matrix
         Eigen::MatrixXd K_matrix;
+
+Eigen::MatrixXd bw;
+Eigen::MatrixXd BC_matrix;
 
         /// Non linear term
         List <Eigen::MatrixXd> C_matrix;
@@ -333,6 +344,8 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the mass matrix.
         ///
         Eigen::MatrixXd  mass_term(label NUmodes, label NPmodes, label NSUPmodes);
+
+	Eigen::MatrixXd  boundary_term(label NUmodes, label NSUPmodes);
 
         // Projection Methods Continuity Equation
 

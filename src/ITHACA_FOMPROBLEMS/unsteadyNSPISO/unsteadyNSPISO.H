@@ -24,22 +24,22 @@ License
 Class
     unsteadyNS
 Description
-    Reduction class for a NON-Stationary NS problem
+    Reduction class for a NON-Stationary NS plus energy equation problem
 SourceFiles
-    unsteadyNS.C
+    unsteadyNSPISO.C
 \*---------------------------------------------------------------------------*/
 
 /// \file
-/// Header file of the unsteadyNS class.
+/// Header file of the unsteadyNSPISO class.
 /// \dir
 /// Directory containing the header and source files for the unsteadyNS class.
 
-#ifndef unsteadyNS_H
-#define unsteadyNS_H
+#ifndef unsteadyNSPISO_H
+#define unsteadyNSPISO_H
 #include "fvCFD.H"
 #include "singlePhaseTransportModel.H"
 #include "turbulentTransportModel.H"
-#include "pimpleControl.H"
+#include "pisoControl.H"
 #include "fvOptions.H"
 #include "IOporosityModelList.H"
 #include "IOMRFZoneList.H"
@@ -50,22 +50,25 @@ SourceFiles
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 /*---------------------------------------------------------------------------*\
-                        Class SteadyNS Declaration
+                        Class unsteadyNSPISO Declaration
 \*---------------------------------------------------------------------------*/
 
-/// Implementation of a parametrized full order <b> unsteady NS problem </b> and preparation of the the reduced matrices for the online solve.
-/** In this class are implemented the methods for the offline solve of a unsteady NS problem
+/// Implementation of a parametrized full order <b> unsteady NS problem weakly coupled with the energy equation </b> and preparation of the the reduced matrices for the online solve.
+/** In this class are implemented the methods for the offline solve of a unsteady NST problem
 and the for the generation of the reduced matrices for subsequent online solve, this class is a son
-of the steadyNS class */
-class unsteadyNS: public steadyNS
+of the unsteadyNS class */
+class unsteadyNSPISO: public steadyNS
 {
+
     public:
-        // Constructors
+        /// Constructors
+
         /// Construct Null
-        unsteadyNS();
+        unsteadyNSPISO();
 
         /// Construct with argc and argv
-        unsteadyNS(int argc, char* argv[]);
+        unsteadyNSPISO(int argc, char* argv[]);
+        //~unsteadyNST() {};
 
         // Specific variable for the unstationary case
         /// Start Time (initial time to start storing the snapshots)
@@ -83,13 +86,6 @@ class unsteadyNS: public steadyNS
         /// Auxiliary variable to store the next writing instant
         scalar nextWrite;
 
-        // Dummy variables to transform pimplefoam into a class
-        /// pimpleControl
-        autoPtr<pimpleControl> _pimple;
-
-        /// Turbulence model
-        autoPtr<incompressible::turbulenceModel> turbulence;
-
         /// adjustTimeStep
         bool adjustTimeStep;
 
@@ -98,6 +94,9 @@ class unsteadyNS: public steadyNS
 
         /// maxDeltaT
         scalar maxDeltaT;
+
+        ///dimensionedScalar nu;
+        autoPtr<dimensionedScalar> _nu;
 
         // Counter used for the time-dependent boundary conditions
         label counter2 = 1;
@@ -114,15 +113,23 @@ class unsteadyNS: public steadyNS
 	// Matrix to store norm of div(U) and div(phi)
 	Eigen::MatrixXd DivNorm;
 
+        /// pisoControl
+        autoPtr<pisoControl> _piso;
 
-        // Functions
+        /// Reference pressure cell
+        label pRefCell;
 
-        //--------------------------------------------------------------------------
-        /// @brief      Perform a truthsolve
-        /// @param[in]  mu_now  The actual value of the parameter for this truthSolve. Used only
-        /// to construct mu_interp matrix which is written out in a specified folder, also for par
-        /// file in the Parameters folder.
-        ///
+        /// Reference pressure value
+        scalar pRefValue;
+
+        /// Mesh
+        mutable autoPtr<fvMesh> _mesh;
+
+        /// Time
+        autoPtr<Time> _runTime;
+
+
+        /// Perform a truthsolve
         void truthSolve(List<scalar> mu_now,
                         fileName folder = "./ITHACAoutput/Offline/");
 
@@ -134,17 +141,14 @@ class unsteadyNS: public steadyNS
         /// @return     1 if we must write 0 elsewhere.
         ///
         bool checkWrite(Time& timeObject);
+
+
+        /// Specific variable for the unstationary case
+
+        
 };
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #endif
-
-
-
-
-
-
-
 
 
 

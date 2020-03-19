@@ -353,6 +353,11 @@ class ITHACAutilities
         static Eigen::VectorXd get_mass_matrix_FV(
             GeometricField<TypeField, fvPatchField, volMesh>& snapshot);
 
+	template<class TypeField, class TypeField2>
+        static Eigen::VectorXd get_mass_matrix_FV_Full(
+            GeometricField<TypeField, fvPatchField, volMesh>& snapshotU, 
+	    GeometricField<TypeField2, fvPatchField, volMesh>& snapshotP);
+
         //--------------------------------------------------------------------------
         /// Projects a snapshot vector field on a non-orthogonal basis function and
         /// gets the coefficients of the projection

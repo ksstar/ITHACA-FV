@@ -28,18 +28,18 @@
 
 \*---------------------------------------------------------------------------*/
 
-#include "unsteadyNS.H"
 
 /// \file
-/// Source file of the unsteadyNS class.
+/// Source file of the unsteadyNSPISO class.
 
-// * * * * * * * * * * * * * * * Constructors * * * * * * * * * * * * * * * * //
 
-// Construct Null
-unsteadyNS::unsteadyNS() {}
+#include "unsteadyNSPISO.H"
+
+
+unsteadyNSPISO::unsteadyNSPISO() {}
 
 // Construct from zero
-unsteadyNS::unsteadyNS(int argc, char* argv[])
+unsteadyNSPISO::unsteadyNSPISO(int argc, char* argv[])
 {
     _args = autoPtr<argList>
             (
@@ -54,13 +54,14 @@ unsteadyNS::unsteadyNS(int argc, char* argv[])
     argList& args = _args();
 #include "createTime.H"
 #include "createMesh.H"
-    _pimple = autoPtr<pimpleControl>
-              (
-                  new pimpleControl
-                  (
-                      mesh
-                  )
-              );
+#include "fvOptions.H"
+    _piso = autoPtr<pisoControl>
+            (
+                new pisoControl
+                (
+                    mesh
+                )
+            );
     ITHACAdict = new IOdictionary
     (
         IOobject
@@ -92,17 +93,20 @@ unsteadyNS::unsteadyNS(int argc, char* argv[])
 }
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+#include "fvCFD.H"
 
-void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
+void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
+
 {
     Time& runTime = _runTime();
     surfaceScalarField& phi = _phi();
     fvMesh& mesh = _mesh();
-#include "initContinuityErrs.H"
     fv::options& fvOptions = _fvOptions();
-    pimpleControl& pimple = _pimple();
+#include "initContinuityErrs.H"
+    pisoControl& piso = _piso();
     volScalarField& p = _p();
     volVectorField& U = _U();
+    dimensionedScalar nu = _nu();
     IOMRFZoneList& MRF = _MRF();
     singlePhaseTransportModel& laminarTransport = _laminarTransport();
     instantList Times = runTime.times();
@@ -112,24 +116,6 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
     runTime.setDeltaT(timeStep);
     nextWrite = startTime;
 
-
-    // Set time-dependent velocity BCs for initial condition
-    if (timedepbcMethod == "yes")
-    {
-        for (label i = 0; i < inletPatch.rows(); i++)
-        {
-            Vector<double> inl(0, 0, 0);
-
-            for (label j = 0; j < inl.size(); j++)
-            {
-                inl[j] = timeBCoff(i * inl.size() + j, 0);
-            }
-
-            assignBC(U, inletPatch(i, 0), inl);
-        }
-    }
-
-    // Export and store the initial conditions for velocity and pressure
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
     ITHACAstream::exportSolution(phi, name(counter), folder);
@@ -151,7 +137,6 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
     counter++;
     nextWrite += writeEvery;
 
-
     // Start the time loop
     while (runTime.run())
     {
@@ -161,48 +146,34 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
         runTime.setEndTime(finalTime);
         runTime++;
         Info << "Time = " << runTime.timeName() << nl << endl;
+        // Momentum predictor
+        fvVectorMatrix UEqn
+        (
+            fvm::ddt(U)
+            + fvm::div(phi, U)
+            - fvm::laplacian(nu, U)
+        );
 
-        // Set time-dependent velocity BCs
-        if (timedepbcMethod == "yes")
+        if (piso.momentumPredictor())
         {
-            for (label i = 0; i < inletPatch.rows(); i++)
-            {
-                Vector<double> inl(0, 0, 0);
-
-                for (label j = 0; j < inl.size(); j++)
-                {
-                    inl[j] = timeBCoff(i * inl.size() + j, counter2);
-                }
-
-                assignBC(U, inletPatch(i, 0), inl);
-            }
-
-            counter2 ++;
+            solve(UEqn == -fvc::grad(p));
         }
 
-        // --- Pressure-velocity PIMPLE corrector loop
-        while (pimple.loop())
+        // --- Pressure-velocity PISO corrector loop
+        while (piso.correct())
         {
-#include "UEqn.H"
-
-            // --- Pressure corrector loop
-            while (pimple.correct())
             {
 #include "pEqn.H"
             }
-
-            if (pimple.turbCorr())
-            {
-                laminarTransport.correct();
-                turbulence->correct();
-            }
         }
 
+
+        //runTime.write();
         Info << "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
              << "  ClockTime = " << runTime.elapsedClockTime() << " s"
              << nl << endl;
-
-        if (checkWrite(runTime))
+        
+ 	if (checkWrite(runTime))
         {
             ITHACAstream::exportSolution(U, name(counter), folder);
             ITHACAstream::exportSolution(p, name(counter), folder);
@@ -224,29 +195,16 @@ void unsteadyNS::truthSolve(List<scalar> mu_now, fileName folder)
             counter++;
             nextWrite += writeEvery;
             writeMu(mu_now);
-            // --- Fill in the mu_samples with parameters (time, mu) to be used for the PODI sample points
-            mu_samples.conservativeResize(mu_samples.rows() + 1, mu_now.size() + 1);
-            mu_samples(mu_samples.rows() - 1, 0) = atof(runTime.timeName().c_str());
 
-            for (int i = 0; i < mu_now.size(); i++)
-            {
-                mu_samples(mu_samples.rows() - 1, i + 1) = mu_now[i];
-            }
-        }
+	}
+
     }
-
-dimensionedScalar nu_fake
-        (
-            "nu_fake",
-            dimensionSet(0, 2, -1, 0, 0, 0, 0),
-            scalar(0.001)
-        );
 
     fvVectorMatrix UEqn
     (
 	fvm::ddt(U)
  	+ fvm::div(phi, U)
-	- fvm::laplacian(nu_fake, U)
+	- fvm::laplacian(nu, U)
      );
     Eigen::MatrixXd A;
     Eigen::VectorXd b;
@@ -260,8 +218,6 @@ dimensionedScalar nu_fake
      ITHACAstream::exportMatrix(bw, "bw", "eigen",
                                "./ITHACAoutput/BCvector/");
 
-     //ITHACAstream::exportMatrix(A, "A", "eigen",
-                               //"./ITHACAoutput/BCvector/");
  ITHACAstream::SaveDenseMatrix(bw, "./ITHACAoutput/BCvector/",
                                   "bw");
  	    
@@ -280,21 +236,9 @@ dimensionedScalar nu_fake
     ITHACAstream::exportMatrix(DivNorm, "DivNorm", "eigen",
                                    folder);
 
-    // Resize to Unitary if not initialized by user (i.e. non-parametric problem)
-    if (mu.cols() == 0)
-    {
-        mu.resize(1, 1);
-    }
-
-    if (mu_samples.rows() == counter * mu.cols())
-    {
-        ITHACAstream::exportMatrix(mu_samples, "mu_samples", "eigen",
-                                   folder);
-    }
 }
 
-
-bool unsteadyNS::checkWrite(Time& timeObject)
+bool unsteadyNSPISO::checkWrite(Time& timeObject)
 {
     scalar diffnow = mag(nextWrite - atof(timeObject.timeName().c_str()));
     scalar diffnext = mag(nextWrite - atof(timeObject.timeName().c_str()) -
@@ -309,6 +253,8 @@ bool unsteadyNS::checkWrite(Time& timeObject)
         return false;
     }
 }
+
+
 
 
 

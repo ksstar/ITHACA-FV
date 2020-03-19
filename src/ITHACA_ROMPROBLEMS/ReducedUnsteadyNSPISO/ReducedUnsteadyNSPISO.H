@@ -26,32 +26,32 @@ Class
 Description
     A reduced problem for the unsteady NS equations
 SourceFiles
-    reducedUnsteadyNS.C
+    reducedUnsteadyNSPISO.C
 \*---------------------------------------------------------------------------*/
 
 /// \file
-/// Header file of the reducedUnsteadyNS class.
+/// Header file of the reducedUnsteadyNSPISO class.
 /// \dir
-/// Directory containing the header and source files for the reducedUnsteadyNS class
+/// Directory containing the header and source files for the reducedUnsteadyNSPISO class
 
-#ifndef ReducedUnsteadyNS_H
-#define ReducedUnsteadyNS_H
+#ifndef ReducedUnsteadyNSPISO_H
+#define ReducedUnsteadyNSPISO_H
 
 #include "fvCFD.H"
 #include "IOmanip.H"
 #include "ReducedSteadyNS.H"
-#include "unsteadyNS.H"
+#include "unsteadyNSPISO.H"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
 
 /// Newton object for the resolution of the reduced problem using a supremizer approach
-struct newton_unsteadyNS_sup: public newton_argument<double>
+struct newton_unsteadyNSPISO_sup: public newton_argument<double>
 {
     public:
-        newton_unsteadyNS_sup() {}
-        newton_unsteadyNS_sup(int Nx, int Ny,
-                              unsteadyNS& problem): newton_argument<double>(Nx, Ny),
+        newton_unsteadyNSPISO_sup() {}
+        newton_unsteadyNSPISO_sup(int Nx, int Ny,
+                              unsteadyNSPISO& problem): newton_argument<double>(Nx, Ny),
             problem(&problem),
             Nphi_u(problem.NUmodes + problem.liftfield.size() + problem.NSUPmodes),
             Nphi_p(problem.NPmodes),
@@ -61,7 +61,7 @@ struct newton_unsteadyNS_sup: public newton_argument<double>
         int operator()(const Eigen::VectorXd& x, Eigen::VectorXd& fvec) const;
         int df(const Eigen::VectorXd& x,  Eigen::MatrixXd& fjac) const;
 
-        unsteadyNS* problem;
+        unsteadyNSPISO* problem;
         int Nphi_u;
         int Nphi_p;
         int N_BC;
@@ -75,12 +75,12 @@ struct newton_unsteadyNS_sup: public newton_argument<double>
 
 
 /// Newton object for the resolution of the reduced problem using a PPE approach
-struct newton_unsteadyNS_PPE: public newton_argument<double>
+struct newton_unsteadyNSPISO_PPE: public newton_argument<double>
 {
     public:
-        newton_unsteadyNS_PPE() {}
-        newton_unsteadyNS_PPE(int Nx, int Ny,
-                              unsteadyNS& problem): newton_argument<double>(Nx, Ny),
+        newton_unsteadyNSPISO_PPE() {}
+        newton_unsteadyNSPISO_PPE(int Nx, int Ny,
+                              unsteadyNSPISO& problem): newton_argument<double>(Nx, Ny),
             problem(&problem),
             Nphi_u(problem.NUmodes + problem.liftfield.size()),
             Nphi_p(problem.NPmodes),
@@ -90,7 +90,7 @@ struct newton_unsteadyNS_PPE: public newton_argument<double>
         int operator()(const Eigen::VectorXd& x, Eigen::VectorXd& fvec) const;
         int df(const Eigen::VectorXd& x,  Eigen::MatrixXd& fjac) const;
 
-        unsteadyNS* problem;
+        unsteadyNSPISO* problem;
         int Nphi_u;
         int Nphi_p;
         int N_BC;
@@ -110,27 +110,27 @@ struct newton_unsteadyNS_PPE: public newton_argument<double>
 /// Class where it is implemented a reduced problem for the <b> unsteady Navier-stokes </b> problem.
 /** In this class are implemented the methods to solve a reduced version of the stationary Navier-stokes
 equations. This class must be used together with the steadyNS class */
-class reducedUnsteadyNS: public reducedSteadyNS
+class reducedUnsteadyNSPISO: public reducedSteadyNS
 {
     private:
 
     public:
         // Constructors
         /// Construct Null
-        reducedUnsteadyNS();
+        reducedUnsteadyNSPISO();
         /// Construct Null
         ///
-        /// @param      problem  a full order unsteadyNS problem
+        /// @param      problem  a full order unsteadyNSPISO problem
         ///
-        explicit reducedUnsteadyNS(unsteadyNS& problem);
+        explicit reducedUnsteadyNSPISO(unsteadyNSPISO& problem);
 
-        ~reducedUnsteadyNS() {};
+        ~reducedUnsteadyNSPISO() {};
 
         /// Function object to call the non linear solver sup approach
-        newton_unsteadyNS_sup newton_object_sup;
+        newton_unsteadyNSPISO_sup newton_object_sup;
 
         /// Function object to call the non linear solver PPE approach
-        newton_unsteadyNS_PPE newton_object_PPE;
+        newton_unsteadyNSPISO_PPE newton_object_PPE;
 
         /// Scalar to store the current time
         scalar time;
@@ -168,7 +168,7 @@ class reducedUnsteadyNS: public reducedSteadyNS
         Eigen::MatrixXd BCRom;
 
         /// Pointer to the FOM problem
-        unsteadyNS* problem;
+        unsteadyNSPISO* problem;
 
         // Functions
 

@@ -114,6 +114,13 @@ class Foam2Eigen
             PtrList<GeometricField<type_f, fvPatchField, volMesh>>& fields,
             int Nfields = -1);
 
+
+	template <class type_f,class type_2>
+	static  Eigen::MatrixXd PtrList2EigenFull(
+    	   PtrList<GeometricField<type_f, fvPatchField, volMesh>>& fieldsU, 
+    	   PtrList<GeometricField<type_2, fvPatchField, volMesh>>& fieldsP, int Nfields = -1);
+
+
         //--------------------------------------------------------------------------
         /// @brief      Convert a PtrList of Fields to Eigen matrix
         ///
@@ -126,6 +133,16 @@ class Foam2Eigen
         template <class type_f>
         static Eigen::MatrixXd PtrList2Eigen(PtrList<Field<type_f>>& fields,
                                              int Nfields = -1);
+
+	/*template <class type_f, class type_2>
+        static Eigen::MatrixXd PtrList2EigenFull(PtrList<Field<type_f>>& fields, PtrList<Field<type_2>>& fieldsP,
+                                             int Nfields = -1);*/
+
+
+	/*template <class Field_type>
+	Eigen::MatrixXd PtrList2EigenSharedBasis(
+    	PtrList<volVectorField>& fieldsU,
+    	PtrList<Field_type>& fieldsP);*/
 
 
         //--------------------------------------------------------------------------
@@ -140,6 +157,9 @@ class Foam2Eigen
         template <class type_f>
         static Eigen::VectorXd field2Eigen(const Field<type_f>& field);
 
+ /*	template <class type_f, class type_2>
+        static Eigen::VectorXd field2EigenFull(const Field<type_f>& field, const Field<type_2>& fieldP);*/
+
         //--------------------------------------------------------------------------
         /// @brief      Convert an OpenFOAM field into an Eigen Vector
         ///
@@ -153,6 +173,11 @@ class Foam2Eigen
         static Eigen::VectorXd field2Eigen(const
                                            DimensionedField<type_f, Foam::volMesh>& field);
 
+	/*template <class type_f, class type_2>
+        static Eigen::VectorXd field2EigenFull(const
+                                           DimensionedField<type_f, Foam::volMesh>& field, 
+					   const DimensionedField<type_2, Foam::volMesh>& fieldP);*/
+
         //--------------------------------------------------------------------------
         /// @brief      Convert an OpenFOAM field to an Eigen Vector
         ///
@@ -165,6 +190,11 @@ class Foam2Eigen
         template <class type_f>
         static Eigen::VectorXd field2Eigen(
             GeometricField<type_f, fvPatchField, volMesh>& field);
+
+       template <class type_f, class type_2>
+        static Eigen::VectorXd field2EigenFull(
+            GeometricField<type_f, fvPatchField, volMesh>& fieldU, GeometricField<type_2, fvPatchField, volMesh>& fieldP);
+
 
 
 
@@ -180,6 +210,11 @@ class Foam2Eigen
         template <class type_f>
         static List<Eigen::VectorXd> field2EigenBC(
             GeometricField<type_f, fvPatchField, volMesh>& field);
+
+	template <class type_f>
+	static List<Eigen::VectorXd> field2EigenBCFull(
+    		GeometricField<type_f, fvPatchField, volMesh>& fieldU,
+    		volScalarField& fieldP);
 
 
         //--------------------------------------------------------------------------
@@ -204,6 +239,11 @@ class Foam2Eigen
         static List<Eigen::MatrixXd> PtrList2EigenBC(
             PtrList<GeometricField<type_f, fvPatchField, volMesh>>& fields,
             int Nfields = -1);
+
+	template <class type_f>
+        static List<Eigen::MatrixXd> PtrList2EigenBCFull(
+            PtrList<GeometricField<type_f, fvPatchField, volMesh>>& fieldsU,
+    		PtrList<volScalarField>& fieldsP, int Nfields = -1);
 
         //--------------------------------------------------------------------------
         /// @brief      Convert a vector in Eigen format into an OpenFOAM GeometricField
@@ -232,6 +272,9 @@ class Foam2Eigen
         ///
         template <class type_f>
         static Field<type_f> Eigen2field(Field<type_f>& field, Eigen::MatrixXd& matrix);
+
+	//template <class type_f, class type_2>
+      //  static Field<type_f, type_2> Eigen2fieldFull(Field<type_f>& field,Field<type_2>& fieldP, Eigen::MatrixXd& matrix);
 
         //--------------------------------------------------------------------------
         /// @brief      Obtain the Mass Matrix from a list of reduced basis
@@ -327,9 +370,19 @@ template <>
 Field<vector> Foam2Eigen::Eigen2field(Field<vector>& field,
                                       Eigen::MatrixXd& matrix);
 
+//template <>
+//Field<vector, scalar> Foam2Eigen::Eigen2fieldFull(Field<vector>& field, Field<scalar>& fieldP,
+//                                      Eigen::MatrixXd& matrix);
+
 template<>
 Eigen::VectorXd Foam2Eigen::field2Eigen(
     GeometricField<vector, fvPatchField, volMesh>& field);
+
+/*template<>
+Eigen::VectorXd Foam2Eigen::field2EigenFull(
+    GeometricField<vector, fvPatchField, volMesh>& fieldU, 
+    GeometricField<scalar, fvPatchField, volMesh>& fieldP);*/
+
 
 template<>
 Eigen::VectorXd Foam2Eigen::field2Eigen(
@@ -342,9 +395,18 @@ List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
 template<>
 List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
     GeometricField<scalar, fvPatchField, volMesh>& field);
+
+template<>
+List<Eigen::VectorXd> Foam2Eigen::field2EigenBCFull(
+    GeometricField<vector, fvPatchField, volMesh>& fieldU,
+     GeometricField<scalar, fvPatchField, volMesh>& fieldP);
 
 template<class type_f>
 List<Eigen::MatrixXd> PtrList2EigenBC(type_f& fields, int Nfields);
+
+template<class type_f>
+List<Eigen::MatrixXd> PtrList2EigenBCFull(type_f& fieldsU,
+    PtrList<volScalarField>& fieldsP, int Nfields);
 
 template<>
 List<Eigen::MatrixXd> PtrList2EigenBC(
@@ -355,6 +417,12 @@ template<>
 List<Eigen::MatrixXd> PtrList2EigenBC(
     PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields,
     int Nfields);
+
+template<>
+List<Eigen::MatrixXd> PtrList2EigenBCFull(
+    PtrList<GeometricField<vector, fvPatchField, volMesh>>& 
+    fieldsU,PtrList<GeometricField<scalar, fvPatchField, volMesh>>& 
+    fieldsP, int Nfields);
 
 template<class type_matrix>
 std::tuple<List<Eigen::SparseMatrix<double>>, List<Eigen::VectorXd>>

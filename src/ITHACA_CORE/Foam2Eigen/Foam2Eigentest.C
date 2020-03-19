@@ -54,25 +54,6 @@ Eigen::VectorXd Foam2Eigen::field2Eigen(
 }
 
 template<>
-Eigen::VectorXd Foam2Eigen::field2EigenFull(
-    GeometricField<vector, fvPatchField, volMesh>& fieldU,  
-    GeometricField<scalar, fvPatchField, volMesh>& fieldP)
-{
-    Eigen::VectorXd out;
-    out.resize(int(fieldU.size() * 4));
-
-    for (int l = 0; l < fieldU.size(); l++)
-    {
-        out(l) = fieldU[l][0];
-        out(fieldU.size() +  l ) = fieldU[l][1];
-        out(2 * fieldU.size() + l ) = fieldU[l][2];
-	out(3 * fieldP.size() + l ) = fieldP[l];
-    }
-
-    return out;
-}
-
-template<>
 Eigen::VectorXd Foam2Eigen::field2Eigen(
     GeometricField<scalar, fvPatchField, volMesh>& field)
 {
@@ -117,23 +98,6 @@ Eigen::VectorXd Foam2Eigen::field2Eigen(const Field<vector>& field)
     return out;
 }
 
-/*template<>
-Eigen::VectorXd Foam2Eigen::field2EigenFull(const Field<vector>& field, const Field<scalar>& fieldP)
-{
-    Eigen::VectorXd out;
-    out.resize(int(field.size() * 4));
-
-    for (int l = 0; l < field.size(); l++)
-    {
-        out(l) = field[l][0];
-        out(field.size() +  l ) = field[l][1];
-        out(2 * field.size() + l ) = field[l][2];
-	out(3 * fieldP.size() + l ) = fieldP[l];
-    }
-
-    return out;
-}*/
-
 
 template<>
 List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
@@ -153,32 +117,6 @@ List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
             Out[i](k) = field.boundaryField()[i][k][0];
             Out[i](k + sizei) = field.boundaryField()[i][k][1];
             Out[i](k + 2 * sizei) = field.boundaryField()[i][k][2];
-        }
-    }
-
-    return Out;
-}
-
-template<>
-List<Eigen::VectorXd> Foam2Eigen::field2EigenBCFull(
-    GeometricField<vector, fvPatchField, volMesh>& fieldU,
-    GeometricField<scalar, fvPatchField, volMesh>& fieldP)
-{
-    List<Eigen::VectorXd> Out;
-    unsigned int size = fieldU.boundaryField().size();
-    Out.resize(size);
-
-    for (unsigned int i = 0; i < size; i++ )
-    {
-        unsigned int sizei = fieldU.boundaryField()[i].size();
-        Out[i].resize(sizei * 4);
-
-        for (unsigned int k = 0; k < sizei ; k++)
-        {
-            Out[i](k) = fieldU.boundaryField()[i][k][0];
-            Out[i](k + sizei) = fieldU.boundaryField()[i][k][1];
-            Out[i](k + 2 * sizei) = fieldU.boundaryField()[i][k][2];
-	    Out[i](k + 3 * sizei) = fieldP.boundaryField()[i][k];
         }
     }
 
@@ -291,48 +229,6 @@ List<Eigen::MatrixXd> Foam2Eigen::PtrList2EigenBC(
     return Out;
 }
 
-template<>
-List<Eigen::MatrixXd> Foam2Eigen::PtrList2EigenBCFull(
-    PtrList<GeometricField<vector, fvPatchField, volMesh>>&
-    fieldsU,PtrList<GeometricField<scalar, fvPatchField, volMesh>>& fieldsP, int Nfields)
-{
-    unsigned int Nf;
-    M_Assert(Nfields <= fieldsU.size(),
-             "The Number of requested fields cannot be bigger than the number of requested entries.");
-
-    if (Nfields == -1)
-    {
-        Nf = fieldsU.size();
-    }
-    else
-    {
-        Nf = Nfields;
-    }
-
-    List<Eigen::MatrixXd> Out;
-    unsigned int NBound = fieldsU[0].boundaryField().size();
-    Out.resize(NBound);
-
-    for (unsigned int i = 0; i < NBound; i++)
-    {
-        int sizei = fieldsU[0].boundaryField()[i].size();
-        Out[i].resize(sizei * 4, Nf);
-    }
-
-    for (unsigned int k = 0; k < Nf; k++)
-    {
-        List<Eigen::VectorXd> temp;
-        temp = field2EigenBCFull(fieldsU[k],fieldsP[k]);
-
-        for (unsigned int i = 0; i < NBound; i++)
-        {
-            Out[i].col(k) = temp[i];
-        }
-    }
-
-    return Out;
-}
-
 
 template<>
 GeometricField<vector, fvPatchField, volMesh> Foam2Eigen::Eigen2field(
@@ -400,37 +296,6 @@ Eigen::MatrixXd Foam2Eigen::PtrList2Eigen(
     return out;
 }
 
-template<>
-Eigen::MatrixXd Foam2Eigen::PtrList2EigenFull(
-    PtrList<GeometricField<vector, fvPatchField, volMesh>>& fieldsU, 
-    PtrList<GeometricField<scalar, fvPatchField, volMesh>>& fieldsP, int Nfields)
-{
-    int Nf;
-    M_Assert(Nfields <= fieldsU.size(),
-             "The Number of requested fields cannot be bigger than the number of requested entries.");
-
-    if (Nfields == -1)
-    {
-        Nf = fieldsU.size();
-    }
-    else
-    {
-        Nf = Nfields;
-    }
-
-    Eigen::MatrixXd out;
-    out.resize(int(fieldsU[0].size() * 4), Nf);
-
-    for (int k = 0; k < Nf; k++)
-    {
-       // out.col(k) = field2EigenFull<vector,scalar>(fieldsU[k],fieldsP[k]);
-	out.col(k) = field2EigenFull(fieldsU[k],fieldsP[k]);
-    }
-
-    return out;
-}
-
-
 template <class type_f>
 Eigen::MatrixXd Foam2Eigen::PtrList2Eigen(PtrList<Field<type_f>>& fields,
         int Nfields)
@@ -459,44 +324,11 @@ Eigen::MatrixXd Foam2Eigen::PtrList2Eigen(PtrList<Field<type_f>>& fields,
 
     return out;
 }
-/*
-template <class type_f, class type_2>
-Eigen::MatrixXd Foam2Eigen::PtrList2EigenFull(PtrList<Field<type_f>>& fields, PtrList<Field<type_2>>& fieldsP,
-        int Nfields)
-{
-    int Nf;
-    M_Assert(Nfields <= fields.size(),
-             "The Number of requested fields cannot be bigger than the number of requested entries.");
-
-    if (Nfields == -1)
-    {
-        Nf = fields.size();
-    }
-    else
-    {
-        Nf = Nfields;
-    }
-
-    Eigen::MatrixXd out;
-    int nrows = (field2Eigen(fields[0])).rows();
-    out.resize(nrows*4, Nf);
-
-    for (int k = 0; k < Nf; k++)
-    {
-        out.col(k) = field2EigenFull<vector,scalar>(fields[k],fieldsP[k]);
-    }
-
-    return out;
-}*/
 
 template Eigen::MatrixXd Foam2Eigen::PtrList2Eigen(PtrList<Field<scalar>>&
         fields, int Nfields);
 template Eigen::MatrixXd Foam2Eigen::PtrList2Eigen(PtrList<Field<vector>>&
         fields, int Nfields);
-
-/*template Eigen::MatrixXd Foam2Eigen::PtrList2EigenFull(PtrList<Field<vector>>&
-        fields, PtrList<Field<scalar>>&
-        fieldsP, int Nfields);*/
 
 template<>
 Eigen::MatrixXd Foam2Eigen::PtrList2Eigen(
@@ -525,6 +357,114 @@ Eigen::MatrixXd Foam2Eigen::PtrList2Eigen(
     }
 
     return out;
+}
+
+
+/*template<>
+Eigen::MatrixXd Foam2Eigen::PtrList2EigenSharedBasis(
+    PtrList<volVectorField>& fieldsU,
+   PtrList<volScalarField>& fieldsP)
+{
+    int NfU;
+    int NfP;
+    int Nf;
+
+    NfU = fieldsU.size(); 
+    NfP = fieldsP.size();
+
+    Nf = NfU*3 + NfP; // Ux, Uy, Uz, p
+
+    Eigen::MatrixXd out;
+    out.resize(int(fieldsP[0].size()), Nf);
+
+    for (int i = 0; i < 3; i++)
+    {
+    	for (int k = 0; k < NfU; k++)
+    	{
+            out.col(k*i+k) = field2Eigen<scalar>(fieldsU[k*i+k].component(i));
+    	}
+    }
+
+    for (int k = 0; k < NfP; k++)
+    {
+        out.col(k*3+k) = field2Eigen<scalar>(fieldsP[k]);
+    }
+
+    return out;
+}*/
+
+/*
+template<>
+List<Eigen::MatrixXd> Foam2Eigen::PtrList2EigenBCSharedBasis(
+    PtrList<volVectorField>& fieldsU,
+    PtrList<volScalarField>& fieldsP)
+{
+    unsigned int Nf;
+    M_Assert(Nfields <= fields.size(),
+             "The Number of requested fields cannot be bigger than the number of requested entries.");
+
+    int NfU;
+    int NfP;
+    int Nf;
+
+    NfU = fieldsU.size(); 
+    NfP = fieldsP.size();
+
+    Nf = NfU*3 + NfP; // Ux, Uy, Uz, p
+
+    List<Eigen::MatrixXd> Out;
+    unsigned int NBound = fieldsP[0].boundaryField().size();
+    Out.resize(NBound);
+
+    for (unsigned int i = 0; i < NBound; i++)
+    {
+        int sizei = fields[0].boundaryField()[i].size();
+        Out[i].resize(sizei * 3, Nf);
+    }
+
+    for (unsigned int k = 0; k < Nf; k++)
+    {
+        List<Eigen::VectorXd> tempUx;
+        List<Eigen::VectorXd> tempUy;
+        List<Eigen::VectorXd> tempUz;
+        List<Eigen::VectorXd> tempp;
+
+        tempUx = field2EigenBC(fieldsU[k].component(0));
+        tempUy = field2EigenBC(fieldsU[k].component(1));
+ 	tempUz = field2EigenBC(fieldsU[k].component(2));
+	tempP = field2EigenBC(fieldsP[k]);
+
+        for (unsigned int i = 0; i < NBound; i++)
+        {
+            Out[i].col(i+k*i) = temp[i];
+        }
+    }
+
+    return Out;
+}*/
+
+
+List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
+    GeometricField<vector, fvPatchField, volMesh>& field)
+{
+    List<Eigen::VectorXd> Out;
+    unsigned int size = field.boundaryField().size();
+    Out.resize(size);
+
+    for (unsigned int i = 0; i < size; i++ )
+    {
+        unsigned int sizei = field.boundaryField()[i].size();
+        Out[i].resize(sizei * 3);
+
+        for (unsigned int k = 0; k < sizei ; k++)
+        {
+            Out[i](k) = field.boundaryField()[i][k][0];
+            Out[i](k + sizei) = field.boundaryField()[i][k][1];
+            Out[i](k + 2 * sizei) = field.boundaryField()[i][k][2];
+        }
+    }
+
+    return Out;
 }
 
 
@@ -594,7 +534,6 @@ void Foam2Eigen::fvMatrix2Eigen(fvMatrix<vector>& foam_matrix,
         A(upperAddr[i] + sizeA, lowerAddr[i] + sizeA) = foam_matrix.lower()[i];
         A(upperAddr[i] + sizeA * 2, lowerAddr[i] + sizeA * 2) = foam_matrix.lower()[i];
     }
-
     forAll(foam_matrix.psi().boundaryField(), I)
     {
         const fvPatch& ptch = foam_matrix.psi().boundaryField()[I].patch();

@@ -78,7 +78,7 @@ steadyNS::steadyNS(int argc, char* argv[])
     tolerance = ITHACAdict->lookupOrDefault<scalar>("tolerance", 1e-5);
     maxIter = ITHACAdict->lookupOrDefault<scalar>("maxIter", 1000);
     bcMethod = ITHACAdict->lookupOrDefault<word>("bcMethod", "lift");
-    M_Assert(bcMethod == "lift" || bcMethod == "penalty",
+    M_Assert(bcMethod == "lift" || bcMethod == "penalty" || bcMethod == "none", 
              "The BC method must be set to lift or penalty in ITHACAdict");
     para = new ITHACAparameters;
     offline = ITHACAutilities::check_off();
@@ -635,14 +635,19 @@ void steadyNS::projectSUP(fileName folder, label NU, label NP, label NSUP)
             bcVelVec = bcVelocityVec(NUmodes, NSUPmodes);
             bcVelMat = bcVelocityMat(NUmodes, NSUPmodes);
         }
+
+	C_matrix  = convective_term(NUmodes, NPmodes, NSUPmodes);
+	BC_matrix = boundary_term(NUmodes, NSUPmodes);
     }
     else
     {
         B_matrix = diffusive_term(NUmodes, NPmodes, NSUPmodes);
         C_tensor = convective_term_tens(NUmodes, NPmodes, NSUPmodes);
+	C_matrix  = convective_term(NUmodes, NPmodes, NSUPmodes);
         K_matrix = pressure_gradient_term(NUmodes, NPmodes, NSUPmodes);
         P_matrix = divergence_term(NUmodes, NPmodes, NSUPmodes);
         M_matrix = mass_term(NUmodes, NPmodes, NSUPmodes);
+	BC_matrix = boundary_term(NUmodes, NSUPmodes);
 
         if (bcMethod == "penalty")
         {
@@ -707,6 +712,10 @@ Eigen::MatrixXd steadyNS::diffusive_term(label NUmodes, label NPmodes,
 
     ITHACAstream::SaveDenseMatrix(B_matrix, "./ITHACAoutput/Matrices/",
                                   "B_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(NSUPmodes));
+
+    ITHACAstream::exportMatrix(B_matrix, "Br_", "eigen",
+                               "./ITHACAoutput/Matrices/");
+
     return B_matrix;
 }
 
@@ -735,12 +744,17 @@ Eigen::MatrixXd steadyNS::pressure_gradient_term(label NUmodes, label NPmodes,
     ITHACAstream::SaveDenseMatrix(K_matrix, "./ITHACAoutput/Matrices/",
                                   "K_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(
                                       NSUPmodes) + "_" + name(NPmodes));
+
+    ITHACAstream::exportMatrix(K_matrix, "Kr_", "eigen",
+                               "./ITHACAoutput/Matrices/");
     return K_matrix;
 }
 
 List <Eigen::MatrixXd> steadyNS::convective_term(label NUmodes, label NPmodes,
         label NSUPmodes)
 {
+
+    Info << "C_matrix" << endl;
     label Csize = NUmodes + NSUPmodes + liftfield.size();
     List <Eigen::MatrixXd> C_matrix;
     C_matrix.setSize(Csize);
@@ -774,9 +788,9 @@ List <Eigen::MatrixXd> steadyNS::convective_term(label NUmodes, label NPmodes,
     }
 
     // Export the matrix
-    ITHACAstream::exportMatrix(C_matrix, "C", "python", "./ITHACAoutput/Matrices/");
-    ITHACAstream::exportMatrix(C_matrix, "C", "matlab", "./ITHACAoutput/Matrices/");
-    ITHACAstream::exportMatrix(C_matrix, "C", "eigen", "./ITHACAoutput/Matrices/C");
+    ITHACAstream::exportMatrix(C_matrix, "Cr", "python", "./ITHACAoutput/Matrices/");
+    //ITHACAstream::exportMatrix(C_matrix, "C", "matlab", "./ITHACAoutput/Matrices/");
+    ITHACAstream::exportMatrix(C_matrix, "Cr", "eigen", "./ITHACAoutput/Matrices/Cr");
     return C_matrix;
 }
 
@@ -836,8 +850,38 @@ Eigen::MatrixXd steadyNS::mass_term(label NUmodes, label NPmodes,
 
     ITHACAstream::SaveDenseMatrix(M_matrix, "./ITHACAoutput/Matrices/",
                                   "M_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(NSUPmodes));
+
+    ITHACAstream::exportMatrix(M_matrix, "Mr_", "eigen",
+                               "./ITHACAoutput/Matrices/");
     return M_matrix;
 }
+
+Eigen::MatrixXd steadyNS::boundary_term(label NUmodes,
+                                    label NSUPmodes)
+{
+    label BCsize = NUmodes + NSUPmodes + liftfield.size();
+    word bw_str = "bw";
+	ITHACAstream::ReadDenseMatrix(bw, "./ITHACAoutput/BCvector/", bw_str);
+    Eigen::MatrixXd BC_matrix(BCsize, 1);
+    Eigen::VectorXd ModeVector;
+
+    // Project everything
+    for (label i = 0; i < BCsize; i++)
+    {
+
+	ModeVector = Foam2Eigen::field2Eigen(L_U_SUPmodes[i]);
+	BC_matrix(i, 0) = ModeVector.dot(bw.col(0));
+
+    }
+
+    ITHACAstream::SaveDenseMatrix(BC_matrix, "./ITHACAoutput/Matrices/",
+                                  "BC_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(NSUPmodes));
+
+    ITHACAstream::exportMatrix(BC_matrix, "BCr_", "eigen",
+                               "./ITHACAoutput/Matrices/");
+    return BC_matrix;
+}
+
 
 // * * * * * * * * * * * * * * Continuity Eq. Methods * * * * * * * * * * * * * //
 
@@ -866,6 +910,8 @@ Eigen::MatrixXd steadyNS::divergence_term(label NUmodes, label NPmodes,
     ITHACAstream::SaveDenseMatrix(P_matrix, "./ITHACAoutput/Matrices/",
                                   "P_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(
                                       NSUPmodes) + "_" + name(NPmodes));
+
+    ITHACAstream::exportMatrix(P_matrix, "Pr_", "eigen", "./ITHACAoutput/Matrices/");
     return P_matrix;
 }
 

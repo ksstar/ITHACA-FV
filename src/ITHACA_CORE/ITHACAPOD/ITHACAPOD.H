@@ -81,6 +81,30 @@ class ITHACAPOD
                              snapshots, PtrList<GeometricField<Field_type, fvPatchField, volMesh>>& modes,
                              bool podex, bool supex = 0, bool sup = 0, int nmodes = 0);
 
+	template<class Field_type, class Field_type2>
+        static void getModesSharedBasis(PtrList<GeometricField<Field_type, fvPatchField, volMesh>>&
+                             snapshotsU, 
+			     PtrList<GeometricField<Field_type2, fvPatchField, volMesh>>& snapshotsP, 
+			     PtrList<GeometricField<Field_type, fvPatchField, volMesh>>& modesU,
+			     PtrList<GeometricField<Field_type2, fvPatchField, volMesh>>& modesP, 
+				bool podex, bool supex = 0, bool sup = 0, int nmodes = 0);
+
+	//--------------------------------------------------------------------------
+        /// Computes the bases or reads them for a vector field
+        ///
+        /// @param[in]  snapshots   List of snapshots.
+        /// @param[out] modes       A PtrList where modes are stored (it must be passed empty).
+        /// @param[in]  podex       If 1, the functions read the stored mode. If 0, the function computes the modes and stores them.
+        /// @param[in]  supex       If 1, the functions read the stored supremizer mode. If 0, the function computes and stores them.
+        /// @param[in]  sup         If 1 it computes the supremizer modes.
+        /// @param[in]  nmodes      Number of modes to be stored. If 0, the maximum number of modes will computed.
+        ///
+        /// @tparam     Field_type  volVectorField or volScalarField.
+        ///
+	/*template<class Field_type>
+        static void getModesSharedVelBasis(PtrList<Field_type>& snapshotsP, PtrList<Field_type>& modes, PtrList<volVectorField>& snapshots,
+                                    bool podex, bool supex = 0, bool sup = 0, int nmodes = 0);*/
+
         //--------------------------------------------------------------------------
         /// @brief      Gets the bases for a scalar field using SVD instead of the method of snapshots
         ///
