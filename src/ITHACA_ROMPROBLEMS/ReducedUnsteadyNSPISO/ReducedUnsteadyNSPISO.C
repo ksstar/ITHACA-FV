@@ -308,10 +308,10 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
     // Create and resize the solution vector
     y.resize(Nphi_u + Nphi_p, 1);
     y.setZero();
-    y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[startSnap],
-                     Umodes);
-    y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
-                     Pmodes);
+   // y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[startSnap],
+  //                   Umodes);
+  //  y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
+ //                    Pmodes);
     int nextStore = 0;
     int counter2 = 0;
 
@@ -331,6 +331,7 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
     newton_object_sup.dt = dt;
     newton_object_sup.BC.resize(N_BC);
     newton_object_sup.tauU = tauU;
+    newton_object_sup.teller= 0;
 
     for (label j = 0; j < N_BC; j++)
     {
@@ -363,7 +364,7 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
     tmp_sol(0) = time;
     tmp_sol.col(0).tail(y.rows()) = y;
     online_solution[counter] = tmp_sol;
-    counter ++;
+    counter = 0;
     counter2++;
     nextStore += numberOfStores;
     // Create nonlinear solver object
@@ -376,6 +377,7 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
 
     for (label i = 1; i < online_solution.size(); i++)
     {
+	newton_object_sup.teller= counter;
         time = time + dt;
 
         // Set time-dependent BCs
@@ -416,6 +418,7 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
         newton_object_sup.operator()(y, res);
         newton_object_sup.yOldOld = newton_object_sup.y_old;
         newton_object_sup.y_old = y;
+	newton_object_sup.teller= counter;
         std::cout << "################## Online solve N° " << counter <<
                   " ##################" << std::endl;
         Info << "Time = " << time << endl;
@@ -458,7 +461,7 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
 	ITHACAstream::exportMatrix(online_solution, "red_coeff", "eigen",
                                "./ITHACAoutput/red_coeff");
 
-	int exportEveryIndex = round(exportEvery / dt);
+/*	int exportEveryIndex = round(exportEvery / dt);
 	int outputIndex = round(finalTime / exportEvery)+1;
 	BCRom.resize(counter , 1);
 	
@@ -479,7 +482,7 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
     
 
     ITHACAstream::exportMatrix(BCRom, "BCRom", "eigen",
-                               "./ITHACAoutput/PostProcess");
+                               "./ITHACAoutput/PostProcess");*/
 }
 
 // * * * * * * * * * * * * * * * Solve Functions PPE * * * * * * * * * * * * * //

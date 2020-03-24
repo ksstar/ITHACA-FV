@@ -71,7 +71,7 @@ _p = autoPtr<volScalarField>
              mesh
          )
      );
-volScalarField& p = _p();
+volScalarField p = _p();
 
 volScalarField p0(p);
 
@@ -96,7 +96,7 @@ _U = autoPtr<volVectorField>
              mesh
          )
      );
-volVectorField& U = _U();
+volVectorField U = _U();
 
 volVectorField U0(U);
 
@@ -108,9 +108,9 @@ _U0 = autoPtr<volVectorField>
 #include "createPhi.H"
 
 
-label pRefCell = 0;
-scalar pRefValue = 0.0;
-setRefCell(p, mesh.solutionDict().subDict("SIMPLE"), pRefCell, pRefValue);
+pRefCell = 0;
+pRefValue = 0.0;
+setRefCell(p, mesh.solutionDict().subDict("PISO"), pRefCell, pRefValue);
 
 _laminarTransport = autoPtr<singlePhaseTransportModel>
                     (

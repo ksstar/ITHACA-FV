@@ -10,47 +10,13 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      fvSchemes;
+    location    "constant";
+    object      transportProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-ddtSchemes
-{
-    default         Euler;
-}
-
-gradSchemes
-{
-    default         Gauss midPoint;
-    grad(p)         Gauss midPoint;
-}
-
-divSchemes
-{
-    default         Gauss midPoint;
-    div(phi,U)      Gauss midPoint;
-}
-
-laplacianSchemes
-{
-    default         Gauss midPoint orthogonal;
-}
-
-interpolationSchemes
-{
-    default         midPoint;
-}
-
-snGradSchemes
-{
-    default         orthogonal;
-}
-
-fluxRequired
-{
-    p;
-}
+transportModel  Newtonian;
+nu              0.01;
 
 
 // ************************************************************************* //

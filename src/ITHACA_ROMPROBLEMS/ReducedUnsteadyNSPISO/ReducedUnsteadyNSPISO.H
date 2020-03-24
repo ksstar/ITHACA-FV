@@ -67,6 +67,7 @@ struct newton_unsteadyNSPISO_sup: public newton_argument<double>
         int N_BC;
         scalar nu;
         scalar dt;
+	int teller;
         Eigen::VectorXd y_old;
         Eigen::VectorXd yOldOld;
         Eigen::VectorXd BC;

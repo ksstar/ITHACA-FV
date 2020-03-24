@@ -128,6 +128,10 @@ class unsteadyNSPISO: public steadyNS
         /// Time
         autoPtr<Time> _runTime;
 
+ 
+    	Eigen::MatrixXd A;
+    	Eigen::VectorXd b;
+
 
         /// Perform a truthsolve
         void truthSolve(List<scalar> mu_now,

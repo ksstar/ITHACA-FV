@@ -125,31 +125,21 @@ class unsteadyNSExplicit: public steadyNS
         /// Reference pressure value
         scalar pRefValue;
 
-	scalar a21;
-	scalar a31;
-	scalar a32;
-	scalar b1;
-	scalar b2;
-	scalar b3;
+        /// Coeff RK
+	double a21;
+	double a31;
+	double a32;
+	double b1;
+	double b2;
+	double b3;
 	double c1;
 	double c2;
 	double c3;
 
-	/*volVectorfield U2;
-	volVectorfield U3;
-	volVectorfield U4;
-
-	volVectorfield dU;
-
-
-	volScalarfield p2;
-	volScalarfield p3;
-	volScalarfield p4;
-
-	surfaceScalarField phi2;
-	surfaceScalarField phi3;
-	surfaceScalarField phi4;*/
-
+	
+	/// To determine boundary vector 
+	Eigen::MatrixXd A;
+    	Eigen::VectorXd b;
 
         /// Mesh
         mutable autoPtr<fvMesh> _mesh;

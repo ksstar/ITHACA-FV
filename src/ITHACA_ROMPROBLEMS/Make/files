@@ -1,6 +1,7 @@
 ReducedProblem/ReducedProblem.C
 ReducedUnsteadyNS/ReducedUnsteadyNS.C
 ReducedUnsteadyNSPISO/ReducedUnsteadyNSPISO.C
+ReducedUnsteadyNSExplicit/ReducedUnsteadyNSExplicit.C
 ReducedUnsteadyBB/ReducedUnsteadyBB.C
 ReducedUnsteadyNSTurb/ReducedUnsteadyNSTurb.C
 ReducedUnsteadyNST/ReducedUnsteadyNST.C

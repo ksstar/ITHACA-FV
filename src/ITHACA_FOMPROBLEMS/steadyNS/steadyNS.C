@@ -861,18 +861,25 @@ Eigen::MatrixXd steadyNS::boundary_term(label NUmodes,
 {
     label BCsize = NUmodes + NSUPmodes + liftfield.size();
     word bw_str = "bw";
-	ITHACAstream::ReadDenseMatrix(bw, "./ITHACAoutput/BCvector/", bw_str);
-    Eigen::MatrixXd BC_matrix(BCsize, 1);
+	//  Eigen::MatrixXd bw = ITHACAstream::readMatrix( "./ITHACAoutput/BCvector",bw_str);
+
+    word matname = "./ITHACAoutput/BCvector/" + bw_str + "0" + "_mat.txt";
+    Eigen::MatrixXd bw = ITHACAstream::readMatrix(matname);
+
+    Eigen::MatrixXd BC_matrix(BCsize,1);
     Eigen::VectorXd ModeVector;
 
     // Project everything
+//for (label j = 0; j < bw.cols(); j++)
+//{
     for (label i = 0; i < BCsize; i++)
     {
 
 	ModeVector = Foam2Eigen::field2Eigen(L_U_SUPmodes[i]);
-	BC_matrix(i, 0) = ModeVector.dot(bw.col(0));
+	BC_matrix(i,0) = ModeVector.dot(bw.col(0));
 
     }
+//}
 
     ITHACAstream::SaveDenseMatrix(BC_matrix, "./ITHACAoutput/Matrices/",
                                   "BC_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(NSUPmodes));

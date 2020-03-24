@@ -40,10 +40,10 @@ _phi = autoPtr<surfaceScalarField>
                    IOobject::READ_IF_PRESENT,
                    IOobject::AUTO_WRITE
                ),
-               linearInterpolate(U) & mesh.Sf()
+               fvc::interpolate(U) & mesh.Sf()
            )
        );
-surfaceScalarField& phi = _phi();
+surfaceScalarField phi = _phi();
 
 surfaceScalarField phi0(phi);
 

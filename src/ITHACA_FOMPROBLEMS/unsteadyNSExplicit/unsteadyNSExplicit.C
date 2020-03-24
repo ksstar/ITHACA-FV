@@ -99,29 +99,32 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
 
 {
     Time& runTime = _runTime();
-    surfaceScalarField& phi = _phi();
     fvMesh& mesh = _mesh();
-    fv::options& fvOptions = _fvOptions();
+    volScalarField p = _p();
+    volVectorField U = _U();
+    surfaceScalarField phi = _phi();
 #include "initContinuityErrs.H"
-    pisoControl& piso = _piso();
-    volScalarField& p = _p();
-    volVectorField& U = _U();
     dimensionedScalar nu = _nu();
     dimensionedScalar dt = _dt();
-    IOMRFZoneList& MRF = _MRF();
-    singlePhaseTransportModel& laminarTransport = _laminarTransport();
     instantList Times = runTime.times();
     runTime.setEndTime(finalTime);
     // Perform a TruthSolve
     runTime.setTime(Times[1], 1);
     runTime.setDeltaT(timeStep);
     nextWrite = startTime;
+    // Determine bc vector
+    fvVectorMatrix UEqn
+    (
+	fvm::laplacian(dimensionedScalar("1", dimless, 1), U)
+    );     
+    Foam2Eigen::fvMatrix2Eigen(UEqn, A, b);
+    bw.resize(b.size(),1);
+    bw.col(0) = b;
+    ITHACAstream::exportMatrix(bw, "bw0", "eigen",
+                               "./ITHACAoutput/BCvector/");
 
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
-    ITHACAstream::exportSolution(phi, name(counter), folder);
-    
-    phi = linearInterpolate(U) & mesh.Sf();
     ITHACAstream::exportSolution(phi, name(counter), folder);
 
     std::ofstream of(folder + name(counter) + "/" +
@@ -133,26 +136,6 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     counter++;
     nextWrite += writeEvery;
 
- /*   volVectorField  dU("dU", U * 0);
- volVectorField  U1("U1", U * 0);
- volVectorField  Un("Un", U * 0);
-    volVectorField  U2("U2", U * 0);
-    volVectorField  U3("U3", U * 0);
-    volVectorField  U4("U4", U * 0);
-
-    volScalarField  p2("p2", p * 0);
-    volScalarField  p3("p3", p * 0);
-    volScalarField  p4("p4", p * 0);
-
-
-    surfaceScalarField phi1("phi1", phi*0);
-    surfaceScalarField phi2("phi2", phi*0);
-    surfaceScalarField phi3("phi3", phi*0);
-    surfaceScalarField phi4("phi4", phi*0);*/
-
-//
-
-#include "CreatePoissonMatrix.H"
     // Start the time loop
     while (runTime.run())
     {
@@ -161,151 +144,62 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
 #include "setDeltaT.H"
         runTime.setEndTime(finalTime);
         runTime++;
-
         Info << "Time = " << runTime.timeName() << nl << endl;
         
-	phi = linearInterpolate(U) & mesh.Sf();
-	volVectorField& Un = U; volVectorField& U1 = Un; surfaceScalarField& phi1 = phi; //Un = U; U1 = Un; phi1 = phi;
+	// Stage 1
+	volVectorField U1 = U; surfaceScalarField phi1 = phi;
 	
 	// Stage 2
-	volVectorField dU =      dt * a21 * (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1));
-	U = U1 + dU; 
-	U.correctBoundaryConditions();
-	phi = linearInterpolate(U) & mesh.Sf();
-	solve(pEqn ==  (1/(c2*dt))*fvc::div(phi));
+	volVectorField dU2 =      dt * a21 * (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1));
+	volVectorField U2 = U1 + dU2; 
+	U2.correctBoundaryConditions();
+	surfaceScalarField phi2 = fvc::interpolate(U2) & mesh.Sf();
 
-	U = U - (c2*dt)*fvc::grad(p);
-	U.correctBoundaryConditions();
- 	phi = linearInterpolate(U) & mesh.Sf();
-	volVectorField& U2 = U; surfaceScalarField& phi2 = phi;
+	fvScalarMatrix pEqn = fvm::laplacian(p);
+	pEqn.setReference(pRefCell, pRefValue);
+	solve(pEqn ==  (1/(c2*dt))*fvc::div(phi2));
 
+	U2 = U2 - (c2*dt)*fvc::grad(p);
+	U2.correctBoundaryConditions();
+
+	phi2 = phi2 - (c2*dt)*pEqn.flux();
+ 	
 	//Stage 3
-	dU =       dt * a31 *(-fvc::div(phi1,U1) + nu *fvc::laplacian(U1))
+	volVectorField dU3  =       dt * a31 *(-fvc::div(phi1,U1) + nu *fvc::laplacian(U1))
 		 + dt * a32 *(-fvc::div(phi2,U2) + nu *fvc::laplacian(U2));
-	U = U1 +  dU;
-	U.correctBoundaryConditions();
-	phi = linearInterpolate(U) & mesh.Sf();
-	solve(pEqn ==  (1/(c3*dt))*fvc::div(phi));
+	volVectorField U3 = U1 +  dU3;
+	U3.correctBoundaryConditions();
+	surfaceScalarField phi3 = fvc::interpolate(U3) & mesh.Sf();
+	pEqn = fvm::laplacian(p);
+	pEqn.setReference(pRefCell, pRefValue);
+	solve(pEqn ==  (1/(c3*dt))*fvc::div(phi3));
 
-	U = Un - (c3*dt)*fvc::grad(p);
-	U.correctBoundaryConditions();
- 	phi = linearInterpolate(U) & mesh.Sf();
-	volVectorField& U3 = U; surfaceScalarField& phi3 = phi;
+	U3 = U3 - (c3*dt)*fvc::grad(p);
+	U3.correctBoundaryConditions();
 
+	phi3 = phi3 - (c3*dt)*pEqn.flux();
+ 	
 	// Stage New Time Step
-	dU =      dt * b1 *(-fvc::div(phi1,U1) + nu *fvc::laplacian(U1))
+	volVectorField dU =      dt * b1 *(-fvc::div(phi1,U1) + nu *fvc::laplacian(U1))
 		+ dt * b2 *(-fvc::div(phi2,U2) + nu *fvc::laplacian(U2))
 		+ dt * b3 *(-fvc::div(phi3,U3) + nu *fvc::laplacian(U3));
 	U = U1 +  dU; 
 	U.correctBoundaryConditions();
-	phi = linearInterpolate(U) & mesh.Sf();
-	solve(pEqn ==  (1/dt)*fvc::div(phi));
+	phi = fvc::interpolate(U) & mesh.Sf();
 
+	pEqn = fvm::laplacian(p);
+	pEqn.setReference(pRefCell, pRefValue);
+	solve(pEqn ==  (1/dt)*fvc::div(phi));
 	U = U - dt*fvc::grad(p);
 	U.correctBoundaryConditions();
- 	phi = linearInterpolate(U) & mesh.Sf();
-
-	//U.storeOldTime();
-	// U.store();
 
 	// Stage pressure postProcessing
+	phi = phi - dt*pEqn.flux();
+	solve(pEqn ==  fvc::div(-fvc::div(phi,U) + nu *fvc::laplacian(U)));
 
-	//solve(pEqn ==  fvc::div(-fvc::div(phi,U) + nu *fvc::laplacian(U)));
-
-	solve(pEqn ==  fvc::div(-fvc::div(phi,U)) );
 	
 	#include "continuityErrs.H"
-        // Calculate the flow-direction filter tensor
-    //    volScalarField magSqrU(magSqr(U));
-    //    volSymmTensorField F(sqr(U)/(magSqrU + SMALL*average(magSqrU)));
 
-        // Calculate the divergence of the flow-direction filtered div(U*U)
-        // Filtering with the flow-direction generates a more reasonable
-        // pressure distribution in regions of high velocity gradient in the
-        // direction of the flow
-      /*  volScalarField divDivUU
-        (
-            fvc::div
-            (
-                F & (-fvc::div(phi, U) + nu *fvc::laplacian(U)),
-                "div(div(phi,U))"
-            )
-        );
-
-
-	fvScalarMatrix pEqn
-	(
-	fvm::laplacian(p) - divDivUU
-	);
-	pEqn.setReference(pRefCell, pRefValue);
-
-	pEqn.solve();*/
-
-	
-
-
-/*	volVectorField Uold = U; volVectorField Uc = U;
-	phi = linearInterpolate(U) & mesh.Sf();
-
-	// Stage 2
-	dU =  dt* a21 *(-fvc::div(phi,U) + nu *fvc::laplacian(U));
-	Uc = U + dU; U = Uold +0.5*dU;
-    	#include "PressureCorrection.H"
- 	phi = linearInterpolate(U) & mesh.Sf();
-
-	//Stage 3
-	dU =  dt * a31 *(-fvc::div(phi,U) + nu *fvc::laplacian(U));
-		//dt  * a32 *(-fvc::div(phi,U2) + nu *fvc::laplacian(U2));
-	Uc = U +  dU; U = Uold +0.5*dU;
-    	#include "PressureCorrection.H"
- 	phi = linearInterpolate(U) & mesh.Sf();
-
-	//Stage 4
-	dU =    dt * b1 *(-fvc::div(phi,U) + nu *fvc::laplacian(U));
-		//dt * b2 *(-fvc::div(phi,U2) + nu *fvc::laplacian(U2))+
-		//dt * b3 *(-fvc::div(phi,U3) + nu *fvc::laplacian(U3))	;
-
-	Uc = U +  dU; U = Uold +0.5*dU;
-    	#include "PressureCorrection.H"
- 	phi = linearInterpolate(U) & mesh.Sf();/*
-
-/*	 U2.correctBoundaryConditions();
-	phi2 = linearInterpolate(U2) & mesh.Sf();
-	solve(fvm::laplacian(p) == fvc::div(phi2));
-	U2 = U2 - fvc::grad(p);
-        U2.correctBoundaryConditions();
-
-
-	//Stage 3
-
-	dU =  dt * a31 *(-fvc::div(phi,U) + nu *fvc::laplacian(U))+
-		dt  * a32 *(-fvc::div(phi,U2) + nu *fvc::laplacian(U2));
-	U3 = U +  dU;
-	 U3.correctBoundaryConditions();
-	phi3 = linearInterpolate(U3) & mesh.Sf();
-	solve(fvm::laplacian(p) == fvc::div(phi3));
-	U3 = U3 - fvc::grad(p);
-        U3.correctBoundaryConditions();
-
-
-	//Stage 4
-
-	dU =    dt * b1 *(-fvc::div(phi,U) + nu *fvc::laplacian(U))+
-		dt  * b2 *(-fvc::div(phi,U2) + nu *fvc::laplacian(U2))+
-		dt * b3 *(-fvc::div(phi,U3) + nu *fvc::laplacian(U3))	;
-
-	U4 = U +  dU;
-	 U4.correctBoundaryConditions();
-	phi4 = linearInterpolate(U4) & mesh.Sf();
-	//p = p;
-	solve(fvm::laplacian(p) == fvc::div(phi4));
-	U4 = U4 - fvc::grad(p);
-        U4.correctBoundaryConditions();
-	U = U4;*/
-
-
-
-        //runTime.write();
         Info << "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
              << "  ClockTime = " << runTime.elapsedClockTime() << " s"
              << nl << endl;
@@ -315,21 +209,8 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
             ITHACAstream::exportSolution(U, name(counter), folder);
             ITHACAstream::exportSolution(p, name(counter), folder);
 
-	    phi = linearInterpolate(U) & mesh.Sf();
 	    volScalarField Udiv = fvc::div(U);
-
-	volTensorField gradUt = fvc::grad(U);
-//volScalarField divUt = gradUt.component(0) + gradUt.component(4) + gradUt.component(8); (Div is the trace of Grad, so...)
-
-	   // volScalarField Phidiv = fvc::div(phi);
-
-volScalarField Phidiv 
-        (
-		"Phidiv",
-                (gradUt.component(0) + gradUt.component(4) + gradUt.component(8))
-                
-
-        );
+	    volScalarField Phidiv = fvc::div(phi);
 
 	    ITHACAstream::exportSolution(phi, name(counter), folder);
 	    ITHACAstream::exportSolution(Udiv, name(counter), folder);
@@ -350,8 +231,7 @@ volScalarField Phidiv
 
     }
 
-DivNorm.resize(Udivfield.size(),2);
-    
+    DivNorm.resize(Udivfield.size(),4);
     for (label j = 0; j < Udivfield.size(); j++)
     {
 
@@ -359,13 +239,16 @@ DivNorm.resize(Udivfield.size(),2);
         	mag(Phidivfield[j])().weightedAverage(Phidivfield[j].mesh().V()).value(); //scalar sumLocalContErr
 	DivNorm(j,1) = runTime.deltaTValue()*
         	Phidivfield[j].weightedAverage(Phidivfield[j].mesh().V()).value(); //scalar globalContErr
-    }
 
+	DivNorm(j,2) = runTime.deltaTValue()*
+        	mag(Udivfield[j])().weightedAverage(Udivfield[j].mesh().V()).value(); //scalar sumLocalContErr
+	DivNorm(j,3) = runTime.deltaTValue()*
+        	Udivfield[j].weightedAverage(Udivfield[j].mesh().V()).value(); //scalar globalContErr
+    }
     ITHACAstream::exportMatrix(DivNorm, "DivNorm", "eigen",
                                    folder);
 
-    
-
+   
 }
 
 bool unsteadyNSExplicit::checkWrite(Time& timeObject)

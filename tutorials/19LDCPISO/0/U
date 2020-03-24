@@ -9,48 +9,33 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    location    "system";
-    object      fvSchemes;
+    class       volVectorField;
+    object      U;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-ddtSchemes
-{
-    default         Euler;
-}
+dimensions      [0 1 -1 0 0 0 0];
 
-gradSchemes
-{
-    default         Gauss midPoint;
-    grad(p)         Gauss midPoint;
-}
+internalField   uniform (0 0 0);
 
-divSchemes
+boundaryField
 {
-    default         Gauss midPoint;
-    div(phi,U)      Gauss midPoint;
-}
+    movingWall
+    {
+        type            fixedValue;
+        value           uniform (1.0 0 0);
+    }
 
-laplacianSchemes
-{
-    default         Gauss midPoint orthogonal;
-}
+    fixedWalls
+    {
+        type 		fixedValue;
+        value           uniform (0 0 0);
+    }
 
-interpolationSchemes
-{
-    default         midPoint;
+    frontAndBack
+    {
+        type            empty;
+    }
 }
-
-snGradSchemes
-{
-    default         orthogonal;
-}
-
-fluxRequired
-{
-    p;
-}
-
 
 // ************************************************************************* //

@@ -116,6 +116,22 @@ void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
     runTime.setDeltaT(timeStep);
     nextWrite = startTime;
 
+    fvVectorMatrix UEqn
+    (
+	fvm::laplacian(dimensionedScalar("1", dimless, 1), U)
+    );     
+    	
+    Foam2Eigen::fvMatrix2Eigen(UEqn, A, b);
+    b = b;
+    bw.resize(b.size(),1);
+    bw.col(0) = b;
+
+
+
+     ITHACAstream::exportMatrix(bw, "bw0", "eigen",
+                               "./ITHACAoutput/BCvector/");
+
+
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
     ITHACAstream::exportSolution(phi, name(counter), folder);
@@ -175,10 +191,16 @@ void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
         
  	if (checkWrite(runTime))
         {
+
+
+
+
+//ITHACAstream::SaveDenseMatrix(bw, "./ITHACAoutput/BCvector/",
+                                 // "bw");
             ITHACAstream::exportSolution(U, name(counter), folder);
             ITHACAstream::exportSolution(p, name(counter), folder);
 
-	    phi = linearInterpolate(U) & mesh.Sf();
+	    //phi = linearInterpolate(U) & mesh.Sf();
 	    volScalarField Udiv = fvc::div(U);
 	    volScalarField Phidiv = fvc::div(phi);
 	    ITHACAstream::exportSolution(phi, name(counter), folder);
@@ -200,26 +222,8 @@ void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
 
     }
 
-    fvVectorMatrix UEqn
-    (
-	fvm::ddt(U)
- 	+ fvm::div(phi, U)
-	- fvm::laplacian(nu, U)
-     );
-    Eigen::MatrixXd A;
-    Eigen::VectorXd b;
-    Foam2Eigen::fvMatrix2Eigen(UEqn, A, b);
-    A = A;
-    b = b;
-   // Eigen::MatrixXd bw;
-    bw.resize(b.size(),1);
-    bw.col(0) = b;
 
-     ITHACAstream::exportMatrix(bw, "bw", "eigen",
-                               "./ITHACAoutput/BCvector/");
 
- ITHACAstream::SaveDenseMatrix(bw, "./ITHACAoutput/BCvector/",
-                                  "bw");
  	    
     DivNorm.resize(Udivfield.size(),4);
     
