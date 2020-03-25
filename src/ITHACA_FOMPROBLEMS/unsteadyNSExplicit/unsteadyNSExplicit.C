@@ -101,6 +101,7 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     Time& runTime = _runTime();
     fvMesh& mesh = _mesh();
     volScalarField p = _p();
+    volScalarField pzero = p;
     volVectorField U = _U();
     surfaceScalarField phi = _phi();
 #include "initContinuityErrs.H"
@@ -136,6 +137,7 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     counter++;
     nextWrite += writeEvery;
 
+
     // Start the time loop
     while (runTime.run())
     {
@@ -147,9 +149,9 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
         Info << "Time = " << runTime.timeName() << nl << endl;
         
 	// Stage 1
-	volVectorField U1 = U; surfaceScalarField phi1 = phi;
-	
+	volVectorField U1 = U; surfaceScalarField phi1 = phi; volScalarField p1("p1", p);
 	// Stage 2
+	p = p1;
 	volVectorField dU2 =      dt * a21 * (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1));
 	volVectorField U2 = U1 + dU2; 
 	U2.correctBoundaryConditions();
@@ -158,13 +160,15 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
 	fvScalarMatrix pEqn = fvm::laplacian(p);
 	pEqn.setReference(pRefCell, pRefValue);
 	solve(pEqn ==  (1/(c2*dt))*fvc::div(phi2));
-
+	p.correctBoundaryConditions();
 	U2 = U2 - (c2*dt)*fvc::grad(p);
 	U2.correctBoundaryConditions();
 
 	phi2 = phi2 - (c2*dt)*pEqn.flux();
+	volScalarField p2("p2", p);
  	
 	//Stage 3
+	p = p1;
 	volVectorField dU3  =       dt * a31 *(-fvc::div(phi1,U1) + nu *fvc::laplacian(U1))
 		 + dt * a32 *(-fvc::div(phi2,U2) + nu *fvc::laplacian(U2));
 	volVectorField U3 = U1 +  dU3;
@@ -173,13 +177,15 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
 	pEqn = fvm::laplacian(p);
 	pEqn.setReference(pRefCell, pRefValue);
 	solve(pEqn ==  (1/(c3*dt))*fvc::div(phi3));
-
+	p.correctBoundaryConditions();
 	U3 = U3 - (c3*dt)*fvc::grad(p);
 	U3.correctBoundaryConditions();
 
 	phi3 = phi3 - (c3*dt)*pEqn.flux();
+	volScalarField p3("p3", p);
  	
 	// Stage New Time Step
+	p = p1;
 	volVectorField dU =      dt * b1 *(-fvc::div(phi1,U1) + nu *fvc::laplacian(U1))
 		+ dt * b2 *(-fvc::div(phi2,U2) + nu *fvc::laplacian(U2))
 		+ dt * b3 *(-fvc::div(phi3,U3) + nu *fvc::laplacian(U3));
@@ -190,13 +196,25 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
 	pEqn = fvm::laplacian(p);
 	pEqn.setReference(pRefCell, pRefValue);
 	solve(pEqn ==  (1/dt)*fvc::div(phi));
+	p.correctBoundaryConditions();
 	U = U - dt*fvc::grad(p);
 	U.correctBoundaryConditions();
 
-	// Stage pressure postProcessing
-	phi = phi - dt*pEqn.flux();
-	solve(pEqn ==  fvc::div(-fvc::div(phi,U) + nu *fvc::laplacian(U)));
+        phi = phi - dt*pEqn.flux();
 
+
+	//pEqn = fvm::laplacian(p);
+	//pEqn.setReference(pRefCell, pRefValue);
+	//solve(pEqn ==  fvc::div(-fvc::div(phi,U) + nu *fvc::laplacian(U)));
+	//solve(pEqn ==  (1/dt)*fvc::div(phi));
+	//volScalarField pPost("pPost", p-dt*nu*fvc::laplacian(p));
+	//volScalarField pPost("pPost", p);
+
+	//pPost.correctBoundaryConditions();
+	//pPost = (-3)*p2 + 4*p;
+	//p.correctBoundaryConditions();
+
+	//p = p1 + p - nu*dt*fvc::laplacian(p);
 	
 	#include "continuityErrs.H"
 
@@ -207,7 +225,10 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
  	if (checkWrite(runTime))
         {
             ITHACAstream::exportSolution(U, name(counter), folder);
-            ITHACAstream::exportSolution(p, name(counter), folder);
+            //ITHACAstream::exportSolution(p1, name(counter), folder);
+	    //ITHACAstream::exportSolution(p2, name(counter), folder);
+	    //ITHACAstream::exportSolution(p3, name(counter), folder);
+	    ITHACAstream::exportSolution(p, name(counter), folder);
 
 	    volScalarField Udiv = fvc::div(U);
 	    volScalarField Phidiv = fvc::div(phi);
@@ -250,6 +271,25 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
 
    
 }
+
+
+/*	// Stage pressure postProcessing
+	volScalarField pPost("pPost", pzero);
+        volScalarField magSqrU(magSqr(U));
+        volSymmTensorField F(sqr(U)/(magSqrU + SMALL*average(magSqrU)));
+
+        volScalarField divDivUU
+        (
+            fvc::div
+            (
+                (F & fvc::div(phi, U)),
+                "div(div(phi,U))"
+            )
+        );
+
+        fvScalarMatrix pEqnPost = fvm::laplacian(pPost) + divDivUU ;
+	pEqnPost.setReference(pRefCell, pRefValue);
+        pEqnPost.solve();*/
 
 bool unsteadyNSExplicit::checkWrite(Time& timeObject)
 {

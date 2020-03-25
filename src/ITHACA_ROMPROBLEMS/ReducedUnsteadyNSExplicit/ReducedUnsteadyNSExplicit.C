@@ -50,23 +50,11 @@ reducedUnsteadyNSExplicit::reducedUnsteadyNSExplicit(unsteadyNSExplicit& FOMprob
     Nphi_u = problem->B_matrix.rows();
     Nphi_p = problem->K_matrix.cols();
 
-    // Create locally the velocity modes
-    for (label k = 0; k < problem->liftfield.size(); k++)
-    {
-        Umodes.append(problem->liftfield[k]);
-    }
-
     for (label k = 0; k < problem->NUmodes; k++)
     {
         Umodes.append(problem->Umodes[k]);
     }
 
-    for (label k = 0; k < problem->NSUPmodes; k++)
-    {
-        Umodes.append(problem->supmodes[k]);
-    }
-
-    // Create locally the pressure modes
     for (label k = 0; k < problem->NPmodes; k++)
     {
         Pmodes.append(problem->Pmodes[k]);
@@ -101,7 +89,7 @@ void reducedUnsteadyNSExplicit::solveOnline(Eigen::MatrixXd vel,
 
     // Initial condition
     a_o.setZero();
-    a_o.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[startSnap],
+    a_o.head(Nphi_u) = ITHACAutilities::get_coeffs_ortho(problem->Ufield[startSnap],
                      Umodes);
 
     // Counting variable
