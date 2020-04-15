@@ -86,9 +86,11 @@ int newton_unsteadyNSPISO_sup::operator()(const Eigen::VectorXd& x,
 {
     Eigen::VectorXd a_dot(Nphi_u);
     Eigen::VectorXd a_tmp(Nphi_u);
+    Eigen::VectorXd a_old(Nphi_u);
     Eigen::VectorXd b_tmp(Nphi_p);
     a_tmp = x.head(Nphi_u);
     b_tmp = x.tail(Nphi_p);
+    a_old = y_old.head(Nphi_u);
 
     // Choose the order of the numerical difference scheme for approximating the time derivative
     if (problem->timeDerivativeSchemeOrder == "first")
@@ -128,9 +130,10 @@ int newton_unsteadyNSPISO_sup::operator()(const Eigen::VectorXd& x,
     for (label i = 0; i < Nphi_u; i++)
     {
         cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
-                i) * a_tmp;
+                i) * a_old;
         //fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i);
-         fvec(i) = - M5(i) + M1(i) - cc(0, 0) + problem->BC_matrix(i,0);
+//(M2(l)  - cc(0,0)-problem->BC_matrix(l,0))*dt + a_o(l);
+         fvec(i) = - M5(i) + M1(i) - cc(0, 0) + problem->BC_matrix(i,0)-M2(i);
         if (problem->bcMethod == "penalty")
         {
             for (label l = 0; l < N_BC; l++)
@@ -143,7 +146,7 @@ int newton_unsteadyNSPISO_sup::operator()(const Eigen::VectorXd& x,
     for (label j = 0; j < Nphi_p; j++)
     {
         label k = j + Nphi_u;
-        //fvec(k) = M3(j);
+        fvec(k) = M3(j);
 	//fvec(k) = b_tmp(j);
 	fvec(k) = 0;
     }
@@ -226,7 +229,7 @@ int newton_unsteadyNSPISO_PPE::operator()(const Eigen::VectorXd& x,
     {
         cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
                 i) * a_tmp;
-        fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i);
+        fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i) ;
 
         if (problem->bcMethod == "penalty")
         {
@@ -308,10 +311,10 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
     // Create and resize the solution vector
     y.resize(Nphi_u + Nphi_p, 1);
     y.setZero();
-   // y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[startSnap],
-  //                   Umodes);
-  //  y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
- //                    Pmodes);
+    y.head(Nphi_u) = ITHACAutilities::get_coeffs(problem->Ufield[startSnap],
+                     Umodes);
+    y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
+                     Pmodes);
     int nextStore = 0;
     int counter2 = 0;
 
@@ -389,8 +392,8 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
             }
         }
 
-	y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
-                     Pmodes)*0;
+	//y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
+        //             Pmodes)*0;
 //ITHACAutilities::get_coeffs(problem->Pfield[counter],Pmodes);
 
         Eigen::VectorXd res(y);
@@ -412,8 +415,8 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
             }
         }
 
-	y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
-                     Pmodes)*0;
+	//y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
+       //              Pmodes)*0;
 
         newton_object_sup.operator()(y, res);
         newton_object_sup.yOldOld = newton_object_sup.y_old;
@@ -948,6 +951,12 @@ void reducedUnsteadyNSPISO::reconstruct_sup(fileName folder)
             {
                 U_rec += Umodes[j] * online_solution[i](j + 1, 0);
             }
+
+	
+	forAll( U_rec.boundaryFieldRef()[0], l)
+	{
+		U_rec.boundaryFieldRef()[0][l].component(vector::X) = 1;
+	}
 
             ITHACAstream::exportSolution(U_rec,  name(counter2), folder);
             volScalarField P_rec("P_rec", problem->Pmodes[0] * 0);

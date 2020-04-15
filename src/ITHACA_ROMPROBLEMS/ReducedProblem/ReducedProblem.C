@@ -137,6 +137,75 @@ Eigen::MatrixXd reducedProblem::solveLinearSys(List<Eigen::MatrixXd> LinSys,
     return y;
 }
 
+Eigen::MatrixXd reducedProblem::solveLinearSysAxb(List<Eigen::MatrixXd> LinSys,
+        Eigen::MatrixXd b, Eigen::MatrixXd x, Eigen::VectorXd& residual, 
+	const Eigen::MatrixXd& bc, const std::string solverType)
+
+{
+    M_Assert(solverType == "fullPivLu" || solverType == "partialPivLu"
+             || solverType == "householderQR" || solverType == "colPivHouseholderQR"
+             || solverType == "fullPivHouseholderQR"
+             || solverType == "CompleteOrthogonalDecomposition" || solverType == "llt"
+             || solverType == "ldlt" || solverType == "bdcSvd"
+             || solverType == "jacobiSvd", "solver not defined");
+    Eigen::MatrixXd y;
+
+    for (label i = 0; i < bc.size(); i++)
+    {
+        LinSys[0].row(i) *= 0;
+        LinSys[0](i, i) = 1;
+        LinSys[1](i, 0) = bc(i);
+    }
+
+    LinSys[1] =  LinSys[1] + b;	
+
+    residual = LinSys[0] * x - LinSys[1];
+
+    if (solverType == "fullPivLu")
+    {
+        y = LinSys[0].fullPivLu().solve(LinSys[1]);
+    }
+    else if (solverType == "partialPivLu")
+    {
+        y = LinSys[0].partialPivLu().solve(LinSys[1]);
+    }
+    else if (solverType == "householderQr")
+    {
+        y = LinSys[0].householderQr().solve(LinSys[1]);
+    }
+    else if (solverType == "colPivHouseholderQr")
+    {
+        y = LinSys[0].colPivHouseholderQr().solve(LinSys[1]);
+    }
+    else if (solverType == "fullPivHouseholderQr")
+    {
+        y = LinSys[0].fullPivHouseholderQr().solve(LinSys[1]);
+    }
+    else if (solverType == "completeOrthogonalDecomposition")
+    {
+        y = LinSys[0].completeOrthogonalDecomposition().solve(LinSys[1]);
+    }
+    else if (solverType == "llt")
+    {
+        y = LinSys[0].llt().solve(LinSys[1]);
+    }
+    else if (solverType == "ldlt")
+    {
+        y = LinSys[0].ldlt().solve(LinSys[1]);
+    }
+    else if (solverType == "bdcSvd")
+    {
+        y = LinSys[0].bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(
+                LinSys[1]);
+    }
+    else if (solverType == "jacobiSvd")
+    {
+        y = LinSys[0].jacobiSvd().solve(LinSys[1]);
+    }
+
+    return y;
+}
+
 // ****************** //
 // class onlineInterp //
 // ****************** //

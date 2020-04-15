@@ -45,6 +45,8 @@ SourceFiles
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <Eigen/Eigen>
+#include <Eigen/Dense>
+#include <iostream>
 #pragma GCC diagnostic pop
 #include <functional>
 #include "./colormod.H"
@@ -201,6 +203,19 @@ class ITHACAutilities
         template<class TypeField>
         static double error_fields(TypeField& field1, TypeField& field2);
 
+	//--------------------------------------------------------------------------
+        /// Computes the relative error between two Fields in infinity norm
+        ///
+        /// @param[in]  field1  The field 1
+        /// @param[in]  fideld2  The field 2
+        ///
+        /// @tparam     TypeField   type of field
+        ///
+        /// @return     infinity norm of the relative error.
+        ///
+        template<class TypeField>
+        static double error_fields_inf(TypeField& field1, TypeField& field2);
+
         //--------------------------------------------------------------------------
         /// Computes the relative error between two volVectorFields in
         /// L2 norm, given the mesh volumes field
@@ -275,6 +290,20 @@ class ITHACAutilities
         ///
         template<class TypeField>
         static Eigen::MatrixXd error_listfields_abs(PtrList<TypeField>& fields1,
+                PtrList<TypeField>& fields2);
+
+	//--------------------------------------------------------------------------
+        /// Computes the absolute error in infinity norm between two lists of Fields
+        ///
+        /// @param[in]  fields1  The fields 1, scalar or vector
+        /// @param[in]  fields2  The fields 2, scalar or vector
+        ///
+        /// @tparam     TypeField   type of field
+        ///
+        /// @return     column vector, in each row the infinity norm .
+        ///
+        template<class TypeField>
+        static Eigen::MatrixXd error_listfields_inf(PtrList<TypeField>& fields1,
                 PtrList<TypeField>& fields2);
 
         //-----------------------------------------------------------------------------
@@ -352,6 +381,10 @@ class ITHACAutilities
         template<class TypeField>
         static Eigen::VectorXd get_mass_matrix_FV(
             GeometricField<TypeField, fvPatchField, volMesh>& snapshot);
+
+	template<class TypeField>
+        static Eigen::VectorXd get_mass_matrix_FV(
+            GeometricField<TypeField, fvsPatchField, surfaceMesh>& snapshot);
 
 	template<class TypeField, class TypeField2>
         static Eigen::VectorXd get_mass_matrix_FV_Full(
@@ -568,6 +601,24 @@ class ITHACAutilities
         /// @return     L2 norm of the volVectorField.
         ///
         static double L2norm(volVectorField field);
+
+	//--------------------------------------------------------------------------
+        /// Evaluate the infinity norm of a volScalarField
+        ///
+        /// @param[in]  field  The field.
+        ///
+        /// @return     infinity norm of the volScalarField.
+        ///
+        static double INFnorm(volScalarField field);
+
+        //--------------------------------------------------------------------------
+        /// Evaluate the infinity norm of a volVectorField
+        ///
+        /// @param[in]  field  The field.
+        ///
+        /// @return     infinity norm of the volVectorField.
+        ///
+        static double INFnorm(volVectorField field);
 
         //--------------------------------------------------------------------------
         /// Evaluate the H1 seminorm of a volScalarField

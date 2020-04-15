@@ -81,6 +81,13 @@ class ITHACAPOD
                              snapshots, PtrList<GeometricField<Field_type, fvPatchField, volMesh>>& modes,
                              bool podex, bool supex = 0, bool sup = 0, int nmodes = 0);
 
+	template<class Field_type>
+        static void getModesPhi(PtrList<GeometricField<Field_type, fvsPatchField, surfaceMesh>>&
+                             snapshots, PtrList<GeometricField<Field_type, fvsPatchField, surfaceMesh>>& modes,
+                             bool podex, bool supex = 0, bool sup = 0, int nmodes = 0);
+
+
+
 	template<class Field_type, class Field_type2>
         static void getModesSharedBasis(PtrList<GeometricField<Field_type, fvPatchField, volMesh>>&
                              snapshotsU, 

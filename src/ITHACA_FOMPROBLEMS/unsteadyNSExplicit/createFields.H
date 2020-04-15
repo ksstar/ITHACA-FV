@@ -105,7 +105,29 @@ _U0 = autoPtr<volVectorField>
           new volVectorField(U0)
       );
 
-#include "createPhi.H"
+_phi = autoPtr<surfaceScalarField>
+       (
+           new surfaceScalarField
+           (
+               IOobject
+               (
+                   "phi",
+                   runTime.timeName(),
+                   mesh,
+                   IOobject::READ_IF_PRESENT,
+                   IOobject::AUTO_WRITE
+               ),
+              mesh
+           )
+       );
+surfaceScalarField phi = _phi();
+
+surfaceScalarField phi0(phi);
+
+_phi0 = autoPtr<surfaceScalarField>
+        (
+            new surfaceScalarField(phi0)
+        );
 
 
 pRefCell = 0;

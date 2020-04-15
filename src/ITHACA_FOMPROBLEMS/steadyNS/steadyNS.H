@@ -84,17 +84,22 @@ class steadyNS: public reductionProblem
         // Member Functions
         /// List of pointers used to form the pressure snapshots matrix
         PtrList<volScalarField> Pfield;
+	PtrList<volScalarField> P0field;
 
         /// List of pointers used to form the velocity snapshots matrix
         PtrList<volVectorField> Ufield;
 
-
+	/// List of pointers used to form the online solutions
 	PtrList<volScalarField> Pfield_on;
         PtrList<volVectorField> Ufield_on;
 
+	/// List of pointers used to form the phi snapshots matrices
 	PtrList<volScalarField> Udivfield;
 	PtrList<volScalarField> Phidivfield;
         PtrList<surfaceScalarField> Phifield;
+
+	/// Projection Peqn onto Pressure modes
+	List<Eigen::MatrixXd> RedLinSysP;
 
         /// List of pointers used to form the supremizer snapshots matrix
         PtrList<volVectorField> supfield;
@@ -107,6 +112,9 @@ class steadyNS: public reductionProblem
 
         /// List of pointers used to form the supremizer modes
         Modes<vector> supmodes;
+
+	/// List of pointers used to form the phi modes
+	PtrList<surfaceScalarField> Phimodes;
 
         /// List of pointers used to form the list of lifting functions
         PtrList<volVectorField> liftfield;
@@ -146,18 +154,27 @@ class steadyNS: public reductionProblem
         /// Gradient of pressure matrix
         Eigen::MatrixXd K_matrix;
 
-Eigen::MatrixXd bw;
-Eigen::MatrixXd BC_matrix;
+	/// Flux of pressure matrix	
+	Eigen::MatrixXd Kf_matrix;
+
+	/// Matrices boundary vector
+	Eigen::MatrixXd bw;
+	Eigen::MatrixXd BC_matrix;
 
         /// Non linear term
         List <Eigen::MatrixXd> C_matrix;
         Eigen::Tensor<double, 3 > C_tensor;
+	Eigen::Tensor<double, 3 > Cf_tensor;
 
         /// Div of velocity
         Eigen::MatrixXd P_matrix;
+	Eigen::MatrixXd Pf_matrix;
 
         /// Laplacian term PPE
         Eigen::MatrixXd D_matrix;
+
+	/// Interpolation term
+	Eigen::MatrixXd I_matrix;
 
         /// Divergence of momentum PPE
         List <Eigen::MatrixXd> G_matrix;
@@ -255,6 +272,9 @@ Eigen::MatrixXd BC_matrix;
         /// Boundary Method
         word bcMethod;
 
+	/// Boundary Method
+        word ExplicitMethod;
+
         // Functions
 
         //--------------------------------------------------------------------------
@@ -309,6 +329,18 @@ Eigen::MatrixXd BC_matrix;
         /// @return     reduced matrix in Eigen::MatrixXd format for the diffusion term.
         ///
         Eigen::MatrixXd diffusive_term(label NUmodes, label NPmodes, label NSUPmodes);
+	
+	//--------------------------------------------------------------------------
+        //  Projection Methods Momentum Equation
+        /// Interpolation Term
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the interpolation term.
+        ///
+	Eigen::MatrixXd interpolation_term(label NUmodes, label NPmodes, label NSUPmodes);
 
         //--------------------------------------------------------------------------
         /// Gradient of pressure
@@ -321,6 +353,28 @@ Eigen::MatrixXd BC_matrix;
         ///
         Eigen::MatrixXd pressure_gradient_term(label NUmodes, label NPmodes,
                                                label NSUPmodes);
+
+	//--------------------------------------------------------------------------
+        /// Gradient of pressure flux
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the Gradient of pressure flux term.
+        ///
+	Eigen::MatrixXd pressure_flux_term(label NUmodes, label NPmodes,
+                                               label NSUPmodes);
+	//--------------------------------------------------------------------------
+        /// Laplacian of pressure Linear System
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the Laplacian of pressure Linear System.
+        ///
+	List < Eigen::MatrixXd > pressure_gradient_term_linsys(label NPmodes);
 
         //--------------------------------------------------------------------------
         /// Convective Term
@@ -345,6 +399,14 @@ Eigen::MatrixXd BC_matrix;
         ///
         Eigen::MatrixXd  mass_term(label NUmodes, label NPmodes, label NSUPmodes);
 
+	//--------------------------------------------------------------------------
+        /// Boundary Term
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the mass matrix.
+        ///
 	Eigen::MatrixXd  boundary_term(label NUmodes, label NSUPmodes);
 
         // Projection Methods Continuity Equation
@@ -359,6 +421,17 @@ Eigen::MatrixXd BC_matrix;
         /// @return     reduced matrix in Eigen::MatrixXd format for the divergence term.
         ///
         Eigen::MatrixXd divergence_term(label NUmodes, label NPmodes, label NSUPmodes);
+
+	//--------------------------------------------------------------------------
+        /// Divergence flux Term (supremizer approach)
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the divergence flux term.
+        ///
+	Eigen::MatrixXd divergence_flux_term(label NUmodes, label NPmodes, label NSUPmodes);
 
         //--------------------------------------------------------------------------
         /// Divergence of convective term (PPE approach)
@@ -496,6 +569,18 @@ Eigen::MatrixXd BC_matrix;
         Eigen::Tensor<double, 3 > convective_term_tens(label NUmodes,
                 label NPmodes,
                 label NSUPmodes);
+
+	//--------------------------------------------------------------------------
+        /// @brief      Export convective flux term as a tensor
+        ///
+        /// @param[in]  NUmodes    The N of velocity modes
+        /// @param[in]  NPmodes    The N of pressure modes
+        /// @param[in]  NSUPmodes  The N of supremizer modes
+        ///
+        /// @return     tensor_Cf
+        ///	
+	Eigen::Tensor<double, 3 > convective_flux_tens(label NUmodes,
+                label NPmodes, label NSUPmodes);
 
         /// set U and P back to the values into the 0 folder
         void restart();

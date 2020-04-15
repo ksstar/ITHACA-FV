@@ -75,6 +75,9 @@ class reducedUnsteadyNSExplicit: public reducedSteadyNS
         /// Scalar to store the time increment
         double dt;
 
+	/// number of phi modes
+	int Nphi_phi;
+
         /// Scalar to store the final time if the online simulation
         scalar finalTime;
 

@@ -114,6 +114,11 @@ class Foam2Eigen
             PtrList<GeometricField<type_f, fvPatchField, volMesh>>& fields,
             int Nfields = -1);
 
+	template <class type_f>
+        static Eigen::MatrixXd PtrList2Eigen(
+            PtrList<GeometricField<type_f, fvsPatchField, surfaceMesh>>& fields,
+            int Nfields = -1);
+
 
 	template <class type_f,class type_2>
 	static  Eigen::MatrixXd PtrList2EigenFull(
@@ -191,6 +196,10 @@ class Foam2Eigen
         static Eigen::VectorXd field2Eigen(
             GeometricField<type_f, fvPatchField, volMesh>& field);
 
+	template <class type_f>
+        static Eigen::VectorXd field2Eigen(
+            GeometricField<type_f, fvsPatchField, surfaceMesh>& field);
+
        template <class type_f, class type_2>
         static Eigen::VectorXd field2EigenFull(
             GeometricField<type_f, fvPatchField, volMesh>& fieldU, GeometricField<type_2, fvPatchField, volMesh>& fieldP);
@@ -210,6 +219,10 @@ class Foam2Eigen
         template <class type_f>
         static List<Eigen::VectorXd> field2EigenBC(
             GeometricField<type_f, fvPatchField, volMesh>& field);
+
+	template <class type_f>
+        static List<Eigen::VectorXd> field2EigenBC(
+            GeometricField<type_f, fvsPatchField, surfaceMesh>& field);
 
 	template <class type_f>
 	static List<Eigen::VectorXd> field2EigenBCFull(
@@ -241,6 +254,11 @@ class Foam2Eigen
             int Nfields = -1);
 
 	template <class type_f>
+        static List<Eigen::MatrixXd> PtrList2EigenBC(
+            PtrList<GeometricField<type_f, fvsPatchField, surfaceMesh>>& fields,
+            int Nfields = -1);
+
+	template <class type_f>
         static List<Eigen::MatrixXd> PtrList2EigenBCFull(
             PtrList<GeometricField<type_f, fvPatchField, volMesh>>& fieldsU,
     		PtrList<volScalarField>& fieldsP, int Nfields = -1);
@@ -258,6 +276,11 @@ class Foam2Eigen
         template <class type_f>
         static GeometricField<type_f, fvPatchField, volMesh> Eigen2field(
             GeometricField<type_f, fvPatchField, volMesh>& field,
+            Eigen::VectorXd& eigen_vector);
+
+	template <class type_f>
+        static GeometricField<type_f, fvsPatchField, surfaceMesh> Eigen2fieldPhi(
+            GeometricField<type_f, fvsPatchField, surfaceMesh>& field,
             Eigen::VectorXd& eigen_vector);
 
         //--------------------------------------------------------------------------
@@ -389,12 +412,20 @@ Eigen::VectorXd Foam2Eigen::field2Eigen(
     GeometricField<scalar, fvPatchField, volMesh>& field);
 
 template<>
+Eigen::VectorXd Foam2Eigen::field2Eigen(
+    GeometricField<scalar, fvsPatchField, surfaceMesh>& field);
+
+template<>
 List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
     GeometricField<vector, fvPatchField, volMesh>& field);
 
 template<>
 List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
     GeometricField<scalar, fvPatchField, volMesh>& field);
+
+template<>
+List<Eigen::VectorXd> Foam2Eigen::field2EigenBC(
+    GeometricField<scalar, fvsPatchField, surfaceMesh>& field);
 
 template<>
 List<Eigen::VectorXd> Foam2Eigen::field2EigenBCFull(
@@ -411,6 +442,11 @@ List<Eigen::MatrixXd> PtrList2EigenBCFull(type_f& fieldsU,
 template<>
 List<Eigen::MatrixXd> PtrList2EigenBC(
     PtrList<GeometricField<scalar, fvPatchField, volMesh>>& fields,
+    int Nfields);
+
+template<>
+List<Eigen::MatrixXd> PtrList2EigenBC(
+    PtrList<GeometricField<scalar, fvsPatchField, surfaceMesh>>& fields,
     int Nfields);
 
 template<>

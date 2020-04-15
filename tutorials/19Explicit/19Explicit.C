@@ -55,8 +55,13 @@ class tutorial19Explicit: public unsteadyNSExplicit
 
             if (offline)
             {
-                ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/Offline/");
-                ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/Offline/");
+                ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/OfflineBRKFOAM/");
+                ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/OfflineBRKFOAM/");
+
+		ITHACAstream::read_fields(Ufield_on, U, "./ITHACAoutput/BRKFOAM/");
+		ITHACAstream::read_fields(Pfield_on, p, "./ITHACAoutput/BRKFOAM/");
+
+ 
             }
             else
             {
@@ -76,6 +81,7 @@ class tutorial19Explicit: public unsteadyNSExplicit
 \*---------------------------------------------------------------------------*/
 int main(int argc, char* argv[])
 {
+#include "fvCFD.H"
     // Construct the tutorial19PISO object
     tutorial19Explicit example(argc, argv);
     // Read parameters from ITHACAdict file
@@ -107,7 +113,9 @@ int main(int argc, char* argv[])
     example.timeStep = 0.01;
     example.writeEvery = 0.01;
 
-     // RK coefficients
+    if (example.Method == "RK3")
+    {
+    // RK coefficients (RK3)
     example.a21 = 0.33333333333333333333333;
     example.a31 = -1;
     example.a32 = 2;
@@ -117,6 +125,19 @@ int main(int argc, char* argv[])
     example.c1 = 0;
     example.c2 = 0.33333333333333333333333;
     example.c3 = 1;
+    }
+    else if (example.Method == "FE")
+    {
+    example.a21 = 0;
+    example.a31 = 0;
+    example.a32 = 0;
+    example.b1 = 1.0;
+    example.b2 = 0;
+    example.b3 = 0;
+    example.c1 = 0;
+    example.c2 = 0;
+    example.c3 = 0;
+    }
 
     // Perform The Offline Solve;
     auto start_FOM = std::chrono::high_resolution_clock::now();
@@ -124,25 +145,91 @@ int main(int argc, char* argv[])
     auto finish_FOM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_FOM = finish_FOM - start_FOM;
 
+//exit(0);
+
+ /*   // Calculate error between online- and corresponding full order solution
+    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
+                                         example.Ufield_on, example.Ufield);
+    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields(
+                                         example.Pfield_on, example.Pfield);
+    //Export the matrix containing the error
+    ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
+                               "./ITHACAoutput/l2errorBRKFOAM");
+    ITHACAstream::exportMatrix(L2errorMatrixP, "L2errorMatrixP", "eigen",
+                               "./ITHACAoutput/l2errorBRKFOAM");
+
+ // Calculate error between online- and corresponding full order solution
+    Eigen::MatrixXd L2errorMatrixInfU = ITHACAutilities::error_listfields_inf(
+                                         example.Ufield_on, example.Ufield);
+    Eigen::MatrixXd L2errorMatrixInfP = ITHACAutilities::error_listfields_inf(
+                                         example.Pfield_on, example.Pfield);
+    //Export the matrix containing the error
+    ITHACAstream::exportMatrix(L2errorMatrixInfU, "L2errorMatrixInfU", "eigen",
+                               "./ITHACAoutput/l2errorBRKFOAM");
+    ITHACAstream::exportMatrix(L2errorMatrixInfP, "L2errorMatrixInfP", "eigen",
+                               "./ITHACAoutput/l2errorBRKFOAM");
+exit(0);*/
+
     ITHACAPOD::getModes(example.Ufield, example.Umodes, example.podex, 0, 0,
                         NmodesUout);
     ITHACAPOD::getModes(example.Pfield, example.Pmodes, example.podex, 0, 0,
-                        NmodesPout);
+                       NmodesPout);
 
-    Eigen::MatrixXd coeffL2U = ITHACAutilities::get_coeffs(example.Ufield,
-              example.Umodes, NmodesUout);
-    ITHACAstream::exportMatrix(coeffL2U, "coeffL2U", "eigen",
-                               "./ITHACAoutput/Matrices/");
+if (example.ExplicitMethod == "A"|| example.ExplicitMethod == "B")
+{
+    ITHACAPOD::getModesPhi(example.Phifield, example.Phimodes, example.podex, 0, 0,
+                       NmodesPout);
 
-    Eigen::MatrixXd coeffL2P = ITHACAutilities::get_coeffs_ortho(example.Pfield,
-              example.Pmodes, NmodesPout);
-    ITHACAstream::exportMatrix(coeffL2P, "coeffL2P", "eigen",
-                               "./ITHACAoutput/Matrices/");
+    Eigen::MatrixXd  DivModes;
+    DivModes.resize(example.Phimodes.size(),2);
 
 
-    //Computational Time
-    std::cout << "elapsed_FOM: " << elapsed_FOM.count() << " seconds.";
-    std::cout << std::endl;
+    for (int j = 0; j < example.Phimodes.size(); j++)
+    {
+	volScalarField PhidivDivModes = fvc::div(example.Phimodes[j]);
+
+   	DivModes(j,0) = example.timeStep*
+        	mag(PhidivDivModes)().weightedAverage(PhidivDivModes.mesh().V()).value(); //scalar sumLocalContErr
+	DivModes(j,1) = example.timeStep*
+        	PhidivDivModes.weightedAverage(PhidivDivModes.mesh().V()).value(); //scalar globalContErr
+
+
+    }
+    ITHACAstream::exportMatrix(DivModes, "DivModes", "eigen",
+                                   "./ITHACAoutput/POD/");
+}
+//exit(0);
+/*
+    Eigen::MatrixXd  DivRec;
+    DivRec.resize(example.Ufield.size(),2);
+
+	Eigen::MatrixXd coeffL2U = ITHACAutilities::get_coeffs(example.Ufield,
+              example.Umodes, 2);
+	PtrList<volVectorField> rec_fieldU = ITHACAutilities::reconstruct_from_coeff(
+                example.Umodes, coeffL2U, 2);
+
+    for (int j = 0; j < example.Ufield.size(); j++)
+    {
+
+	volScalarField UdivDivRec = fvc::div(rec_fieldU[j]);
+	
+   	DivRec(j,0) = example.timeStep*
+        	mag(UdivDivRec)().weightedAverage(UdivDivRec.mesh().V()).value(); //scalar sumLocalContErr
+	DivRec(j,1) = example.timeStep*
+        	UdivDivRec.weightedAverage(UdivDivRec.mesh().V()).value(); //scalar globalContErr
+
+    }
+    ITHACAstream::exportMatrix(DivRec, "DivRec", "eigen",
+                                   "./ITHACAoutput/POD/");*/
+
+
+
+
+      
+
+ 
+
+
 
     // Galerkin Projection
     example.projectSUP("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
@@ -151,7 +238,7 @@ int main(int argc, char* argv[])
     // Set values of the reduced stuff
     reduced.nu = example.mu(0, 0);
     reduced.tstart = example.startTime;
-    reduced.finalTime = 0.1;
+    reduced.finalTime = 1.0;
     reduced.dt = example.timeStep;
     reduced.storeEvery = example.timeStep;
     reduced.exportEvery = example.timeStep;
@@ -165,12 +252,16 @@ int main(int argc, char* argv[])
     // Reconstruct the solution and export it
     reduced.reconstruct("./ITHACAoutput/ReconstructionExplicit/");
     // Calculate error between online- and corresponding full order solution
-    // Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
-    //                                     example.Ufield, reduced.UREC);
+    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
+                                         example.Ufield, reduced.UREC);
+    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields(
+                                         example.Pfield, reduced.PREC);
  
     //Export the matrix containing the error
-    // ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
-    //                            "./ITHACAoutput/l2error");
+    ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
+                                "./ITHACAoutput/l2error");
+    ITHACAstream::exportMatrix(L2errorMatrixP, "L2errorMatrixP", "eigen",
+                                "./ITHACAoutput/l2error");
 
 
 

@@ -18,10 +18,10 @@ FoamFile
 EigenSolver eigen;
 
 // Number of modes to output and to use for projection
-NmodesUout 50;
-NmodesUproj 5;
-NmodesPout 50;
-NmodesPproj 5;
+NmodesUout 20;
+NmodesUproj 10;
+NmodesPout 20;
+NmodesPproj 10;
 NmodesSUPout 0;
 NmodesSUPproj 0;
 
@@ -30,15 +30,19 @@ OutPrecision 20;
 OutType fixed;
 
 // Specific problem of a stationary case
-tolerance 1e-6;
+tolerance 1e-10;
 
 // Reduced simple cicle parameters
-residualJumpLim 1e-8;
-normalizedResidualLim 1e-8;
+residualJumpLim 1e-10;
+normalizedResidualLim 1e-10;
 
-bcMethod none
+bcMethod none;
 
-timeDerivativeSchemeOrder first
+timeDerivativeSchemeOrder first;
+
+Method FE;
+
+ExplicitMethod Ales;
 
 // Inlet boundary conditions velocities.
 online_velocities vel.txt;

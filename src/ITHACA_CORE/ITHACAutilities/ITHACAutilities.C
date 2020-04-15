@@ -331,7 +331,7 @@ double ITHACAutilities::error_fields(TypeField& field1,
 {
     double err;
 
-    if (L2norm(field1) <= 1e-6)
+    if (L2norm(field1) <= 1e-20)
     {
         err = 0;
     }
@@ -364,6 +364,46 @@ double ITHACAutilities::error_fields(
     double err = Foam::sqrt(gSum(diffFields2));
     return err;
 }
+
+template<class TypeField>
+double ITHACAutilities::error_fields_inf(TypeField& field1,
+                                     TypeField& field2)
+{
+    double err;
+
+    if (INFnorm(field1) <= 1e-20)
+    {
+        err = 0;
+    }
+    else
+    {
+        err = INFnorm(field1 - field2) / INFnorm(field1);
+    }
+
+    return err;
+}
+
+/*template<>
+double ITHACAutilities::error_fields_inf(
+    GeometricField<vector, fvPatchField, volMesh>& field1,
+    GeometricField<vector, fvPatchField, volMesh>& field2, volScalarField& Volumes)
+
+{
+    volScalarField diffFields2 = ((field1 - field2) & (field1 - field2)) * Volumes;
+    double err = Foam::sqrt(gSum(diffFields2));
+    return err;
+}
+
+template<>
+double ITHACAutilities::error_fields_inf(
+    GeometricField<scalar, fvPatchField, volMesh>& field1,
+    GeometricField<scalar, fvPatchField, volMesh>& field2, volScalarField& Volumes)
+
+{
+    volScalarField diffFields2 = ((field1 - field2) * (field1 - field2)) * Volumes;
+    double err = Foam::sqrt(gSum(diffFields2));
+    return err;
+}*/
 
 template<class TypeField>
 double ITHACAutilities::error_fields_abs(TypeField& field1,
@@ -441,6 +481,29 @@ Eigen::MatrixXd ITHACAutilities::error_listfields_abs(PtrList<TypeField>&
     return err;
 }
 
+template<class TypeField>
+Eigen::MatrixXd ITHACAutilities::error_listfields_inf(PtrList<TypeField>&
+        fields1, PtrList<TypeField>& fields2)
+{
+    Eigen::VectorXd err;
+
+    if (fields1.size() != fields2.size())
+    {
+        Info << "The two fields do not have the same size, code will abort" << endl;
+        exit(0);
+    }
+
+    err.resize(fields1.size(), 1);
+
+    for (label k = 0; k < fields1.size(); k++)
+    {
+        err(k, 0) = error_fields_inf(fields1[k], fields2[k]);
+        Info << " Error is " << err[k] << endl;
+    }
+
+    return err;
+}
+
 Eigen::MatrixXd ITHACAutilities::get_mass_matrix(PtrList<volVectorField> modes,
         int Nmodes)
 {
@@ -509,6 +572,22 @@ Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
     int dim = std::nearbyint(snapEigen.rows() / (snapshot.mesh().V()).size());
     Eigen::VectorXd volumes = Foam2Eigen::field2Eigen(snapshot.mesh().V());
     Eigen::VectorXd vol3 = volumes.replicate(dim, 1);
+    return vol3;
+}
+
+template<class TypeField>
+Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
+    GeometricField<TypeField, fvsPatchField, surfaceMesh>& snapshot)
+{
+Info << "####### Debug A #######" << endl;
+    Eigen::MatrixXd snapEigen = Foam2Eigen::field2Eigen(snapshot);
+Info << "####### Debug B #######" << endl;
+    int dim = std::nearbyint(snapEigen.rows() / (snapshot.mesh().V()).size());
+Info << "####### Debug C #######" << endl;
+    Eigen::VectorXd volumes = Foam2Eigen::field2Eigen(snapshot.mesh().V());
+Info << "####### Debug D #######" << endl;
+    Eigen::VectorXd vol3 = volumes.replicate(dim, 1);
+Info << "####### Debug E #######" << endl;
     return vol3;
 }
 
@@ -740,6 +819,22 @@ double ITHACAutilities::L2norm(volVectorField field)
 {
     double a;
     a = Foam::sqrt(fvc::domainIntegrate(field & field).value());
+    return a;
+}
+
+double ITHACAutilities::INFnorm(volScalarField field)
+{
+    double a(0);
+    Eigen::VectorXd vF = Foam2Eigen::field2Eigen(field);
+    a = vF.lpNorm<Eigen::Infinity>();
+    return a;
+}
+
+double ITHACAutilities::INFnorm(volVectorField field)
+{
+    double a;
+    Eigen::VectorXd vF = Foam2Eigen::field2Eigen(field);
+    a = vF.lpNorm<Eigen::Infinity>();
     return a;
 }
 
@@ -1662,10 +1757,20 @@ template Eigen::MatrixXd ITHACAutilities::error_listfields_abs(
     PtrList<volVectorField>& fields1,
     PtrList<volVectorField>& fields2);
 
+template Eigen::MatrixXd ITHACAutilities::error_listfields_inf(
+    PtrList<volScalarField>& fields1,
+    PtrList<volScalarField>& fields2);
+template Eigen::MatrixXd ITHACAutilities::error_listfields_inf(
+    PtrList<volVectorField>& fields1,
+    PtrList<volVectorField>& fields2);
+
 template Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
     GeometricField<scalar, fvPatchField, volMesh>& snapshot);
 template Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
     GeometricField<vector, fvPatchField, volMesh>& snapshot);
+
+template Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
+    GeometricField<scalar, fvsPatchField, surfaceMesh>& snapshot);
 
 template Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV_Full(
     GeometricField<vector, fvPatchField, volMesh>& snapshotU,  

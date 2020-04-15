@@ -101,6 +101,9 @@ class unsteadyNSExplicit: public steadyNS
 	///dimensionedScalar dt;
         autoPtr<dimensionedScalar> _dt;
 
+	/// Boundary Method
+        word Method;
+
         // Counter used for the time-dependent boundary conditions
         label counter2 = 1;
 

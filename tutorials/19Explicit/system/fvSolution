@@ -21,7 +21,7 @@ solvers
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-8;
+        tolerance       1e-12;
         relTol          0.00;
     }
 
@@ -31,11 +31,27 @@ solvers
         relTol          0;
     }
 
+
+P_rec
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-12;
+        relTol          0.00;
+    }
+
+    P_recFinal
+    {
+        $P_rec;
+        relTol          0;
+    }
+
+
     pPost
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-8;
+        tolerance       1e-12;
         relTol          0.00;
     }
 
@@ -49,7 +65,7 @@ solvers
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-8;
+        tolerance       1e-12;
         relTol          0.00;
     }
 
@@ -63,7 +79,7 @@ solvers
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-8;
+        tolerance       1e-12;
         relTol          0.00;
     }
 
@@ -77,14 +93,14 @@ solvers
     {
         solver          smoothSolver;
         smoother        symGaussSeidel;
-        tolerance       1e-8;
+        tolerance       1e-12;
         relTol          0;
     }
     UFinal
     {
         solver          smoothSolver;
         smoother        symGaussSeidel;
-        tolerance       1e-8;
+        tolerance       1e-12;
         relTol          0;
     }
 }

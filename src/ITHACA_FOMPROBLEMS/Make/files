@@ -1,19 +1,10 @@
 reductionProblem/reductionProblem.C
 steadyNS/steadyNS.C
-SteadyNSTurb/SteadyNSTurb.C
-SteadyNSTurbIntrusive/SteadyNSTurbIntrusive.C
 unsteadyNS/unsteadyNS.C
 unsteadyNSPISO/unsteadyNSPISO.C
 unsteadyNSExplicit/unsteadyNSExplicit.C
-UnsteadyBB/UnsteadyBB.C
-UnsteadyNSTurb/UnsteadyNSTurb.C
-UnsteadyNSTurbIntrusive/UnsteadyNSTurbIntrusive.C
-unsteadyNST/unsteadyNST.C
-UnsteadyNSTTurb/UnsteadyNSTTurb.C
 SteadyNSSimple/SteadyNSSimple.C
 laplacianProblem/laplacianProblem.C
-msrProblem/msrProblem.C
-unsteadymsrProblem/usmsrProblem.C
 
 
 LIB = $(FOAM_USER_LIBBIN)/libITHACA_FOMPROBLEMS

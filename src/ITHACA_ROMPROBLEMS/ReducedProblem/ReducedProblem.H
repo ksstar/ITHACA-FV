@@ -93,6 +93,10 @@ class reducedProblem
         Eigen::MatrixXd solveLinearSys(List<Eigen::MatrixXd> LinSys, Eigen::MatrixXd x,
                                        Eigen::VectorXd& residual, const Eigen::MatrixXd& bc = Eigen::MatrixXd::Zero(0,
                                                0), const std::string solverType = "fullPivLu");
+
+	Eigen::MatrixXd solveLinearSysAxb(List<Eigen::MatrixXd> LinSys, Eigen::MatrixXd b, Eigen::MatrixXd x,
+                                       Eigen::VectorXd& residual, const Eigen::MatrixXd& bc = Eigen::MatrixXd::Zero(0,
+                                               0), const std::string solverType = "fullPivLu");
         ///
         /// @brief      Linear system solver for the online problem. It can be used for any kind of variable.
         /// Boundary conditions are set to 0 as default so that the system is not constrained if no conditions
