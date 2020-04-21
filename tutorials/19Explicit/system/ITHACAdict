@@ -18,10 +18,10 @@ FoamFile
 EigenSolver eigen;
 
 // Number of modes to output and to use for projection
-NmodesUout 20;
-NmodesUproj 10;
-NmodesPout 20;
-NmodesPproj 10;
+NmodesUout 25;
+NmodesUproj 15;
+NmodesPout 25;
+NmodesPproj 15;
 NmodesSUPout 0;
 NmodesSUPproj 0;
 
@@ -43,6 +43,8 @@ timeDerivativeSchemeOrder first;
 Method FE;
 
 ExplicitMethod Ales;
+
+PoissonMethod FOM;
 
 // Inlet boundary conditions velocities.
 online_velocities vel.txt;

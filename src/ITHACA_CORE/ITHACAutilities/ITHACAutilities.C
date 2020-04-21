@@ -343,6 +343,24 @@ double ITHACAutilities::error_fields(TypeField& field1,
     return err;
 }
 
+template<class TypeField>
+double ITHACAutilities::error_fields_Kazemi(TypeField& field1,
+                                     TypeField& field2)
+{
+    double err;
+
+    if (L1norm(field1) <= 1e-20)
+    {
+        err = 0;
+    }
+    else
+    {
+        err = L1norm(field1 - field2) / L1norm(field1);
+    }
+
+    return err;
+}
+
 template<>
 double ITHACAutilities::error_fields(
     GeometricField<vector, fvPatchField, volMesh>& field1,
@@ -498,6 +516,29 @@ Eigen::MatrixXd ITHACAutilities::error_listfields_inf(PtrList<TypeField>&
     for (label k = 0; k < fields1.size(); k++)
     {
         err(k, 0) = error_fields_inf(fields1[k], fields2[k]);
+        Info << " Error is " << err[k] << endl;
+    }
+
+    return err;
+}
+
+template<class TypeField>
+Eigen::MatrixXd ITHACAutilities::error_listfields_Kazemi(PtrList<TypeField>&
+        fields1, PtrList<TypeField>& fields2)
+{
+    Eigen::VectorXd err;
+
+    if (fields1.size() != fields2.size())
+    {
+        Info << "The two fields do not have the same size, code will abort" << endl;
+        exit(0);
+    }
+
+    err.resize(fields1.size(), 1);
+
+    for (label k = 0; k < fields1.size(); k++)
+    {
+        err(k, 0) = error_fields_Kazemi(fields1[k], fields2[k]);
         Info << " Error is " << err[k] << endl;
     }
 
@@ -835,6 +876,22 @@ double ITHACAutilities::INFnorm(volVectorField field)
     double a;
     Eigen::VectorXd vF = Foam2Eigen::field2Eigen(field);
     a = vF.lpNorm<Eigen::Infinity>();
+    return a;
+}
+
+double ITHACAutilities::L1norm(volScalarField field)
+{
+    double a(0);
+    Eigen::VectorXd vF = Foam2Eigen::field2Eigen(field);
+    a = vF.lpNorm<1>();
+    return a;
+}
+
+double ITHACAutilities::L1norm(volVectorField field)
+{
+    double a;
+    Eigen::VectorXd vF = Foam2Eigen::field2Eigen(field);
+    a = vF.lpNorm<1>();
     return a;
 }
 
@@ -1761,6 +1818,13 @@ template Eigen::MatrixXd ITHACAutilities::error_listfields_inf(
     PtrList<volScalarField>& fields1,
     PtrList<volScalarField>& fields2);
 template Eigen::MatrixXd ITHACAutilities::error_listfields_inf(
+    PtrList<volVectorField>& fields1,
+    PtrList<volVectorField>& fields2);
+
+template Eigen::MatrixXd ITHACAutilities::error_listfields_Kazemi(
+    PtrList<volScalarField>& fields1,
+    PtrList<volScalarField>& fields2);
+template Eigen::MatrixXd ITHACAutilities::error_listfields_Kazemi(
     PtrList<volVectorField>& fields1,
     PtrList<volVectorField>& fields2);
 

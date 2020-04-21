@@ -88,6 +88,7 @@ class steadyNS: public reductionProblem
 
         /// List of pointers used to form the velocity snapshots matrix
         PtrList<volVectorField> Ufield;
+	PtrList<volVectorField> UStarfield;
 
 	/// List of pointers used to form the online solutions
 	PtrList<volScalarField> Pfield_on;
@@ -97,6 +98,7 @@ class steadyNS: public reductionProblem
 	PtrList<volScalarField> Udivfield;
 	PtrList<volScalarField> Phidivfield;
         PtrList<surfaceScalarField> Phifield;
+	PtrList<surfaceScalarField> PhiStarfield;
 
 	/// Projection Peqn onto Pressure modes
 	List<Eigen::MatrixXd> RedLinSysP;
@@ -160,6 +162,7 @@ class steadyNS: public reductionProblem
 	/// Matrices boundary vector
 	Eigen::MatrixXd bw;
 	Eigen::MatrixXd BC_matrix;
+	Eigen::MatrixXd BC_matrix_PPE;
 
         /// Non linear term
         List <Eigen::MatrixXd> C_matrix;
@@ -169,9 +172,11 @@ class steadyNS: public reductionProblem
         /// Div of velocity
         Eigen::MatrixXd P_matrix;
 	Eigen::MatrixXd Pf_matrix;
+	Eigen::MatrixXd PF_matrix;
 
         /// Laplacian term PPE
         Eigen::MatrixXd D_matrix;
+	Eigen::MatrixXd DF_matrix;
 
 	/// Interpolation term
 	Eigen::MatrixXd I_matrix;
@@ -181,6 +186,7 @@ class steadyNS: public reductionProblem
 
         /// Divergence of momentum PPE
         Eigen::Tensor<double, 3 > gTensor;
+	Eigen::Tensor<double, 3 > gFTensor;
 
         /// PPE BC1
         Eigen::MatrixXd BC1_matrix;
@@ -272,8 +278,11 @@ class steadyNS: public reductionProblem
         /// Boundary Method
         word bcMethod;
 
-	/// Boundary Method
+	/// Explicit time discretization Method
         word ExplicitMethod;
+
+	/// Poisson Method
+        word PoissonMethod;
 
         // Functions
 
@@ -408,6 +417,7 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the mass matrix.
         ///
 	Eigen::MatrixXd  boundary_term(label NUmodes, label NSUPmodes);
+	Eigen::MatrixXd  boundary_term_PPE(label NPmodes);
 
         // Projection Methods Continuity Equation
 
@@ -423,7 +433,7 @@ class steadyNS: public reductionProblem
         Eigen::MatrixXd divergence_term(label NUmodes, label NPmodes, label NSUPmodes);
 
 	//--------------------------------------------------------------------------
-        /// Divergence flux Term (supremizer approach)
+        /// Divergence flux Term 
         ///
         /// @param[in]  NUmodes    The number of velocity modes.
         /// @param[in]  NPmodes    The number of pressure modes.
@@ -432,6 +442,17 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the divergence flux term.
         ///
 	Eigen::MatrixXd divergence_flux_term(label NUmodes, label NPmodes, label NSUPmodes);
+
+	//--------------------------------------------------------------------------
+        /// Divergence source Term 
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        /// @param[in]  NSUPmodes  The number of supremizer modes.
+        ///
+        /// @return     reduced matrix in Eigen::MatrixXd format for the divergence flux term.
+        ///
+	Eigen::MatrixXd divergence_source_term(label NUmodes, label NPmodes, label NSUPmodes);
 
         //--------------------------------------------------------------------------
         /// Divergence of convective term (PPE approach)
@@ -443,6 +464,7 @@ class steadyNS: public reductionProblem
         ///
         List < Eigen::MatrixXd > div_momentum(label NUmodes, label NPmodes);
 
+
         ///
         /// @brief      Divergence of convective term (PPE approach)
         ///
@@ -453,6 +475,16 @@ class steadyNS: public reductionProblem
         ///
         Eigen::Tensor<double, 3 > divMomentum(label NUmodes, label NPmodes);
 
+	///
+        /// @brief      Divergence of convective term (PPE approach)
+        ///
+        /// @param[in]  NUmodes    The number of velocity modes.
+        /// @param[in]  NPmodes    The number of pressure modes.
+        ///
+        /// @return     reduced third order tensor for the conv. term which is used for the PPE approach
+        ///
+        Eigen::Tensor<double, 3 > divMomentumConvection(label NUmodes, label NPmodes);
+
         //--------------------------------------------------------------------------
         /// Laplacian of pressure term (PPE approach)
         ///
@@ -461,6 +493,8 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the laplacian of pressure.
         ///
         Eigen::MatrixXd laplacian_pressure(label NPmodes);
+
+	Eigen::MatrixXd laplacian_pressure_FOM(label NUmodes, label NPmodes);
 
         //--------------------------------------------------------------------------
         /// @brief      Term N° 1 given by the additional boundary condition using a PPE approach

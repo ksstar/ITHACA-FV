@@ -83,6 +83,9 @@ steadyNS::steadyNS(int argc, char* argv[])
     ExplicitMethod = ITHACAdict->lookupOrDefault<word>("ExplicitMethod", "A");
     M_Assert(ExplicitMethod == "Ales" || ExplicitMethod == "A" || ExplicitMethod == "B", 
              "The Explicit method must be set to Ales or A or B in ITHACAdict");
+    PoissonMethod = ITHACAdict->lookupOrDefault<word>("PoissonMethod", "A");
+    M_Assert(PoissonMethod == "FOM" || PoissonMethod == "ROM", 
+             "The Explicit method must be set to FOM or ROM in ITHACAdict");
     para = new ITHACAparameters;
     offline = ITHACAutilities::check_off();
     podex = ITHACAutilities::check_pod();
@@ -652,11 +655,27 @@ void steadyNS::projectSUP(fileName folder, label NU, label NP, label NSUP)
         P_matrix = divergence_term(NUmodes, NPmodes, NSUPmodes);
         M_matrix = mass_term(NUmodes, NPmodes, NSUPmodes);
 	BC_matrix = boundary_term(NUmodes, NSUPmodes);
+Info << "bug4" << endl;
+	//BC_matrix_PPE = boundary_term_PPE(NPmodes);
+//Info << "bug5" << endl;
 	RedLinSysP = pressure_gradient_term_linsys(NPmodes);
+Info << "bug6" << endl;
+	DF_matrix = laplacian_pressure_FOM(NUmodes, NPmodes);
+Info << "bug7" << endl;
+	Cf_tensor = convective_flux_tens(NUmodes, NPmodes, NSUPmodes);
+Info << "bug8" << endl;
+	//if (PoissonMethod == "FOM")
+        //{
+	    //PF_matrix = divergence_source_term(NUmodes, NPmodes, NSUPmodes);
+	    //BC3_matrix = pressure_BC3(NUmodes, NPmodes);
+	    //gTensor = divMomentum(NUmodes, NPmodes);
+	    
+	
+	//}
 
 	if (ExplicitMethod == "A")
         {
-            Cf_tensor = convective_flux_tens(NUmodes, NPmodes, NSUPmodes);
+            //Cf_tensor = convective_flux_tens(NUmodes, NPmodes, NSUPmodes);
 	    Pf_matrix = divergence_flux_term(NUmodes, NPmodes, NSUPmodes);
 	    Kf_matrix = pressure_flux_term(NUmodes, NPmodes, NSUPmodes);
 	    I_matrix = interpolation_term(NUmodes,NPmodes, NSUPmodes);
@@ -928,22 +947,24 @@ Eigen::Tensor<double, 3> steadyNS::convective_term_tens(label NUmodes,
 }
 
 Eigen::Tensor<double, 3> steadyNS::convective_flux_tens(label NUmodes,
-        label NPmodes,
-        label NSUPmodes)
+        label NPmodes, label NSUPmodes)
 {
-    label Csize = NUmodes + NSUPmodes + liftfield.size();
+    label Csize1 = NUmodes + NSUPmodes + liftfield.size();
+    label Csize2 = NPmodes;
     Eigen::Tensor<double, 3> Cf_tensor;
-    Cf_tensor.resize(Csize, Csize, Csize);
+    Cf_tensor.resize(Csize2, Csize1, Csize1);
 
-    for (label i = 0; i < Csize; i++)
+    for (label i = 0; i < Csize2; i++)
     {
-        for (label j = 0; j < Csize; j++)
+        for (label j = 0; j < Csize1; j++)
         {
-            for (label k = 0; k < Csize; k++)
+            for (label k = 0; k < Csize1; k++)
             {
-                Cf_tensor(i, j, k) = fvc::domainIntegrate(L_U_SUPmodes[i] & fvc::div(
-                                        Phimodes[j],
-                                        L_U_SUPmodes[k])).value();
+                //Cf_tensor(i, j, k) = fvc::domainIntegrate(L_U_SUPmodes[i] & fvc::div(
+                                      //  Phimodes[j],L_U_SUPmodes[k])).value();
+	    	Cf_tensor(i, j, k) = fvc::domainIntegrate(Pmodes[i] * fvc::div(fvc::div(
+                                        fvc::interpolate(L_U_SUPmodes[j]) & L_U_SUPmodes[j].mesh().Sf(),
+                                        L_U_SUPmodes[k]))).value();
             }
         }
     }
@@ -1017,6 +1038,33 @@ Eigen::MatrixXd steadyNS::boundary_term(label NUmodes,
     return BC_matrix;
 }
 
+Eigen::MatrixXd steadyNS::boundary_term_PPE(label NPmodes)
+{
+    label BCsize = NPmodes;
+    word bw_str = "bw";
+    word matname = "./ITHACAoutput/BCvector/" + bw_str + "0" + "_mat.txt";
+    Eigen::MatrixXd bw = ITHACAstream::readMatrix(matname);
+
+    Eigen::MatrixXd BC_matrix_PPE(BCsize,1);
+    Eigen::VectorXd ModeVector;
+
+    // Project everything
+    for (label i = 0; i < BCsize; i++)
+    {
+
+	ModeVector = Foam2Eigen::field2Eigen(Pmodes[i]);
+	BC_matrix_PPE(i,0) = ModeVector.dot(bw.col(0));
+
+    }
+
+    ITHACAstream::SaveDenseMatrix(BC_matrix_PPE, "./ITHACAoutput/Matrices/",
+                                  "BC_PPE_" );
+
+    ITHACAstream::exportMatrix(BC_matrix_PPE, "BCr_PPE_", "eigen",
+                               "./ITHACAoutput/Matrices/");
+    return BC_matrix_PPE;
+}
+
 
 // * * * * * * * * * * * * * * Continuity Eq. Methods * * * * * * * * * * * * * //
 
@@ -1079,6 +1127,36 @@ Eigen::MatrixXd steadyNS::divergence_flux_term(label NUmodes, label NPmodes,
     ITHACAstream::exportMatrix(Pf_matrix, "Pfr_", "eigen", "./ITHACAoutput/Matrices/");
     return Pf_matrix;
 }
+
+/*Eigen::MatrixXd steadyNS::divergence_source_term(label NUmodes, label NPmodes,
+        label NSUPmodes)
+{
+    label P1size = NPmodes;
+    label P2size = NUmodes + NSUPmodes + liftfield.size();
+    Eigen::MatrixXd PF_matrix(P1size, P2size);
+
+    // Project everything
+    for (label i = 0; i < P1size; i++)
+    {
+        for (label j = 0; j < P2size; j++)
+        {
+	            PF_matrix(i, j) = fvc::domainIntegrate(Pmodes[i] * 
+                    fvc::flux(fvc::laplacian(dimensionedScalar("1", dimless, 1),L_U_SUPmodes[j]) )).value();
+        }
+    }
+
+    if (Pstream::parRun())
+    {
+        reduce(PF_matrix, sumOp<Eigen::MatrixXd>());
+    }
+
+    ITHACAstream::SaveDenseMatrix(PF_matrix, "./ITHACAoutput/Matrices/",
+                                  "Pf_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(
+                                      NSUPmodes) + "_" + name(NPmodes));
+
+    ITHACAstream::exportMatrix(Pf_matrix, "Pfr_", "eigen", "./ITHACAoutput/Matrices/");
+    return Pf_matrix;
+}*/
 
 
 List <Eigen::MatrixXd> steadyNS::div_momentum(label NUmodes, label NPmodes)
@@ -1155,6 +1233,42 @@ Eigen::Tensor<double, 3> steadyNS::divMomentum(label NUmodes, label NPmodes)
     return gTensor;
 }
 
+Eigen::Tensor<double, 3> steadyNS::divMomentumConvection(label NUmodes, label NPmodes)
+{
+    label g1Size = NPmodes;
+    label g2Size = NUmodes + NSUPmodes + liftfield.size();
+    Eigen::Tensor<double, 3> gTensor;
+    gTensor.resize(g1Size, g2Size, g2Size);
+
+    for (label i = 0; i < g1Size; i++)
+    {
+        for (label j = 0; j < g2Size; j++)
+        {
+            for (label k = 0; k < g2Size; k++)
+            {
+                gFTensor(i, j, k) = fvc::domainIntegrate(Pmodes[i] * 
+				    fvc::div(
+				    fvc::div(
+                        (fvc::interpolate(L_U_SUPmodes[j]) & L_U_SUPmodes[j].mesh().Sf()),
+                        L_U_SUPmodes[k])
+				    )
+				    ).value();
+            }
+        }
+    }
+
+    if (Pstream::parRun())
+    {
+        reduce(gFTensor, sumOp<Eigen::Tensor<double, 3>>());
+    }
+
+    // Export the tensor
+    ITHACAstream::SaveDenseTensor(gFTensor, "./ITHACAoutput/Matrices/",
+                                  "GF_" + name(liftfield.size()) + "_" + name(NUmodes) + "_" + name(
+                                      NSUPmodes) + "_" + name(NPmodes) + "_t");
+    return gFTensor;
+}
+
 Eigen::MatrixXd steadyNS::laplacian_pressure(label NPmodes)
 {
     label Dsize = NPmodes;
@@ -1177,7 +1291,43 @@ Eigen::MatrixXd steadyNS::laplacian_pressure(label NPmodes)
 
     ITHACAstream::SaveDenseMatrix(D_matrix, "./ITHACAoutput/Matrices/",
                                   "D_" + name(NPmodes));
+
+     ITHACAstream::exportMatrix(D_matrix, "Dr_", "eigen", "./ITHACAoutput/Matrices/");
+
     return D_matrix;
+}
+
+
+
+
+Eigen::MatrixXd steadyNS::laplacian_pressure_FOM(label NUmodes, label NPmodes)
+{
+    label Dsize1 = NPmodes;
+    label Dsize2 = NUmodes;
+    Eigen::MatrixXd DF_matrix(Dsize1, Dsize2);
+
+    // Project everything
+    for (label i = 0; i < Dsize1; i++)
+    {
+        for (label j = 0; j < Dsize2; j++)
+        {
+	    forAll( L_U_SUPmodes[j].boundaryFieldRef()[0], l)
+	    {
+		L_U_SUPmodes[j].boundaryFieldRef()[0][l].component(vector::X) = 0;
+	    }
+            DF_matrix(i, j) = fvc::domainIntegrate(Pmodes[i]*fvc::div(fvc::laplacian(
+                    dimensionedScalar("1", dimless, 1), L_U_SUPmodes[j]))).value();
+        }
+    }
+
+    if (Pstream::parRun())
+    {
+        reduce(DF_matrix, sumOp<Eigen::MatrixXd>());
+    }
+
+    ITHACAstream::SaveDenseMatrix(DF_matrix, "./ITHACAoutput/Matrices/",
+                                  "DF_" + name(NPmodes));
+    return DF_matrix;
 }
 
 Eigen::MatrixXd steadyNS::pressure_BC1(label NUmodes, label NPmodes)
@@ -1309,16 +1459,20 @@ Eigen::MatrixXd steadyNS::pressure_BC3(label NUmodes, label NPmodes)
     label P3_BC1size = NPmodes;
     label P3_BC2size = NUmodes + liftfield.size();
     Eigen::MatrixXd BC3_matrix(P3_BC1size, P3_BC2size);
-    fvMesh& mesh = _mesh();
-    surfaceVectorField n(mesh.Sf() / mesh.magSf());
+    //fvMesh& mesh = _mesh();
+    surfaceVectorField n(Pmodes[0].mesh().Sf() / Pmodes[0].mesh().magSf());
 
     for (label i = 0; i < P3_BC1size; i++)
     {
         for (label j = 0; j < P3_BC2size; j++)
         {
+	    forAll( L_U_SUPmodes[j].boundaryFieldRef()[0], l)
+	    {
+		L_U_SUPmodes[j].boundaryFieldRef()[0][l].component(vector::X) = 0;
+	    }
             surfaceVectorField BC3 = fvc::interpolate(fvc::curl(L_U_SUPmodes[j]));
             surfaceVectorField BC4 = n ^ fvc::interpolate(fvc::grad(Pmodes[i]));
-            surfaceScalarField BC5 = (BC3 & BC4) * mesh.magSf();
+            surfaceScalarField BC5 = (BC3 & BC4) * BC3.mesh().magSf();
             double s = 0;
 
             for (label k = 0; k < BC5.boundaryField().size(); k++)

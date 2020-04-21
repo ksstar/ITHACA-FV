@@ -85,6 +85,9 @@ unsteadyNSExplicit::unsteadyNSExplicit(int argc, char* argv[])
     ExplicitMethod = ITHACAdict->lookupOrDefault<word>("ExplicitMethod", "A");
     M_Assert(ExplicitMethod == "Ales" || ExplicitMethod == "A" || ExplicitMethod == "B", 
              "The Explicit method must be set to Ales or A or B in ITHACAdict");
+    PoissonMethod = ITHACAdict->lookupOrDefault<word>("PoissonMethod", "A");
+    M_Assert(PoissonMethod == "FOM" || PoissonMethod == "ROM", 
+             "The Explicit method must be set to FOM or ROM in ITHACAdict");
     timedepbcMethod = ITHACAdict->lookupOrDefault<word>("timedepbcMethod", "no");
     M_Assert(timedepbcMethod == "yes" || timedepbcMethod == "no",
              "The BC method can be set to yes or no");
@@ -136,6 +139,7 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     std::ofstream of(folder + name(counter) + "/" +
                      runTime.timeName());
     Ufield.append(U);
+    UStarfield.append(U);
     Pfield.append(p);
     Phifield.append(phi);
 
@@ -194,7 +198,7 @@ if (ExplicitMethod == "Ales")
 	    volVectorField F3 =  (-fvc::div(phi3,U3) + nu *fvc::laplacian(U3));
 	    U = U1 +  dt * b1 * F1 +  dt * b2 * F2 + dt * b3 * F3 ; 
 	    U.correctBoundaryConditions();
-
+	    UStarfield.append(U);
 	    pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
 	    solve(pEqn ==  (1/dt)*fvc::div(U));
@@ -207,12 +211,26 @@ if (ExplicitMethod == "Ales")
 	{
 	    volVectorField F =  (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1) );
 	    U = U1 +  dt *F  ; 
-	    U.correctBoundaryConditions();
-
+	    volScalarField pp = (1/dt)*(fvc::div(U1 + dt * (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1) ) ,"Gauss midPoint"));
+	    //U.correctBoundaryConditions();
+	    //UStarfield.append(U);
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
-	    solve(pEqn ==  (1/dt)*fvc::div(U));
-	    U = U - dt*fvc::grad(p);
+	    //solve(pEqn ==  (1/dt)*(fvc::div(U1,"Gauss midPoint")+fvc::div(dt*F,"Gauss midPoint")));
+	    //solve(pEqn ==  (1/dt)*(fvc::div(U,"Gauss midPoint")));
+	    solve(pEqn ==  pp);
+	    U = U1 -  dt*fvc::div(phi1,U1) +dt*nu *fvc::laplacian(U1) - dt*fvc::grad(p);
+	    U.correctBoundaryConditions();
+
+	    phi = fvc::interpolate(U)& mesh.Sf();
+
+	}
+	else if (Method == "FEwrong")
+	{
+	    fvScalarMatrix pEqn = fvm::laplacian(p);
+	    pEqn.setReference(pRefCell, pRefValue);
+	    solve(pEqn ==  (1/dt)*fvc::div(U1-dt*fvc::div(phi1,U1) + nu *dt*fvc::laplacian(U1)));
+	    U = U1 -  dt*fvc::div(phi1,U1) +dt*nu *fvc::laplacian(U1) - dt*fvc::grad(p);
 	    U.correctBoundaryConditions();
 
 	    phi = fvc::interpolate(U)& mesh.Sf();
@@ -227,13 +245,14 @@ if (ExplicitMethod == "Ales")
         
  	if (checkWrite(runTime))
         {
-	    volVectorField gradP = fvc::grad(p);
+	    //volVectorField gradP = fvc::grad(p);
             ITHACAstream::exportSolution(U, name(counter), folder);
-	    ITHACAstream::exportSolution(gradP, name(counter), folder);
-	    
+	    ITHACAstream::exportSolution(p, name(counter), folder);
+	   // ITHACAstream::exportSolution(gradP, name(counter), folder);
             std::ofstream of(folder + name(counter) + "/" +
                              runTime.timeName());
             Ufield.append(U);
+	    UStarfield.append(U);
             Pfield.append(p);
 	    Phifield.append(phi);
 
@@ -304,7 +323,7 @@ else if (ExplicitMethod == "A")
 	    volVectorField F3 =  (-fvc::div(phi3,U3) + nu *fvc::laplacian(U3));
 	    U = U1 +  dt * b1 * F1 +  dt * b2 * F2 + dt * b3 * F3 ; 
 	    U.correctBoundaryConditions();
-
+	    UStarfield.append(U);
 	    phi = fvc::interpolate(U)& mesh.Sf();
 
 	    pEqn = fvm::laplacian(p);
@@ -322,9 +341,9 @@ else if (ExplicitMethod == "A")
 	    volVectorField F =  (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1) );
 	    U = U1 +  dt *F  ; 
 	    U.correctBoundaryConditions();
-
+	    UStarfield.append(U);
 	    phi = fvc::interpolate(U)& mesh.Sf();
-
+	    Phifield.append(phi);
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
 	    solve(pEqn ==  (1/dt)*fvc::div(phi));
@@ -349,6 +368,7 @@ else if (ExplicitMethod == "A")
             std::ofstream of(folder + name(counter) + "/" +
                              runTime.timeName());
             Ufield.append(U);
+	    UStarfield.append(U);
             Pfield.append(p);
 	    Phifield.append(phi);
 	    //Phidiv = fvc::div(phi);
@@ -399,7 +419,7 @@ else if (ExplicitMethod == "B")
 	    volVectorField U2 = U1 + dt * a21 *F1 ; 
 	    U2.correctBoundaryConditions();
 	
-	    surfaceScalarField phi2 = phi1 + dt * a21 *fvc::flux(F1); 
+	    surfaceScalarField phi2 = (phi1 + dt * a21 *fvc::flux(F1)); 
 
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
@@ -435,7 +455,7 @@ else if (ExplicitMethod == "B")
 	    volVectorField F3 =  (-fvc::div(phi3,U3) + nu *fvc::laplacian(U3));
 	    U = U1 +  dt * b1 * F1 +  dt * b2 * F2 + dt * b3 * F3 ; 
 	    U.correctBoundaryConditions();
-
+	    UStarfield.append(U);
 	    phi = phi1 + dt * b1 * fvc::flux(F1) +  dt * b2 * fvc::flux(F2)+ 
 			dt * b3 * fvc::flux(F3); 
 
@@ -455,8 +475,8 @@ else if (ExplicitMethod == "B")
 	    volVectorField F =  (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1) );
 	    U = U1 +  dt *F  ; 
 	    U.correctBoundaryConditions();
-
-	    phi = fvc::interpolate(U)& mesh.Sf();
+	    UStarfield.append(U);
+	    phi = phi1 + dt * fvc::flux(F);
 
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);

@@ -55,11 +55,11 @@ class tutorial19Explicit: public unsteadyNSExplicit
 
             if (offline)
             {
-                ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/OfflineBRKFOAM/");
-                ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/OfflineBRKFOAM/");
+                ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/Bdt0p1/");
+                ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/Bdt0p1/");
 
-		ITHACAstream::read_fields(Ufield_on, U, "./ITHACAoutput/BRKFOAM/");
-		ITHACAstream::read_fields(Pfield_on, p, "./ITHACAoutput/BRKFOAM/");
+		ITHACAstream::read_fields(Ufield_on, U, "./ITHACAoutput/OfflineBdt0p1/");
+		ITHACAstream::read_fields(Pfield_on, p, "./ITHACAoutput/OfflineBdt0p1/");
 
  
             }
@@ -145,7 +145,6 @@ int main(int argc, char* argv[])
     auto finish_FOM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_FOM = finish_FOM - start_FOM;
 
-//exit(0);
 
  /*   // Calculate error between online- and corresponding full order solution
     Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
@@ -154,9 +153,9 @@ int main(int argc, char* argv[])
                                          example.Pfield_on, example.Pfield);
     //Export the matrix containing the error
     ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
-                               "./ITHACAoutput/l2errorBRKFOAM");
+                               "./ITHACAoutput/l2errorBdt0p1");
     ITHACAstream::exportMatrix(L2errorMatrixP, "L2errorMatrixP", "eigen",
-                               "./ITHACAoutput/l2errorBRKFOAM");
+                               "./ITHACAoutput/l2errorBdt0p1");
 
  // Calculate error between online- and corresponding full order solution
     Eigen::MatrixXd L2errorMatrixInfU = ITHACAutilities::error_listfields_inf(
@@ -165,9 +164,20 @@ int main(int argc, char* argv[])
                                          example.Pfield_on, example.Pfield);
     //Export the matrix containing the error
     ITHACAstream::exportMatrix(L2errorMatrixInfU, "L2errorMatrixInfU", "eigen",
-                               "./ITHACAoutput/l2errorBRKFOAM");
+                               "./ITHACAoutput/l2errorBdt0p1");
     ITHACAstream::exportMatrix(L2errorMatrixInfP, "L2errorMatrixInfP", "eigen",
-                               "./ITHACAoutput/l2errorBRKFOAM");
+                               "./ITHACAoutput/l2errorBdt0p1");
+
+ // Calculate error between online- and corresponding full order solution
+    Eigen::MatrixXd L1errorMatrixU = ITHACAutilities::error_listfields_Kazemi(
+                                         example.Ufield_on, example.Ufield);
+    Eigen::MatrixXd L1errorMatrixP = ITHACAutilities::error_listfields_Kazemi(
+                                         example.Pfield_on, example.Pfield);
+    //Export the matrix containing the error
+    ITHACAstream::exportMatrix(L1errorMatrixU, "L1errorMatrixU", "eigen",
+                               "./ITHACAoutput/l2errorBdt0p1");
+    ITHACAstream::exportMatrix(L1errorMatrixP, "L1errorMatrixP", "eigen",
+                               "./ITHACAoutput/l2errorBdt0p1");
 exit(0);*/
 
     ITHACAPOD::getModes(example.Ufield, example.Umodes, example.podex, 0, 0,

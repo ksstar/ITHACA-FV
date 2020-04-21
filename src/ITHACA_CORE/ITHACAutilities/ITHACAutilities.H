@@ -216,6 +216,9 @@ class ITHACAutilities
         template<class TypeField>
         static double error_fields_inf(TypeField& field1, TypeField& field2);
 
+	template<class TypeField>
+        static double error_fields_Kazemi(TypeField& field1, TypeField& field2);
+
         //--------------------------------------------------------------------------
         /// Computes the relative error between two volVectorFields in
         /// L2 norm, given the mesh volumes field
@@ -304,6 +307,10 @@ class ITHACAutilities
         ///
         template<class TypeField>
         static Eigen::MatrixXd error_listfields_inf(PtrList<TypeField>& fields1,
+                PtrList<TypeField>& fields2);
+
+	template<class TypeField>
+        static Eigen::MatrixXd error_listfields_Kazemi(PtrList<TypeField>& fields1,
                 PtrList<TypeField>& fields2);
 
         //-----------------------------------------------------------------------------
@@ -619,6 +626,24 @@ class ITHACAutilities
         /// @return     infinity norm of the volVectorField.
         ///
         static double INFnorm(volVectorField field);
+
+	//--------------------------------------------------------------------------
+        /// Evaluate the L1 norm of a volScalarField
+        ///
+        /// @param[in]  field  The field.
+        ///
+        /// @return     L1 norm of the volScalarField.
+        ///
+        static double L1norm(volScalarField field);
+
+        //--------------------------------------------------------------------------
+        /// Evaluate the L1 norm of a volVectorField
+        ///
+        /// @param[in]  field  The field.
+        ///
+        /// @return     L1 norm of the volVectorField.
+        ///
+        static double L1norm(volVectorField field);
 
         //--------------------------------------------------------------------------
         /// Evaluate the H1 seminorm of a volScalarField

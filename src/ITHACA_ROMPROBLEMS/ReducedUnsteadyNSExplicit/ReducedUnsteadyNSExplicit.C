@@ -62,8 +62,52 @@ reducedUnsteadyNSExplicit::reducedUnsteadyNSExplicit(unsteadyNSExplicit& FOMprob
         Pmodes.append(problem->Pmodes[k]);
     }
 
+    newton_object = newton_unsteadyNSExplicit(Nphi_p, Nphi_p,
+                        FOMproblem);
+
 }
 
+// * * * * * * * * * * * *  Operators Poisson FOM level   * * * * * * * * * * //
+
+// Operator to evaluate the residual for the Pressure Poisson Equation (PPE) approach
+	int newton_unsteadyNSExplicit::operator()(const Eigen::VectorXd& x,
+                                      Eigen::VectorXd& fvec) const
+	{
+
+	Eigen::VectorXd b_tmp(Nphi_p);
+        b_tmp = x;
+	//Eigen::MatrixXd M5 = (1/dt)*problem->PF_matrix * a_n;
+	//Eigen::MatrixXd M6 = (1/dt)*problem->DF_matrix * a_n;
+
+ 	// Pressure Term
+    	Eigen::VectorXd M5 = problem->D_matrix * b_tmp;
+
+    	// BC PPE
+    	Eigen::VectorXd M6 = problem->BC3_matrix * a_n * nu;
+
+	Eigen::VectorXd M7 = (problem->K_matrix).transpose() * a_n;
+
+	Eigen::MatrixXd gg(1, 1);
+
+    	for (label l = 0; l < Nphi_p; l++)
+    	{
+        	gg = a_n.transpose() * Eigen::SliceFromTensor(problem->gTensor, 0,
+                l) * a_n;
+        	fvec(l) = -(1/dt) * M7(l,0) + M5(l, 0) + gg(0, 0) - M6(l, 0);
+
+    	}
+
+    	return 0;
+	}
+
+	// Operator to evaluate the Jacobian for the supremizer approach
+	int newton_unsteadyNSExplicit::df(const Eigen::VectorXd& x,
+                              Eigen::MatrixXd& fjac) const
+	{
+    	Eigen::NumericalDiff<newton_unsteadyNSExplicit> numDiff(*this);
+    	numDiff.df(x, fjac);
+    	return 0;
+	}
 
 
 // * * * * * * * * * * * * * Solve Functions  * * * * * * * * * * * //
@@ -92,7 +136,7 @@ if (problem->ExplicitMethod == "Ales")
     Eigen::VectorXd a_n = Eigen::VectorXd::Zero(Nphi_u);
     Eigen::VectorXd a_o = Eigen::VectorXd::Zero(Nphi_u);
     Eigen::MatrixXd b_n = Eigen::VectorXd::Zero(Nphi_p);
-    Eigen::MatrixXd x = Eigen::VectorXd::Zero(Nphi_p);
+    Eigen::MatrixXd xx = Eigen::VectorXd::Zero(Nphi_p);
    
     // Counting variable
     int counter = 0;
@@ -125,6 +169,17 @@ if (problem->ExplicitMethod == "Ales")
     Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
     scalar P_norm_res(1);
 
+
+   /* y.resize(Nphi_p, 1);
+    y.setZero();
+    newton_object.dt = dt;
+    newton_object.nu = nu;
+    newton_object.a_n = a_n;
+    // Create nonlinear solver object
+    Eigen::HybridNonLinearSolver<newton_unsteadyNSExplicit> hnls(newton_object);*/
+    
+    
+
     for (label i = 1; i < online_solution.size(); i++)
     {
 
@@ -132,29 +187,77 @@ if (problem->ExplicitMethod == "Ales")
     	std::cout << " ################## time =   " << time <<
                   " ##################" << std::endl;
 
-    	// Convective term
+
+	if (problem->PoissonMethod == "ROM")
+	{
+    	 /*  Eigen::MatrixXd M4 = (1/dt)*(-1)*(problem->K_matrix).transpose() * a_n;
+    	   b_n = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, M4, xx, presidual);
+
+    	   Eigen::VectorXd M3 = problem->K_matrix * b_n;
+
+    	   for (label k = 0; k < Nphi_u; k++)
+    	   {  
+		a_n(k) =  a_n(k) - (dt * M3(k));
+    	   }*/
+	}
+	else if (problem->PoissonMethod == "FOM")
+	{
+
+	Eigen::VectorXd RHS  = Eigen::VectorXd::Zero(Nphi_p);
+	// Diffusion Term
+    	Eigen::VectorXd M5 = problem->DF_matrix * a_o * nu;
+	// Convection Term
+	Eigen::MatrixXd cp(1, 1);
+	// Mom term
+	Eigen::MatrixXd M4 = problem->P_matrix * a_o;
+
+    	for (label l = 0; l < Nphi_p; l++)
+    	{
+        	cp = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
+        	RHS(l) = (1/dt) * M4(l,0)  -cp(0,0)+ M5(l,0);
+
+    	}
+
+    	b_n = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, RHS, xx, presidual);
+
+	// Convective term
     	Eigen::MatrixXd cc(1, 1);
     	// Mom Term
     	Eigen::VectorXd M1 = problem->M_matrix * a_o;
     	// Diff Term
     	Eigen::VectorXd M2 = problem->B_matrix * a_o * nu ;
+	// Pressure Term
+	Eigen::VectorXd M3 = problem->K_matrix * b_n;
 
     	for (label l = 0; l < Nphi_u; l++)
     	{
         	cc = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
               		l) * a_o;
-        	 a_n(l) =  (M2(l)  - cc(0,0))*dt -problem->BC_matrix(l,0)*dt + a_o(l);
+        	 a_n(l) =  (M2(l)  - cc(0,0))*dt -problem->BC_matrix(l,0)*dt + a_o(l) - dt*M3(l);
     	}
 
-    	Eigen::MatrixXd M4 = (1/dt)*problem->P_matrix * a_n;
-    	b_n = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, M4, x, presidual);
+    	  /* 
 
-    	Eigen::VectorXd M3 = problem->K_matrix * b_n;
-
-    	for (label k = 0; k < Nphi_u; k++)
-    	{
+    	   for (label k = 0; k < Nphi_u; k++)
+    	   {  
 		a_n(k) =  a_n(k) - (dt * M3(k));
-    	}
+    	   }*/
+	 
+
+	   /*newton_object.nu = nu;
+	   newton_object.a_n = a_n;
+
+	   newton_object.dt = dt;
+	   
+	    Eigen::VectorXd res(y);
+            res.setZero();
+            hnls.solve(y);
+
+	    newton_object.operator()(y, res);
+	    b_n = y;*/
+
+	}
 
     	tmp_sol(0) = time;
     	tmp_sol.col(0).segment(1, Nphi_u) = a_n;
@@ -222,8 +325,8 @@ else if (problem->ExplicitMethod == "A")
 
     	for (label l = 0; l < Nphi_u; l++)
     	{
-        	cc = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
-                l) * c_o;
+        	cc = c_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
          	a_n(l) =  (M2(l)  - cc(0,0)-problem->BC_matrix(l,0))*dt + a_o(l);
     	}
 
@@ -249,7 +352,7 @@ else if (problem->ExplicitMethod == "A")
 	
 	for (label k = 0; k < Nphi_phi; k++)
     	{
-		c_n(k) =  c_n(k) - (dt * M5(k));
+		c_n(k) =  M6(k) - (dt * M5(k));
 	}
 
 	tmp_sol(0) = time;
@@ -310,7 +413,9 @@ void reducedUnsteadyNSExplicit::reconstruct(fileName folder)
                 P_rec += Pmodes[j] * online_solution[i](j + Nphi_u + 1, 0);
             }
 
-           ITHACAstream::exportSolution(P_rec, name(counter2), folder);
+	   // volVectorField P_grad= fvc::grad(P_rec);
+            ITHACAstream::exportSolution(P_rec, name(counter2), folder);
+	   //ITHACAstream::exportSolution(P_grad, name(counter2), folder);
             nextwrite += exportEveryIndex;
             double timenow = online_solution[i](0, 0);
             std::ofstream of(folder + name(counter2) + "/" + name(timenow));

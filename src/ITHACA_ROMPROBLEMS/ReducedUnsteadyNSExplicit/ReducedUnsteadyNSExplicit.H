@@ -41,9 +41,39 @@ SourceFiles
 #include "IOmanip.H"
 #include "ReducedSteadyNS.H"
 #include "unsteadyNSExplicit.H"
+#include "unsteadyNS.H"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/NonLinearOptimization>
 #include <unsupported/Eigen/NumericalDiff>
+
+
+struct newton_unsteadyNSExplicit: public newton_argument<double>
+{
+    public:
+        newton_unsteadyNSExplicit() {}
+        newton_unsteadyNSExplicit(int Nx, int Ny,
+                              unsteadyNSExplicit& problem): newton_argument<double>(Nx, Ny),
+            problem(&problem),
+            Nphi_u(problem.NUmodes),
+            Nphi_p(problem.NPmodes),
+            N_BC(problem.inletIndex.rows())
+        {}
+
+        int operator()(const Eigen::VectorXd& x, Eigen::VectorXd& fvec) const;
+        int df(const Eigen::VectorXd& x,  Eigen::MatrixXd& fjac) const;
+
+        unsteadyNSExplicit* problem;
+        int Nphi_u;
+        int Nphi_p;
+        int N_BC;
+        scalar nu;
+        scalar dt;
+        Eigen::VectorXd y_old;
+	Eigen::VectorXd a_n;
+	Eigen::VectorXd b_n;
+        Eigen::VectorXd yOldOld;
+        Eigen::VectorXd BC;
+};
 
 
 /*---------------------------------------------------------------------------*\
@@ -68,6 +98,9 @@ class reducedUnsteadyNSExplicit: public reducedSteadyNS
         explicit reducedUnsteadyNSExplicit(unsteadyNSExplicit& problem);
 
         ~reducedUnsteadyNSExplicit() {};
+
+	 /// Function object to call the non linear solver Poisson approach
+        newton_unsteadyNSExplicit newton_object;
 
         /// Scalar to store the current time
         scalar time;
