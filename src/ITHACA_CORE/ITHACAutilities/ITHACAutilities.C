@@ -338,6 +338,7 @@ double ITHACAutilities::error_fields(TypeField& field1,
     else
     {
         err = L2norm(field1 - field2) / L2norm(field1);
+	//err = frobNorm(field1 - field2) / frobNorm(field1);
     }
 
     return err;
@@ -380,6 +381,17 @@ double ITHACAutilities::error_fields(
 {
     volScalarField diffFields2 = ((field1 - field2) * (field1 - field2)) * Volumes;
     double err = Foam::sqrt(gSum(diffFields2));
+    return err;
+}
+
+template<>
+double ITHACAutilities::error_fields(
+    GeometricField<scalar, fvsPatchField, surfaceMesh>& field1,
+    GeometricField<scalar, fvsPatchField, surfaceMesh>& field2, volScalarField& Volumes)
+
+{
+    surfaceScalarField diffFields2 = ((field1 - field2) * (field1 - field2));
+    double err = Foam::sqrt(sum(fvc::surfaceIntegrate(diffFields2)).value());
     return err;
 }
 
@@ -458,6 +470,27 @@ template<class TypeField>
 Eigen::MatrixXd ITHACAutilities::error_listfields(
     PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields1,
     PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields2,
+    PtrList<volScalarField>& Volumes)
+{
+    M_Assert(fields1.size() == fields2.size(),
+             "The two fields do not have the same size, code will abort");
+    M_Assert(fields1.size() == Volumes.size(),
+             "The volumes field and the two solution fields do not have the same size, code will abort");
+    Eigen::VectorXd err;
+    err.resize(fields1.size(), 1);
+
+    for (label k = 0; k < fields1.size(); k++)
+    {
+        err(k, 0) = error_fields(fields1[k], fields2[k], Volumes[k]);
+        Info << " Error is " << err[k] << endl;
+    }
+
+    return err;
+}
+
+Eigen::MatrixXd ITHACAutilities::error_listfields(
+    PtrList<surfaceScalarField>& fields1,
+    PtrList<surfaceScalarField>& fields2,
     PtrList<volScalarField>& Volumes)
 {
     M_Assert(fields1.size() == fields2.size(),
@@ -605,6 +638,39 @@ Eigen::MatrixXd ITHACAutilities::get_mass_matrix(PtrList<volScalarField> modes,
     return M_matrix;
 }
 
+Eigen::MatrixXd ITHACAutilities::get_mass_matrix(PtrList<surfaceScalarField> modes,
+        int Nmodes)
+{
+    label Msize;
+
+    if (Nmodes == 0)
+    {
+        Msize =  modes.size();
+    }
+    else
+    {
+        Msize = Nmodes;
+    }
+
+    M_Assert(modes.size() >= Msize,
+             "The Number of requested modes is larger then the available quantity.");
+    Eigen::MatrixXd M_matrix(Msize, Msize);
+
+    // Project everything
+    for (label i = 0; i < Msize; i++)
+    {	
+	volVectorField A = fvc::reconstruct(modes[i]);
+        for (label j = 0; j < Msize; j++)
+        {
+	    volVectorField B = fvc::reconstruct(modes[j]);
+	    M_matrix(i, j) = fvc::domainIntegrate(A & B).value();
+            //M_matrix(i, j) = sum(fvc::surfaceIntegrate(modes[i] * modes[j])).value();
+        }
+    }
+
+    return M_matrix;
+}
+
 template<class TypeField>
 Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
     GeometricField<TypeField, fvPatchField, volMesh>& snapshot)
@@ -620,15 +686,12 @@ template<class TypeField>
 Eigen::VectorXd ITHACAutilities::get_mass_matrix_FV(
     GeometricField<TypeField, fvsPatchField, surfaceMesh>& snapshot)
 {
-Info << "####### Debug A #######" << endl;
     Eigen::MatrixXd snapEigen = Foam2Eigen::field2Eigen(snapshot);
-Info << "####### Debug B #######" << endl;
-    int dim = std::nearbyint(snapEigen.rows() / (snapshot.mesh().V()).size());
-Info << "####### Debug C #######" << endl;
-    Eigen::VectorXd volumes = Foam2Eigen::field2Eigen(snapshot.mesh().V());
-Info << "####### Debug D #######" << endl;
+    int dim = std::nearbyint(snapEigen.rows() / (snapshot.mesh().magSf()).size());
+    surfaceScalarField Weights = snapshot.mesh().surfaceInterpolation::weights() ;
+    Eigen::VectorXd volumes = Foam2Eigen::field2Eigen(Weights);
+//Foam2Eigen::field2Eigen(snapshot.mesh().magSf());
     Eigen::VectorXd vol3 = volumes.replicate(dim, 1);
-Info << "####### Debug E #######" << endl;
     return vol3;
 }
 
@@ -706,6 +769,40 @@ Eigen::VectorXd ITHACAutilities::get_coeffs(volScalarField snapshot,
     for (label i = 0; i < Msize; i++)
     {
         b(i) = fvc::domainIntegrate(snapshot * modes[i]).value();
+    }
+
+    a = M_matrix.colPivHouseholderQr().solve(b);
+    return a;
+}
+
+Eigen::VectorXd ITHACAutilities::get_coeffs(surfaceScalarField snapshot,
+        PtrList<surfaceScalarField>& modes, int Nmodes)
+{
+    label Msize;
+
+    if (Nmodes == 0)
+    {
+        Msize =  modes.size();
+    }
+    else
+    {
+        Msize = Nmodes;
+    }
+
+    M_Assert(modes.size() >= Msize,
+             "The Number of requested modes is larger then the available quantity.");
+    Eigen::MatrixXd M_matrix = get_mass_matrix(modes, Msize);
+    Eigen::VectorXd a(Msize);
+    Eigen::VectorXd b(Msize);
+
+    // Project everything
+    for (label i = 0; i < Msize; i++)
+    {
+	//surfaceScalarField Coeffb = snapshot * modes[i];
+	volVectorField CoeffA = fvc::reconstruct(snapshot);
+	volVectorField CoeffB = fvc::reconstruct(modes[i]);
+	b(i) = fvc::domainIntegrate(CoeffA &  CoeffB).value();
+        //b(i) = sum(fvc::surfaceIntegrate(snapshot * modes[i])).value();
     }
 
     a = M_matrix.colPivHouseholderQr().solve(b);
@@ -856,11 +953,23 @@ double ITHACAutilities::L2norm(volScalarField field)
     return a;
 }
 
+double ITHACAutilities::L2norm(surfaceScalarField field)
+{
+    /*double a;
+    a = Foam::sqrt(sum(fvc::surfaceIntegrate(field * field)).value());
+    return a;*/
+    double a(0);
+    Eigen::VectorXd vF = Foam2Eigen::field2Eigen(field);
+    a = vF.lpNorm<2>();
+    return a; 
+}
+
 double ITHACAutilities::L2norm(volVectorField field)
 {
     double a;
     a = Foam::sqrt(fvc::domainIntegrate(field & field).value());
     return a;
+
 }
 
 double ITHACAutilities::INFnorm(volScalarField field)
@@ -1768,6 +1877,8 @@ template PtrList<volScalarField> ITHACAutilities::reconstruct_from_coeff(
     PtrList<volScalarField>& modes, Eigen::MatrixXd& coeff_matrix, label Nmodes);
 template PtrList<volVectorField> ITHACAutilities::reconstruct_from_coeff(
     PtrList<volVectorField>& modes, Eigen::MatrixXd& coeff_matrix, label Nmodes);
+template PtrList<surfaceScalarField> ITHACAutilities::reconstruct_from_coeff(
+    PtrList<surfaceScalarField>& modes, Eigen::MatrixXd& coeff_matrix, label Nmodes);
 
 template PtrList<volScalarField> ITHACAutilities::averageSubtract(
     PtrList<volScalarField>
@@ -1784,6 +1895,8 @@ template double ITHACAutilities::error_fields(volScalarField& field1,
         volScalarField& field2);
 template double ITHACAutilities::error_fields(volVectorField& field1,
         volVectorField& field2);
+template double ITHACAutilities::error_fields(surfaceScalarField& field1,
+        surfaceScalarField& field2);
 
 template double ITHACAutilities::error_fields_abs(volScalarField& field1,
         volScalarField& field2);
@@ -1798,6 +1911,10 @@ template Eigen::MatrixXd ITHACAutilities::error_listfields(
     PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields1,
     PtrList<GeometricField<vector, fvPatchField, volMesh>>& fields2,
     PtrList<volScalarField>& Volumes);
+Eigen::MatrixXd ITHACAutilities::error_listfields(
+    PtrList<surfaceScalarField>& fields1,
+    PtrList<surfaceScalarField>& fields2,
+    PtrList<volScalarField>& Volumes);
 
 
 template Eigen::MatrixXd ITHACAutilities::error_listfields(
@@ -1806,6 +1923,9 @@ template Eigen::MatrixXd ITHACAutilities::error_listfields(
 template Eigen::MatrixXd ITHACAutilities::error_listfields(
     PtrList<volVectorField>& fields1,
     PtrList<volVectorField>& fields2);
+template Eigen::MatrixXd ITHACAutilities::error_listfields(
+    PtrList<surfaceScalarField>& fields1,
+    PtrList<surfaceScalarField>& fields2);
 
 template Eigen::MatrixXd ITHACAutilities::error_listfields_abs(
     PtrList<volScalarField>& fields1,
@@ -1844,6 +1964,8 @@ template Eigen::MatrixXd ITHACAutilities::get_coeffs(PtrList<volScalarField>
         snapshots, PtrList<volScalarField> modes, int Nmodes);
 template Eigen::MatrixXd ITHACAutilities::get_coeffs(PtrList<volVectorField>
         snapshots, PtrList<volVectorField> modes, int Nmodes);
+template Eigen::MatrixXd ITHACAutilities::get_coeffs(PtrList<surfaceScalarField>
+        snapshots, PtrList<surfaceScalarField> modes, int Nmodes);
 
 template Eigen::MatrixXd ITHACAutilities::get_coeffs_ortho(
     PtrList<volScalarField> snapshots, PtrList<volScalarField>& modes, int Nmodes);

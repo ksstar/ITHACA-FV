@@ -55,11 +55,11 @@ class tutorial19Explicit: public unsteadyNSExplicit
 
             if (offline)
             {
-                ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/Bdt0p1/");
-                ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/Bdt0p1/");
+                ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/Offline/");
+                ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/Offline/");
 
-		ITHACAstream::read_fields(Ufield_on, U, "./ITHACAoutput/OfflineBdt0p1/");
-		ITHACAstream::read_fields(Pfield_on, p, "./ITHACAoutput/OfflineBdt0p1/");
+		//ITHACAstream::read_fields(Ufield_on, U, "./ITHACAoutputError/OfflineAlesDiffRK3/");
+		//ITHACAstream::read_fields(Pfield_on, p, "./ITHACAoutputError/OfflineAlesDiffRK3/");
 
  
             }
@@ -116,15 +116,60 @@ int main(int argc, char* argv[])
     if (example.Method == "RK3")
     {
     // RK coefficients (RK3)
-    example.a21 = 0.33333333333333333333333;
-    example.a31 = -1;
-    example.a32 = 2;
+    /*example.a21 = 0.33333333333333333333;
+    example.a31 = -1.0;
+    example.a32 = 2.0;
     example.b1 = 0;
     example.b2 = 0.75;
     example.b3 = 0.25;
     example.c1 = 0;
-    example.c2 = 0.33333333333333333333333;
-    example.c3 = 1;
+    example.c2 = 0.3333333333333333333333; 
+    example.c3 = 1.0;*/
+
+    example.a21 = 0.5;
+    example.a31 = -1.0;
+    example.a32 = 2.0;
+    example.b1 = 0.1666666666666666666;
+    example.b2 = 0.6666666666666666666;
+    example.b3 = 0.1666666666666666666;
+    example.c1 = 0;
+    example.c2 = 0.5; 
+    example.c3 = 1.0;
+
+    /*example.a21 = 0.5;
+    example.a31 = -1.0;
+    example.a32 = 2.0;
+    example.b1 = 1.0;
+    example.b2 = 0.0;
+    example.b3 = 0.0;
+    example.c1 = 0;
+    example.c2 = 0.5; 
+    example.c3 = 1.0;*/
+
+    /*example.a21 = 0.5;
+    example.a31 = 0.5;
+    example.a32 = 0.5;
+    example.b1 = 0.3333333333333333333;
+    example.b2 = 0.3333333333333333333;
+    example.b3 = 0.3333333333333333333;
+    example.c1 = 0;
+    example.c2 = 0.5; 
+    example.c3 = 1.0;*/
+
+    /*example.a21 = 1.0;
+    example.a31 = 0.375;
+    example.a32 = 0.125;
+    example.a41 = -0.125;
+    example.a42 = -0.375;
+    example.a43 = 1.5;
+    example.b1 = 0.166666666666666666666666;
+    example.b2 = -0.05555555555555555555555;
+    example.b3 = 0.666666666666666666666666;
+    example.b4 = 0.222222222222222222222222;
+    example.c1 = 0;
+    example.c2 = 1.0; 
+    example.c3 = 0.5;
+    example.c4 = 1.0;*/
     }
     else if (example.Method == "FE")
     {
@@ -138,18 +183,26 @@ int main(int argc, char* argv[])
     example.c2 = 0;
     example.c3 = 0;
     }
+    else if (example.Method == "midPoint")
+    {
+    example.a21 = 0.5;
+    example.b1 = 0.0;
+    example.b2 = 1.0;
+    example.c1 = 0;
+    example.c2 = 0.5;
+    }
 
     // Perform The Offline Solve;
     auto start_FOM = std::chrono::high_resolution_clock::now();
     example.offlineSolve();
     auto finish_FOM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_FOM = finish_FOM - start_FOM;
+//exit(0);
 
-
- /*   // Calculate error between online- and corresponding full order solution
-    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields(
+ /*  // Calculate error between online- and corresponding full order solution
+    Eigen::MatrixXd L2errorMatrixU = ITHACAutilities::error_listfields_abs(
                                          example.Ufield_on, example.Ufield);
-    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields(
+    Eigen::MatrixXd L2errorMatrixP = ITHACAutilities::error_listfields_abs(
                                          example.Pfield_on, example.Pfield);
     //Export the matrix containing the error
     ITHACAstream::exportMatrix(L2errorMatrixU, "L2errorMatrixU", "eigen",
@@ -188,7 +241,7 @@ exit(0);*/
 if (example.ExplicitMethod == "A"|| example.ExplicitMethod == "B")
 {
     ITHACAPOD::getModesPhi(example.Phifield, example.Phimodes, example.podex, 0, 0,
-                       NmodesPout);
+                       NmodesUout);
 
     Eigen::MatrixXd  DivModes;
     DivModes.resize(example.Phimodes.size(),2);
@@ -233,10 +286,57 @@ if (example.ExplicitMethod == "A"|| example.ExplicitMethod == "B")
                                    "./ITHACAoutput/POD/");*/
 
 
+ // Perform the projection for all number of modes in list List_of_modes
+    Eigen::MatrixXd L2errorProjMatrixU(example.Ufield.size(),1);
+    Eigen::MatrixXd L2errorProjMatrixP(example.Pfield.size(), 1);
+    Eigen::MatrixXd L2errorProjMatrixPhi(example.Ufield.size(), 1);
 
+        Eigen::MatrixXd coeffU = ITHACAutilities::get_coeffs(example.Ufield,
+                                 example.Umodes,
+                                 NmodesUproj );
+        Eigen::MatrixXd coeffP = ITHACAutilities::get_coeffs(example.Pfield, example.Pmodes,
+                                 NmodesPproj );
+	Eigen::MatrixXd coeffPhi = ITHACAutilities::get_coeffs(example.Phifield, example.Phimodes,
+                                 NmodesUproj );
 
-      
+	/*Eigen::MatrixXd coeffU = ITHACAutilities::getCoeffsFrobenius(example.Ufield,
+                                 example.Umodes,
+                                 NmodesUproj );
+        Eigen::MatrixXd coeffP = ITHACAutilities::getCoeffsFrobenius(example.Pfield, example.Pmodes,
+                                 NmodesPproj );
+	Eigen::MatrixXd coeffPhi = ITHACAutilities::getCoeffsFrobenius(example.Phifield, example.Phimodes,
+                                 NmodesUproj );*/
 
+        PtrList<volVectorField> rec_fieldU = ITHACAutilities::reconstruct_from_coeff(
+                example.Umodes, coeffU, NmodesUproj);
+        PtrList<volScalarField> rec_fieldP = ITHACAutilities::reconstruct_from_coeff(
+                example.Pmodes, coeffP, NmodesPproj );
+	PtrList<surfaceScalarField> rec_fieldPhi = ITHACAutilities::reconstruct_from_coeff(
+                example.Phimodes, coeffPhi, NmodesUproj );
+
+        Eigen::MatrixXd L2errorProjU = ITHACAutilities::error_listfields(example.Ufield,
+                                       rec_fieldU);
+        Eigen::MatrixXd L2errorProjP = ITHACAutilities::error_listfields(example.Pfield,
+                                       rec_fieldP);
+	Eigen::MatrixXd L2errorProjPhi = ITHACAutilities::error_listfields(example.Phifield,
+                                       rec_fieldPhi);
+        L2errorProjMatrixU.col(0) = L2errorProjU;
+        L2errorProjMatrixP.col(0) = L2errorProjP;
+	L2errorProjMatrixPhi.col(0) = L2errorProjPhi;
+
+    // Export the matrix containing the error
+    ITHACAstream::exportMatrix(L2errorProjMatrixU, "L2errorProjMatrixU", "eigen",
+                               "./ITHACAoutput/l2error");
+    ITHACAstream::exportMatrix(L2errorProjMatrixP, "L2errorProjMatrixP", "eigen",
+                               "./ITHACAoutput/l2error");
+    ITHACAstream::exportMatrix(L2errorProjMatrixPhi, "L2errorProjMatrixPhi", "eigen",
+                               "./ITHACAoutput/l2error");
+
+ 
+// Resize the modes for projection
+    example.Pmodes.resize(NmodesPproj);
+    example.Umodes.resize(NmodesUproj);
+    example.Phimodes.resize(NmodesUproj);
  
 
 

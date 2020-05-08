@@ -79,6 +79,9 @@ unsteadyNSPISO::unsteadyNSPISO(int argc, char* argv[])
     bcMethod = ITHACAdict->lookupOrDefault<word>("bcMethod", "lift");
     M_Assert(bcMethod == "lift" || bcMethod == "penalty" || bcMethod == "none", 
              "The BC method must be set to lift or penalty in ITHACAdict");
+    ExplicitMethod = ITHACAdict->lookupOrDefault<word>("ExplicitMethod", "A");
+    M_Assert(ExplicitMethod == "Ales" || ExplicitMethod == "A" || ExplicitMethod == "B", 
+             "The Explicit method must be set to Ales or A or B in ITHACAdict");
     timedepbcMethod = ITHACAdict->lookupOrDefault<word>("timedepbcMethod", "no");
     M_Assert(timedepbcMethod == "yes" || timedepbcMethod == "no",
              "The BC method can be set to yes or no");
@@ -147,19 +150,19 @@ void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
     ITHACAstream::exportSolution(phi, name(counter), folder);
-    phi = linearInterpolate(U) & mesh.Sf();
-    volScalarField Udiv = fvc::div(U);
-    volScalarField Phidiv = fvc::div(phi);
-    ITHACAstream::exportSolution(phi, name(counter), folder);
-    ITHACAstream::exportSolution(Udiv, name(counter), folder);
-    ITHACAstream::exportSolution(Phidiv, name(counter), folder);
+    //phi = linearInterpolate(U) & mesh.Sf();
+    //volScalarField Udiv = fvc::div(U);
+    //volScalarField Phidiv = fvc::div(phi);
+    //ITHACAstream::exportSolution(phi, name(counter), folder);
+    //ITHACAstream::exportSolution(Udiv, name(counter), folder);
+    //ITHACAstream::exportSolution(Phidiv, name(counter), folder);
     std::ofstream of(folder + name(counter) + "/" +
                      runTime.timeName());
     Ufield.append(U);
     Pfield.append(p);
     Phifield.append(phi);
-    Udivfield.append(Udiv);
-    Phidivfield.append(Phidiv);
+    //Udivfield.append(Udiv);
+    //Phidivfield.append(Phidiv);
 
 
     counter++;
@@ -181,18 +184,20 @@ void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
             + fvm::div(phi, U)
             - fvm::laplacian(nu, U)
         );
-
+std::cout << " Here1 " << std::endl;
         if (piso.momentumPredictor())
         {
+	    
             solve(UEqn == -fvc::grad(p));
+	    std::cout << " Here2 " << std::endl;
         }
 
         // --- Pressure-velocity PISO corrector loop
         while (piso.correct())
         {
-            {
+            
 #include "pEqn.H"
-            }
+            std::cout << " Here3 " << std::endl;
         }
 
 
@@ -213,18 +218,18 @@ void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
             ITHACAstream::exportSolution(p, name(counter), folder);
 
 	    //phi = linearInterpolate(U) & mesh.Sf();
-	    volScalarField Udiv = fvc::div(U);
-	    volScalarField Phidiv = fvc::div(phi);
+	    //volScalarField Udiv = fvc::div(U);
+	    //volScalarField Phidiv = fvc::div(phi);
 	    ITHACAstream::exportSolution(phi, name(counter), folder);
-	    ITHACAstream::exportSolution(Udiv, name(counter), folder);
-	    ITHACAstream::exportSolution(Phidiv, name(counter), folder);
+	    //ITHACAstream::exportSolution(Udiv, name(counter), folder);
+	    //ITHACAstream::exportSolution(Phidiv, name(counter), folder);
             std::ofstream of(folder + name(counter) + "/" +
                              runTime.timeName());
             Ufield.append(U);
             Pfield.append(p);
 	    Phifield.append(phi);
-	    Udivfield.append(Udiv);
-	    Phidivfield.append(Phidiv);
+	    //Udivfield.append(Udiv);
+	    //Phidivfield.append(Phidiv);
 
             counter++;
             nextWrite += writeEvery;
@@ -237,7 +242,7 @@ void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
 
 
  	    
-    DivNorm.resize(Udivfield.size(),4);
+ /*   DivNorm.resize(Udivfield.size(),4);
     
     for (label j = 0; j < Udivfield.size(); j++)
     {
@@ -250,7 +255,7 @@ void unsteadyNSPISO::truthSolve(List<scalar> mu_now, fileName folder)
     }
 
     ITHACAstream::exportMatrix(DivNorm, "DivNorm", "eigen",
-                                   folder);
+                                   folder);*/
 
 }
 

@@ -15,28 +15,42 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-3
+5
 (
     movingWall
     {
         type            wall;
         inGroups        1(wall);
-        nFaces          20;
-        startFace       760;
+        nFaces          40;
+        startFace       3120;
     }
-    fixedWalls
+    Bottom
     {
         type            wall;
         inGroups        1(wall);
-        nFaces          60;
-        startFace       780;
+        nFaces          40;
+        startFace       3160;
+    }
+    Left
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          40;
+        startFace       3200;
+    }
+    Right
+    {
+        type            wall;
+        inGroups        1(wall);
+        nFaces          40;
+        startFace       3240;
     }
     frontAndBack
     {
         type            empty;
         inGroups        1(empty);
-        nFaces          800;
-        startFace       840;
+        nFaces          3200;
+        startFace       3280;
     }
 )
 

@@ -22,6 +22,27 @@
   You should have received a copy of the GNU Lesser General Public License
   along with ITHACA-FV. If not, see <http://www.gnu.org/licenses/>.
 \*---------------------------------------------------------------------------*/
+IOdictionary transportProperties
+(
+    IOobject
+    (
+        "transportProperties",
+        runTime.constant(),
+        mesh,
+        IOobject::MUST_READ_IF_MODIFIED,
+        IOobject::NO_WRITE
+    )
+);
+
+_nu = autoPtr<dimensionedScalar>
+      (
+          new dimensionedScalar
+          (
+              "nu",
+              dimViscosity,
+              transportProperties.lookup("nu")
+          )
+      );
 
 Info << "Reading field p\n" << endl;
 Info << runTime.timeName() << endl;

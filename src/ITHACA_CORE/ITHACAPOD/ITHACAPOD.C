@@ -118,15 +118,27 @@ void ITHACAPOD::getModes(
         List<Eigen::MatrixXd> SnapMatrixBC = Foam2Eigen::PtrList2EigenBC(snapshots);
         int NBC = snapshots[0].boundaryField().size();
         auto VM = ITHACAutilities::get_mass_matrix_FV(snapshots[0]);
+	
         Eigen::MatrixXd _corMatrix = SnapMatrix.transpose() * VM.asDiagonal() *
                                      SnapMatrix;
 
-        if (Pstream::parRun())
+	/*Eigen::MatrixXd _corMatrix(snapshots.size(), snapshots.size());
+	for (label i = 0; i < snapshots.size(); i++)
         {
-            List<double> vec(_corMatrix.data(), _corMatrix.data() + _corMatrix.size());
-            reduce(vec, sumOp<List<double>>());
-            std::memcpy(_corMatrix.data(), &vec[0], sizeof (double)*vec.size());
+            for (label j = 0; j <= i; j++)
+            {
+		_corMatrix(i, j) = SnapMatrix.col(i).transpose() *
+                                   SnapMatrix.col(j);
+            }
         }
+
+        for (label i = 1; i < snapshots.size(); i++)
+        {
+            for (label j = 0; j < i; j++)
+            {
+                _corMatrix(j, i) = _corMatrix(i, j);
+            }
+        }*/
 
         Eigen::VectorXd eigenValueseig;
         Eigen::MatrixXd eigenVectoreig;
@@ -275,23 +287,31 @@ void ITHACAPOD::getModesPhi(
             M_Assert(nmodes <= snapshots.size(),
                      "The number of requested modes cannot be bigger than the number of Snapshots");
         }
-Info << "####### Debug 1 #######" << endl;
+
         Eigen::MatrixXd SnapMatrix = Foam2Eigen::PtrList2Eigen(snapshots);
-std::cout << "####### SnapMatrixRows: " << SnapMatrix.rows()<< endl;
-std::cout << "####### SnapMatrixCols: " << SnapMatrix.cols()<< endl;
         List<Eigen::MatrixXd> SnapMatrixBC = Foam2Eigen::PtrList2EigenBC(snapshots);
-Info << "####### Debug 3 #######" << endl;
         int NBC = snapshots[0].boundaryField().size();
-Info << "####### Debug 4 #######" << endl;
         auto VM = ITHACAutilities::get_mass_matrix_FV(snapshots[0]);
-Info << "####### Debug 5 #######" << endl;
-std::cout << "####### VmROWS: " << VM.rows()<< endl;
-std::cout << "####### VmCOLS: " << VM.cols()<< endl;
-        Eigen::MatrixXd _corMatrix = SnapMatrix.transpose() *
-                                     SnapMatrix;
-	//Eigen::MatrixXd _corMatrix = SnapMatrix.transpose() * VM.asDiagonal() *
-            //                         SnapMatrix;
-Info << "####### Debug 6 #######" << endl;
+	Eigen::MatrixXd _corMatrix = SnapMatrix.transpose() * VM.asDiagonal() *
+                                   SnapMatrix;
+
+	/*Eigen::MatrixXd _corMatrix(snapshots.size(), snapshots.size());
+	for (label i = 0; i < snapshots.size(); i++)
+        {
+            for (label j = 0; j <= i; j++)
+            {
+		_corMatrix(i, j) = SnapMatrix.col(i).transpose() *
+                                   SnapMatrix.col(j);
+            }
+        }
+
+        for (label i = 1; i < snapshots.size(); i++)
+        {
+            for (label j = 0; j < i; j++)
+            {
+                _corMatrix(j, i) = _corMatrix(i, j);
+            }
+        }*/
 
         if (Pstream::parRun())
         {
@@ -302,7 +322,6 @@ Info << "####### Debug 6 #######" << endl;
 
         Eigen::VectorXd eigenValueseig;
         Eigen::MatrixXd eigenVectoreig;
-Info << "####### Debug 7 #######" << endl;
         modes.resize(nmodes);
         Info << "####### Performing the POD using EigenDecomposition " <<
              snapshots[0].name() << " #######" << endl;

@@ -30,7 +30,7 @@ vertices
 
 blocks
 (
-    hex (0 1 2 3 4 5 6 7) (20 20 1) simpleGrading (1 1 1)
+    hex (0 1 2 3 4 5 6 7) (40 40 1) simpleGrading (1 1 1)
 );
 
 edges
@@ -47,14 +47,28 @@ boundary
             (3 7 6 2)
         );
     }
-    fixedWalls
+    Bottom
+    {
+        type wall;
+        faces
+        (
+            (1 5 4 0)
+        );
+    }
+    Left
     {
         type wall;
         faces
         (
             (0 4 7 3)
+        );
+    }
+    Right
+    {
+        type wall;
+        faces
+        (
             (2 6 5 1)
-            (1 5 4 0)
         );
     }
     frontAndBack

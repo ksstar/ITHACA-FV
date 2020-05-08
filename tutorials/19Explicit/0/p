@@ -25,7 +25,17 @@ boundaryField
         type            zeroGradient;
     }
 
-    fixedWalls
+    Bottom
+    {
+        type            zeroGradient;
+    }
+
+    Left
+    {
+        type            zeroGradient;
+    }
+
+    Right
     {
         type            zeroGradient;
     }

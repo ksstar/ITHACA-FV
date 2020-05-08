@@ -62,52 +62,18 @@ reducedUnsteadyNSExplicit::reducedUnsteadyNSExplicit(unsteadyNSExplicit& FOMprob
         Pmodes.append(problem->Pmodes[k]);
     }
 
+    if (problem->ExplicitMethod == "A")
+    {
+    	for (label k = 0; k < Nphi_phi; k++)
+    	{
+            Phimodes.append(problem->Phimodes[k]);
+    	}
+    }
+
     newton_object = newton_unsteadyNSExplicit(Nphi_p, Nphi_p,
                         FOMproblem);
 
 }
-
-// * * * * * * * * * * * *  Operators Poisson FOM level   * * * * * * * * * * //
-
-// Operator to evaluate the residual for the Pressure Poisson Equation (PPE) approach
-	int newton_unsteadyNSExplicit::operator()(const Eigen::VectorXd& x,
-                                      Eigen::VectorXd& fvec) const
-	{
-
-	Eigen::VectorXd b_tmp(Nphi_p);
-        b_tmp = x;
-	//Eigen::MatrixXd M5 = (1/dt)*problem->PF_matrix * a_n;
-	//Eigen::MatrixXd M6 = (1/dt)*problem->DF_matrix * a_n;
-
- 	// Pressure Term
-    	Eigen::VectorXd M5 = problem->D_matrix * b_tmp;
-
-    	// BC PPE
-    	Eigen::VectorXd M6 = problem->BC3_matrix * a_n * nu;
-
-	Eigen::VectorXd M7 = (problem->K_matrix).transpose() * a_n;
-
-	Eigen::MatrixXd gg(1, 1);
-
-    	for (label l = 0; l < Nphi_p; l++)
-    	{
-        	gg = a_n.transpose() * Eigen::SliceFromTensor(problem->gTensor, 0,
-                l) * a_n;
-        	fvec(l) = -(1/dt) * M7(l,0) + M5(l, 0) + gg(0, 0) - M6(l, 0);
-
-    	}
-
-    	return 0;
-	}
-
-	// Operator to evaluate the Jacobian for the supremizer approach
-	int newton_unsteadyNSExplicit::df(const Eigen::VectorXd& x,
-                              Eigen::MatrixXd& fjac) const
-	{
-    	Eigen::NumericalDiff<newton_unsteadyNSExplicit> numDiff(*this);
-    	numDiff.df(x, fjac);
-    	return 0;
-	}
 
 
 // * * * * * * * * * * * * * Solve Functions  * * * * * * * * * * * //
@@ -152,6 +118,11 @@ if (problem->ExplicitMethod == "Ales")
     }
     time = tstart;
 
+    //a_o = ITHACAutilities::get_coeffs(problem->Ufield[0],
+      //               Umodes);
+    //y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
+                    // Pmodes);
+
     // Set size of online solution
     online_solution.resize(counter+1);
     // Create vector to store temporal solution and save initial condition as first solution
@@ -163,22 +134,6 @@ if (problem->ExplicitMethod == "Ales")
 
     /// Pressure field
     volScalarField p = problem->_p;
-  
-
-    Eigen::VectorXd presidualOld = Eigen::VectorXd::Zero(Nphi_p);
-    Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
-    scalar P_norm_res(1);
-
-
-   /* y.resize(Nphi_p, 1);
-    y.setZero();
-    newton_object.dt = dt;
-    newton_object.nu = nu;
-    newton_object.a_n = a_n;
-    // Create nonlinear solver object
-    Eigen::HybridNonLinearSolver<newton_unsteadyNSExplicit> hnls(newton_object);*/
-    
-    
 
     for (label i = 1; i < online_solution.size(); i++)
     {
@@ -187,77 +142,175 @@ if (problem->ExplicitMethod == "Ales")
     	std::cout << " ################## time =   " << time <<
                   " ##################" << std::endl;
 
+	//if (problem->Method == "FE")
+	//{
+	    Eigen::VectorXd presidualOld = Eigen::VectorXd::Zero(Nphi_p);
+            Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
+            scalar P_norm_res(1);
 
-	if (problem->PoissonMethod == "ROM")
+	    Eigen::VectorXd RHS  = Eigen::VectorXd::Zero(Nphi_p);
+	    // Diffusion Term
+    	    Eigen::VectorXd M5 = problem->DF_matrix * a_o *nu ;
+	    // Convection Term
+	    Eigen::MatrixXd cp(1, 1);
+	    // Mom term
+	    Eigen::MatrixXd M4 = problem->P_matrix * a_o;
+
+    	    for (label l = 0; l < Nphi_p; l++)
+    	    {
+        	cp = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
+        	RHS(l) = (1/dt) * M4(l,0)  - cp(0,0)+ M5(l,0);
+
+    	    }
+
+	    List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	    RedLinSysP[1] = RedLinSysP[1] + nu * problem->RedLinSysPDiff[1];
+
+    	    b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
+
+	    // Convective term
+    	    Eigen::MatrixXd cc(1, 1);
+    	    // Mom Term
+    	    Eigen::VectorXd M1 = problem->M_matrix * a_o;
+    	    // Diff Term
+    	    Eigen::VectorXd M2 = problem->B_matrix * a_o * nu ;
+	    // Pressure Term
+	    Eigen::VectorXd M3 = problem->K_matrix * b_n;
+
+    	    for (label l = 0; l < Nphi_u; l++)
+    	    {
+        	cc = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	 a_n(l) =  (M2(l)  - cc(0,0))*dt -problem->BC_matrix(l,0)*dt + a_o(l)- dt*M3(l);
+    	    }
+
+	//}
+	/*else if (problem->Method == "RK3")
 	{
-    	 /*  Eigen::MatrixXd M4 = (1/dt)*(-1)*(problem->K_matrix).transpose() * a_n;
-    	   b_n = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, M4, xx, presidual);
+	std::cout << " ########## RK3   " <<
+                  " ###########" << std::endl;
 
-    	   Eigen::VectorXd M3 = problem->K_matrix * b_n;
+	Eigen::VectorXd presidualOld = Eigen::VectorXd::Zero(Nphi_p);
+        Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
+        scalar P_norm_res(1);
 
-    	   for (label k = 0; k < Nphi_u; k++)
-    	   {  
-		a_n(k) =  a_n(k) - (dt * M3(k));
-    	   }*/
-	}
-	else if (problem->PoissonMethod == "FOM")
-	{
-
+	Eigen::VectorXd a_2 = Eigen::VectorXd::Zero(Nphi_u);
+	Eigen::VectorXd a_3 = Eigen::VectorXd::Zero(Nphi_u);
 	Eigen::VectorXd RHS  = Eigen::VectorXd::Zero(Nphi_p);
+
 	// Diffusion Term
-    	Eigen::VectorXd M5 = problem->DF_matrix * a_o * nu;
+    	Eigen::VectorXd M5_1 = problem->DF_matrix * a_o *nu ;
 	// Convection Term
-	Eigen::MatrixXd cp(1, 1);
+	Eigen::MatrixXd cp_1(1, 1);
 	// Mom term
 	Eigen::MatrixXd M4 = problem->P_matrix * a_o;
 
     	for (label l = 0; l < Nphi_p; l++)
     	{
-        	cp = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+        	cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
                 l) * a_o;
-        	RHS(l) = (1/dt) * M4(l,0)  -cp(0,0)+ M5(l,0);
+        	RHS(l) = (1/(problem->c2*dt)) * (M4(l,0)  - (problem->a21 *dt) * (cp_1(0,0)- M5_1(l,0)));
+
+    	}
+	List<Eigen::MatrixXd> RedLinSysProm2 = problem->RedLinSysP;
+	RedLinSysProm2[1] = (problem->a21/(problem->c2))*RedLinSysProm2[1];
+	
+    	b_n = reducedProblem::solveLinearSysAxb(RedLinSysProm2, RHS, xx, presidual);
+
+	// Convective term
+    	Eigen::MatrixXd cc_1(1, 1);
+    	// Diff Term
+    	Eigen::VectorXd M2_1 = problem->B_matrix * a_o * nu ;
+	// Pressure Term
+	Eigen::VectorXd M3_2 = problem->K_matrix * b_n;
+
+    	for (label l = 0; l < Nphi_u; l++)
+    	{
+        	cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	 a_2(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->a21 *dt) 
+			 	- (problem->c2*dt)*M3_2(l);
+    	}
+
+	// Stage 3
+        presidual = Eigen::VectorXd::Zero(Nphi_p);
+
+    	Eigen::VectorXd M5_2 = problem->DF_matrix * a_2 *nu ;
+	Eigen::MatrixXd cp_2(1, 1);
+
+    	for (label l = 0; l < Nphi_p; l++)
+    	{
+	        cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
+        	cp_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_2;
+        	RHS(l) = (1/(problem->c3*dt)) * (M4(l,0) 
+			 - (problem->a31 *dt) * (cp_1(0,0)- M5_1(l,0))
+			 - (problem->a32 *dt) * (cp_2(0,0)- M5_2(l,0)));
+
+    	}
+	List<Eigen::MatrixXd> RedLinSysProm3 = problem->RedLinSysP;
+	RedLinSysProm3[1] = (1/(problem->c3))*RedLinSysProm3[1];
+	
+    	b_n = reducedProblem::solveLinearSysAxb(RedLinSysProm3, RHS, xx, presidual);
+
+
+    	Eigen::MatrixXd cc_2(1, 1);
+    	Eigen::VectorXd M2_2 = problem->B_matrix * a_2 * nu ;
+	Eigen::VectorXd M3_3 = problem->K_matrix * b_n;
+
+    	for (label l = 0; l < Nphi_u; l++)
+    	{	cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	cc_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_2;
+        	 a_3(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->a31 *dt) 
+				+  (M2_2(l)  - cc_2(0,0)-problem->BC_matrix(l,0))*(problem->a32 *dt) 
+			 	- (problem->c3*dt)*M3_3(l);
+    	}
+
+	// Stage Final
+        presidual = Eigen::VectorXd::Zero(Nphi_p);
+    	Eigen::VectorXd M5_3 = problem->DF_matrix * a_3 *nu ;
+	Eigen::MatrixXd cp_3(1, 1);
+
+    	for (label l = 0; l < Nphi_p; l++)
+    	{
+	        cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
+        	cp_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_2;
+        	cp_3 = a_3.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_3;
+        	RHS(l) = (1/dt) * (M4(l,0)  
+			- (problem->b1 *dt) * (cp_1(0,0)- M5_1(l,0))
+			- (problem->b2 *dt) * (cp_2(0,0)- M5_2(l,0))
+			- (problem->b3 *dt) * (cp_3(0,0)- M5_3(l,0)));
 
     	}
 
     	b_n = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, RHS, xx, presidual);
 
-	// Convective term
-    	Eigen::MatrixXd cc(1, 1);
-    	// Mom Term
-    	Eigen::VectorXd M1 = problem->M_matrix * a_o;
-    	// Diff Term
-    	Eigen::VectorXd M2 = problem->B_matrix * a_o * nu ;
-	// Pressure Term
+    	Eigen::MatrixXd cc_3(1, 1);
+    	Eigen::VectorXd M2_3 = problem->B_matrix * a_3 * nu ;
 	Eigen::VectorXd M3 = problem->K_matrix * b_n;
 
     	for (label l = 0; l < Nphi_u; l++)
-    	{
-        	cc = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+    	{	
+	         cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
               		l) * a_o;
-        	 a_n(l) =  (M2(l)  - cc(0,0))*dt -problem->BC_matrix(l,0)*dt + a_o(l) - dt*M3(l);
+        	 cc_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_2;
+        	 cc_3 = a_3.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_3;
+        	 a_n(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->b1 *dt) 
+				+  (M2_2(l)  - cc_2(0,0)-problem->BC_matrix(l,0))*(problem->b2 *dt) 
+				+  (M2_3(l)  - cc_3(0,0)-problem->BC_matrix(l,0))*(problem->b3 *dt) 
+			 	-  dt*M3(l);
     	}
 
-    	  /* 
-
-    	   for (label k = 0; k < Nphi_u; k++)
-    	   {  
-		a_n(k) =  a_n(k) - (dt * M3(k));
-    	   }*/
-	 
-
-	   /*newton_object.nu = nu;
-	   newton_object.a_n = a_n;
-
-	   newton_object.dt = dt;
-	   
-	    Eigen::VectorXd res(y);
-            res.setZero();
-            hnls.solve(y);
-
-	    newton_object.operator()(y, res);
-	    b_n = y;*/
-
-	}
+	}*/
 
     	tmp_sol(0) = time;
     	tmp_sol.col(0).segment(1, Nphi_u) = a_n;
@@ -274,10 +327,12 @@ else if (problem->ExplicitMethod == "A")
     Eigen::VectorXd a_n = Eigen::VectorXd::Zero(Nphi_u);
     Eigen::VectorXd a_o = Eigen::VectorXd::Zero(Nphi_u);
     Eigen::MatrixXd b = Eigen::VectorXd::Zero(Nphi_p);
-    Eigen::MatrixXd x = Eigen::VectorXd::Zero(Nphi_p);
+    Eigen::MatrixXd xx = Eigen::VectorXd::Zero(Nphi_p);
     Eigen::VectorXd c_o = Eigen::VectorXd::Zero(Nphi_phi);
     Eigen::VectorXd c_n = Eigen::VectorXd::Zero(Nphi_phi);
 
+    c_o = ITHACAutilities::get_coeffs(problem->Phifield[0],
+                   Phimodes);
 
     // Counting variable
     int counter = 0;
@@ -302,66 +357,75 @@ else if (problem->ExplicitMethod == "A")
     tmp_sol.col(0).tail(b.rows()) = b;
     online_solution[0] = tmp_sol;
 
-    /// Pressure field
-    volScalarField& p = problem->_p();
-
-    Eigen::VectorXd presidualOld = Eigen::VectorXd::Zero(Nphi_p);
-    Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
-    scalar P_norm_res(1);
 
     for (label i = 1; i < online_solution.size(); i++)
     {
-	presidual = presidual*0;
+	Eigen::VectorXd presidualOld = Eigen::VectorXd::Zero(Nphi_p);
+        Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
+        scalar P_norm_res(1);
         time = time + dt;
   	std::cout << " ################## time =   " << time <<
                   " ##################" << std::endl;
 
-	
-    	// Convective term
+	Eigen::VectorXd RHS  = Eigen::VectorXd::Zero(Nphi_p);
+	// Diffusion Term
+    	Eigen::VectorXd M5 = problem->DF_matrix * a_o *nu ;
+	// Convection Term
+	Eigen::MatrixXd cp(1, 1);
+	// Mom term
+	Eigen::MatrixXd M4 = problem->P_matrix * a_o;
+
+    	for (label l = 0; l < Nphi_p; l++)
+    	{
+        	cp = c_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
+        	RHS(l) = (1/dt) * M4(l,0)  - cp(0,0)+ M5(l,0);
+
+    	}
+
+	List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	RedLinSysP[1] = RedLinSysP[1] + nu * problem->RedLinSysPDiff[1];
+	b = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
+    	//b = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, RHS, xx, presidual);
+	// Convective term
     	Eigen::MatrixXd cc(1, 1);
-    	// Mom Term
-    	Eigen::VectorXd M1 = problem->M_matrix * a_o;
-	Eigen::VectorXd M2 = problem->B_matrix * a_o * nu ;
+    	// Diff Term
+    	Eigen::VectorXd M2 = problem->B_matrix * a_o * nu ;
+	// Pressure Term
+	Eigen::VectorXd M3 = problem->K_matrix * b;
 
     	for (label l = 0; l < Nphi_u; l++)
     	{
-        	cc = c_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
-                l) * a_o;
-         	a_n(l) =  (M2(l)  - cc(0,0)-problem->BC_matrix(l,0))*dt + a_o(l);
+        	cc = c_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	 a_n(l) = a_o(l) + (M2(l)  - cc(0,0)-problem->BC_matrix(l,0)- M3(l))*dt  ;
     	}
-
-	
-	Eigen::VectorXd M6 = problem->I_matrix * a_n;
-
-	for (label k = 0; k < Nphi_p; k++)
-    	{
-		c_n(k) =  M6(k) ;
-	}
-
-	Eigen::MatrixXd M4 = (1/dt)*problem->Pf_matrix * a_n;
-        b = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, M4, x, presidual);
-
-	Eigen::VectorXd M3 = problem->K_matrix * b;
-
-	for (label k = 0; k < Nphi_u; k++)
-    	{
-		a_n(k) =  a_n(k) - (dt * M3(k));
-	}
-
-	Eigen::VectorXd M5 = problem->Kf_matrix * b;
+	surfaceScalarField phi_2(Phimodes[0]*0);
+	Eigen::MatrixXd M6 = problem->I_matrix * a_o;
+	Eigen::MatrixXd M7 = problem->ID_matrix * a_o*nu;
+	Eigen::MatrixXd M8 = problem->Kf_matrix*b.col(0);
+	Eigen::MatrixXd M11(Nphi_phi,Nphi_phi);
+	Eigen::MatrixXd M12 = Eigen::VectorXd::Zero(Nphi_phi);
+	Eigen::MatrixXd ci(Nphi_phi,1);
+	//Eigen::MatrixXd M9 = problem->Mf_matrix.colPivHouseholderQr().solve(M6 + dt*(M7-M8));
+	Eigen::MatrixXd M9 = problem->Mf_matrix.fullPivLu().solve(M6 + dt*(M7-M8));
 	
 	for (label k = 0; k < Nphi_phi; k++)
-    	{
-		c_n(k) =  M6(k) - (dt * M5(k));
+    	{	
+		M12 = dt*problem->Ci_matrix[k] * a_o*c_o(k)+M12;
+		//Eigen::MatrixXd M13 = problem->Mf_matrix.colPivHouseholderQr().solve(M12);
+		Eigen::MatrixXd M13 = problem->Mf_matrix.fullPivLu().solve(M12);
+		
+		c_n(k) =  M9(k) -M13(k);
 	}
-
 	tmp_sol(0) = time;
     	tmp_sol.col(0).segment(1, Nphi_u) = a_n;
     	tmp_sol.col(0).tail(b.rows()) = b;
     	online_solution[i] = tmp_sol;
- 
+
 	a_o = a_n;
 	c_o = c_n;
+
 
     	}
 }
@@ -399,12 +463,7 @@ void reducedUnsteadyNSExplicit::reconstruct(fileName folder)
                 U_rec += Umodes[j] * online_solution[i](j + 1, 0);
             }
 
-	forAll( U_rec.boundaryFieldRef()[0], l)
-	{
-		U_rec.boundaryFieldRef()[0][l].component(vector::X) = 1;
-	}
-
-           ITHACAstream::exportSolution(U_rec,  name(counter2), folder);
+            ITHACAstream::exportSolution(U_rec,  name(counter2), folder);
 
             volScalarField P_rec("P_rec", problem->Pmodes[0] * 0);
 
@@ -415,7 +474,6 @@ void reducedUnsteadyNSExplicit::reconstruct(fileName folder)
 
 	   // volVectorField P_grad= fvc::grad(P_rec);
             ITHACAstream::exportSolution(P_rec, name(counter2), folder);
-	   //ITHACAstream::exportSolution(P_grad, name(counter2), folder);
             nextwrite += exportEveryIndex;
             double timenow = online_solution[i](0, 0);
             std::ofstream of(folder + name(counter2) + "/" + name(timenow));

@@ -23,13 +23,27 @@ boundaryField
     movingWall
     {
         type            fixedValue;
-        value           uniform (1.0 0 0);
+        value           uniform (1.0 0.0 0.0);
     }
 
-    fixedWalls
+   Bottom
     {
         type            fixedValue;
-        value           uniform (0.0 0 0);
+        value           uniform (0.0 0.0 0.0);
+    }
+
+   Left
+    {
+        //type            cyclic;
+	type            fixedValue;
+        value           uniform (0.0 0.0 0.0);
+    }
+
+    Right
+    {
+        //type            cyclic;
+	type            fixedValue;
+        value           uniform (0.0 0.0 0.0);
     }
 
     frontAndBack

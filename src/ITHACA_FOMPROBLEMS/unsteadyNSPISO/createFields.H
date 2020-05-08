@@ -98,10 +98,10 @@ _U0 = autoPtr<volVectorField>
 #include "createPhi.H"
 
 
-label pRefCell = 0;
-scalar pRefValue = 0.0;
-setRefCell(p, mesh.solutionDict().subDict("SIMPLE"), pRefCell, pRefValue);
+pRefCell = 0;
+pRefValue = 0.0;
 
+setRefCell(p, mesh.solutionDict().subDict("SIMPLE"), pRefCell, pRefValue);
 _laminarTransport = autoPtr<singlePhaseTransportModel>
                     (
                         new singlePhaseTransportModel( U, phi )

@@ -111,6 +111,8 @@ class reducedUnsteadyNSExplicit: public reducedSteadyNS
 	/// number of phi modes
 	int Nphi_phi;
 
+	PtrList<surfaceScalarField> Phimodes;
+
         /// Scalar to store the final time if the online simulation
         scalar finalTime;
 

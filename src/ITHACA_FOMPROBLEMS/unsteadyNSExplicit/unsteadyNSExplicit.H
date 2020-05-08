@@ -132,12 +132,17 @@ class unsteadyNSExplicit: public steadyNS
 	double a21;
 	double a31;
 	double a32;
+	double a41;
+	double a42;
+	double a43;
 	double b1;
 	double b2;
 	double b3;
+	double b4;
 	double c1;
 	double c2;
 	double c3;
+	double c4;
 
 	
 	/// To determine boundary vector 

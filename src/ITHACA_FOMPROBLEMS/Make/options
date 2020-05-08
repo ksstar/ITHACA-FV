@@ -47,4 +47,10 @@ EXE_LIBS = \
     -lcompressibleRASModels \
     -lforces \
     -lfileFormats \
-    -lcompressibleLESModels
+    -lcompressibleLESModels \
+    -L$(FOAM_USER_LIBBIN) \
+    -lITHACA_FOMPROBLEMS \
+    -lITHACA_ROMPROBLEMS \
+    -lITHACA_THIRD_PARTY \
+    -lITHACA_CORE \
+    -lITHACA_DEIM

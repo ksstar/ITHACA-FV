@@ -80,14 +80,14 @@ unsteadyNSExplicit::unsteadyNSExplicit(int argc, char* argv[])
     M_Assert(bcMethod == "lift" || bcMethod == "penalty" || bcMethod == "none", 
              "The BC method must be set to lift or penalty in ITHACAdict");
     Method = ITHACAdict->lookupOrDefault<word>("Method", "RK3");
-    M_Assert(Method == "FE" || Method == "RK3" , 
-             "The BC method must be set to FE or RK3 in ITHACAdict");
+    M_Assert(Method == "FE" || Method == "RK3" || Method == "midPoint", 
+             "The Method must be set to FE or RK3 or midPoint in ITHACAdict");
     ExplicitMethod = ITHACAdict->lookupOrDefault<word>("ExplicitMethod", "A");
     M_Assert(ExplicitMethod == "Ales" || ExplicitMethod == "A" || ExplicitMethod == "B", 
              "The Explicit method must be set to Ales or A or B in ITHACAdict");
     PoissonMethod = ITHACAdict->lookupOrDefault<word>("PoissonMethod", "A");
     M_Assert(PoissonMethod == "FOM" || PoissonMethod == "ROM", 
-             "The Explicit method must be set to FOM or ROM in ITHACAdict");
+             "The Poisson method must be set to FOM or ROM in ITHACAdict");
     timedepbcMethod = ITHACAdict->lookupOrDefault<word>("timedepbcMethod", "no");
     M_Assert(timedepbcMethod == "yes" || timedepbcMethod == "no",
              "The BC method can be set to yes or no");
@@ -111,7 +111,7 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     fvMesh& mesh = _mesh();
     volScalarField p = _p();
     volVectorField U = _U();
-    surfaceScalarField phi = _phi() ;
+    surfaceScalarField phi = _phi();
 #include "initContinuityErrs.H"
     dimensionedScalar nu = _nu();
     dimensionedScalar dt = timeStep*_dt();
@@ -131,6 +131,11 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     bw.col(0) = b;
     ITHACAstream::exportMatrix(bw, "bw0", "eigen",
                                "./ITHACAoutput/BCvector/");
+
+   /* volVectorField HbyA("HbyA", U);
+    HbyA = UEqn.H()/UEqn.A();
+    phi = fvc::flux(HbyA);*/
+
     P0field.append(p);
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
@@ -160,79 +165,133 @@ if (ExplicitMethod == "Ales")
         Info << "Time = " << runTime.timeName() << nl << endl;
         
 	// Stage 1
-	volVectorField U1 = U; surfaceScalarField phi1 = 
-	fvc::interpolate(U)& mesh.Sf(); volScalarField p1("p1", p*0);
+	volVectorField U1(U.oldTime()); surfaceScalarField phi1 = 
+	fvc::interpolate(U1)& mesh.Sf(); volScalarField p1(p);
 
 	if (Method == "RK3")
 	{
 	    // Stage 2
-	    p = p1;
-	    volVectorField F1 = (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1));
-	    volVectorField U2 = U1 + dt * a21 *F1 ; 
-	    U2.correctBoundaryConditions();
+	    p = p*0;
+	    p.correctBoundaryConditions();
+	    volVectorField F1aux(U);
+	    F1aux =  dt * (a21 *(fvc::laplacian(nu,U1)-fvc::div(phi1,U1)));
 
+	    volVectorField U2(U);
+	    U2 = U.oldTime() + F1aux;
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
-	    solve(pEqn ==  (1/(c2*dt))*fvc::div(U2)); 
-	    U2 = U2 - (c2*dt)*fvc::grad(p);
-	    U2.correctBoundaryConditions();
+	    solve(pEqn ==  (1.0/(c2*dt))*fvc::div(U2) ); 
+
+	    U2 = U2 - c2*dt*fvc::grad(p);
+
 	    surfaceScalarField phi2 = fvc::interpolate(U2)& mesh.Sf(); 
-	    volScalarField p2("p2", p);
  	
 	    //Stage 3
-	    p = p1;
-	    volVectorField F2  = (-fvc::div(phi2,U2) + nu *fvc::laplacian(U2));
-	    volVectorField U3 = U1 + dt * a31 * F1 + dt * a32 * F2  ;
-	    U3.correctBoundaryConditions();
+	    p = p*0;
+	    p.correctBoundaryConditions();	
+	    volVectorField F2aux(U);
+	    F2aux =  dt * (a31 * (fvc::laplacian(nu,U1)-fvc::div(phi1,U1)) +
+			   a32 * (fvc::laplacian(nu,U2)-fvc::div(phi2,U2)));
 
+	    volVectorField U3(U);
+            U3 = U.oldTime() + F2aux ;
 	    pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
-	    solve(pEqn ==  (1/(c3*dt))*fvc::div(U3));
-	    U3 = U3 - (c3*dt)*fvc::grad(p);
-	    U3.correctBoundaryConditions();
+	    solve(pEqn ==  (1.0/(c3*dt))*fvc::div(U3));
+
+	    U3 = U3 - c3*dt*fvc::grad(p);
+	    
 	    surfaceScalarField phi3 = fvc::interpolate(U3)& mesh.Sf(); 
-	    volScalarField p3("p3", p);
  	
-	    // Stage New Time Step
-	    p = p1;
-	    volVectorField F3 =  (-fvc::div(phi3,U3) + nu *fvc::laplacian(U3));
-	    U = U1 +  dt * b1 * F1 +  dt * b2 * F2 + dt * b3 * F3 ; 
-	    U.correctBoundaryConditions();
-	    UStarfield.append(U);
+	  /*  // Stage 4
+	    p = p*0;
+	    p.correctBoundaryConditions();	
+	    volVectorField F4aux(U);
+	    F4aux =  dt * (a41 * (fvc::laplacian(nu,U1)-fvc::div(phi1,U1)) +
+			   a42 * (fvc::laplacian(nu,U2)-fvc::div(phi2,U2)) +
+			   a43 * (fvc::laplacian(nu,U3)-fvc::div(phi3,U3))
+			  );
+ 	
+	    volVectorField U4(U);
+	    U4 = U.oldTime() + F4aux;
 	    pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
-	    solve(pEqn ==  (1/dt)*fvc::div(U));
-	    U = U - dt*fvc::grad(p);
-	    U.correctBoundaryConditions();
+	    solve(pEqn ==  (1.0/(c4*dt))*fvc::div(U4) );
+	    U4 = U4 - c4*dt*fvc::grad(p);
+
+	    surfaceScalarField phi4 = fvc::interpolate(U4)& mesh.Sf();*/
+
+	    // Stage New Time Step
+	    p = p*0;
+	    p.correctBoundaryConditions();	
+	    volVectorField F3aux(U);
+	    F3aux =  dt * (b1 * (fvc::laplacian(nu,U1)-fvc::div(phi1,U1)) +
+			   b2 * (fvc::laplacian(nu,U2)-fvc::div(phi2,U2)) +
+			   b3 * (fvc::laplacian(nu,U3)-fvc::div(phi3,U3)) //+
+			   //b4 * (fvc::laplacian(nu,U4)-fvc::div(phi4,U4))
+			  );
+ 	
+	    volVectorField Uaux(U);
+	    Uaux = U.oldTime() + F3aux;
+	    pEqn = fvm::laplacian(p);
+	    pEqn.setReference(pRefCell, pRefValue);
+	    solve(pEqn ==  (1.0/dt)*fvc::div(Uaux) );
+	    U = Uaux - dt*fvc::grad(p);
+	    Ufield.append(U);
+	    phi = fvc::interpolate(U)& mesh.Sf();
+
+	}
+	else if (Method == "midPoint")
+	{
+	    // Stage 2
+	    volVectorField F1aux(U);
+	    F1aux =  dt * (a21 *(fvc::laplacian(nu,U1)));
+
+	    volVectorField U2(U);
+	    U2 = U.oldTime() + F1aux;
+	    fvScalarMatrix pEqn = fvm::laplacian(p);
+	    pEqn.setReference(pRefCell, pRefValue);
+	    solve(pEqn ==  (1.0/(c2*dt))*fvc::div(U2) ); 
+
+	    U2 = U2 - c2*dt*fvc::grad(p);
+
+	    surfaceScalarField phi2 = fvc::interpolate(U2)& mesh.Sf(); 
+ 
+
+	    // Stage New Time Step
+	    p = p*0;
+	    p.correctBoundaryConditions();	
+	    volVectorField F3aux(U);
+	    F3aux =  dt * (b1 * (fvc::laplacian(nu,U1)) +
+			   b2 * (fvc::laplacian(nu,U2))
+			  );
+ 	
+	    volVectorField Uaux(U);
+	    Uaux = U.oldTime() + F3aux;
+	    pEqn = fvm::laplacian(p);
+	    pEqn.setReference(pRefCell, pRefValue);
+	    solve(pEqn ==  (1.0/dt)*fvc::div(Uaux) );
+	    U = Uaux - dt*fvc::grad(p);
 
 	    phi = fvc::interpolate(U)& mesh.Sf();
+
+	    Ufield.append(U);
+
 	}
 	else if (Method == "FE")
 	{
-	    volVectorField F =  (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1) );
-	    U = U1 +  dt *F  ; 
-	    volScalarField pp = (1/dt)*(fvc::div(U1 + dt * (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1) ) ,"Gauss midPoint"));
-	    //U.correctBoundaryConditions();
-	    //UStarfield.append(U);
+	    volVectorField U1aux(U);
+	    volVectorField Faux(U);
+
+	    Faux = dt * (fvc::laplacian(nu,U1)-fvc::div(phi1,U1));
+	    U1aux = U.oldTime() + Faux;
+
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
-	    //solve(pEqn ==  (1/dt)*(fvc::div(U1,"Gauss midPoint")+fvc::div(dt*F,"Gauss midPoint")));
-	    //solve(pEqn ==  (1/dt)*(fvc::div(U,"Gauss midPoint")));
-	    solve(pEqn ==  pp);
-	    U = U1 -  dt*fvc::div(phi1,U1) +dt*nu *fvc::laplacian(U1) - dt*fvc::grad(p);
-	    U.correctBoundaryConditions();
+	    solve(pEqn ==  (1/dt)*fvc::div(U1aux)); 
 
-	    phi = fvc::interpolate(U)& mesh.Sf();
-
-	}
-	else if (Method == "FEwrong")
-	{
-	    fvScalarMatrix pEqn = fvm::laplacian(p);
-	    pEqn.setReference(pRefCell, pRefValue);
-	    solve(pEqn ==  (1/dt)*fvc::div(U1-dt*fvc::div(phi1,U1) + nu *dt*fvc::laplacian(U1)));
-	    U = U1 -  dt*fvc::div(phi1,U1) +dt*nu *fvc::laplacian(U1) - dt*fvc::grad(p);
-	    U.correctBoundaryConditions();
-
+	    U = U1aux - dt*fvc::grad(p);
+	    Ufield.append(U);
 	    phi = fvc::interpolate(U)& mesh.Sf();
 
 	}
@@ -245,14 +304,12 @@ if (ExplicitMethod == "Ales")
         
  	if (checkWrite(runTime))
         {
-	    //volVectorField gradP = fvc::grad(p);
             ITHACAstream::exportSolution(U, name(counter), folder);
 	    ITHACAstream::exportSolution(p, name(counter), folder);
-	   // ITHACAstream::exportSolution(gradP, name(counter), folder);
             std::ofstream of(folder + name(counter) + "/" +
                              runTime.timeName());
-            Ufield.append(U);
-	    UStarfield.append(U);
+            
+
             Pfield.append(p);
 	    Phifield.append(phi);
 
@@ -278,8 +335,8 @@ else if (ExplicitMethod == "A")
         Info << "Time = " << runTime.timeName() << nl << endl;
         
 	// Stage 1
-	volVectorField U1 = U; surfaceScalarField phi1 = phi; 
-	volScalarField p1("p1", p*0);
+	volVectorField U1 = U.oldTime(); surfaceScalarField phi1=phi.oldTime(); 
+	volScalarField p1(p);
 
 	if (Method == "RK3")
 	{
@@ -294,11 +351,11 @@ else if (ExplicitMethod == "A")
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
 	    solve(pEqn ==  (1/(c2*dt))*fvc::div(phi2)); 
-	    U2 = U2 - (c2*dt)*fvc::grad(p);
-	    U2.correctBoundaryConditions();
+	    //U2 = U2 - (c2*dt)*fvc::grad(p);
+	    //U2.correctBoundaryConditions();
 
-	    phi2 = phi2 - c2*dt*fvc::snGrad(p)*mag(mesh.magSf());
-	    volScalarField p2("p2", p);
+	    //phi2 = phi2 - c2*dt*fvc::snGrad(p)*mag(mesh.magSf());
+	    //volScalarField p2("p2", p);
  	
 	    //Stage 3
 	    p = p1;
@@ -311,12 +368,12 @@ else if (ExplicitMethod == "A")
 	    pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
 	    solve(pEqn ==  (1/(c3*dt))*fvc::div(phi3));
-	    U3 = U3 - (c3*dt)*fvc::grad(p);
-	    U3.correctBoundaryConditions();
+	   // U3 = U3 - (c3*dt)*fvc::grad(p);
+	   // U3.correctBoundaryConditions();
 	
-	    phi3 = phi3 - c3*dt*fvc::snGrad(p)*mag(mesh.magSf());
+	    //phi3 = phi3 - c3*dt*fvc::snGrad(p)*mag(mesh.magSf());
 
-	    volScalarField p3("p3", p);
+	    //volScalarField p3("p3", p);
  	
 	    // Stage New Time Step
 	    p = p1;
@@ -330,27 +387,49 @@ else if (ExplicitMethod == "A")
 	    pEqn.setReference(pRefCell, pRefValue);
 	    solve(pEqn ==  (1/dt)*fvc::div(phi));
 
-	    U = U - dt*fvc::grad(p);
-	    U.correctBoundaryConditions();
+	    //U = U - dt*fvc::grad(p);
+	    //U.correctBoundaryConditions();
 
-	    phi = phi -  dt*fvc::snGrad(p)*mag(mesh.magSf());
+	   // phi = phi -  dt*fvc::snGrad(p)*mag(mesh.magSf());
+
+
+
 	}
 	else if (Method == "FE")
 	{
-	    p = p1;
-	    volVectorField F =  (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1) );
-	    U = U1 +  dt *F  ; 
-	    U.correctBoundaryConditions();
-	    UStarfield.append(U);
-	    phi = fvc::interpolate(U)& mesh.Sf();
-	    Phifield.append(phi);
+
+	
+	    volVectorField U1aux(U);
+	    volVectorField Faux(U);
+
+	    Faux = dt * (-fvc::div(phi1,U1)+ fvc::laplacian(nu,U1));
+	    U1aux = U.oldTime() + Faux;
+	    p = p*0;
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
-	    solve(pEqn ==  (1/dt)*fvc::div(phi));
-	    p.correctBoundaryConditions();
-	    U = U - dt*fvc::grad(p);
+	    solve(pEqn ==  (1/dt)*fvc::div(U1aux)); 
+
+	    U = U1aux - dt*fvc::grad(p);
 	    U.correctBoundaryConditions();
-	    phi = phi - dt*fvc::snGrad(p)*mag(mesh.magSf());
+	    phi = fvc::flux(U1aux) - dt*fvc::snGrad(p)*mag(mesh.magSf());
+
+
+	    /*volVectorField U1aux(U);
+	    volVectorField Caux(U);
+	    volVectorField Daux(U);
+	    
+	    U1aux = U1;
+	    Daux = dt * nu *fvc::laplacian(U1);
+	    Caux = dt * (-fvc::div(phi1,U1));
+
+	    //phi = fvc::flux(U1aux+Daux+Caux);
+	    fvScalarMatrix pEqn = fvm::laplacian(p);
+	    pEqn.setReference(pRefCell, pRefValue);
+	    solve(pEqn ==  (1/dt)*fvc::div(U1aux) +(1/dt)*fvc::div(Daux) +(1/dt)*fvc::div(Caux));
+	    U = U1aux+Daux+Caux - dt*fvc::grad(p);
+	    //
+	    U.correctBoundaryConditions();
+	    phi = fvc::flux(U1aux)+fvc::flux(Daux)+fvc::flux(Caux) - dt*fvc::snGrad(p)*mag(mesh.magSf());*/
 
 	}
 
@@ -368,7 +447,6 @@ else if (ExplicitMethod == "A")
             std::ofstream of(folder + name(counter) + "/" +
                              runTime.timeName());
             Ufield.append(U);
-	    UStarfield.append(U);
             Pfield.append(p);
 	    Phifield.append(phi);
 	    //Phidiv = fvc::div(phi);
@@ -549,6 +627,46 @@ bool unsteadyNSExplicit::checkWrite(Time& timeObject)
 
    
 
+/* Stage 2
+	    p = p1;
+	    volVectorField F1 = (-fvc::div(phi1,U1) + nu *fvc::laplacian(U1));
+	    volVectorField U2 = U1 + dt * a21 *F1 ; volScalarField p1("p1", p*0);
+	    U2.correctBoundaryConditions();
 
+	    fvScalarMatrix pEqn = fvm::laplacian(p);
+	    pEqn.setReference(pRefCell, pRefValue);
+	    solve(pEqn ==  (1/(c2*dt))*fvc::div(U2)); 
+	    U2 = U2 - (c2*dt)*fvc::grad(p);
+	    U2.correctBoundaryConditions();
+	    surfaceScalarField phi2 = fvc::interpolate(U2)& mesh.Sf(); 
+	    volScalarField p2("p2", p);
+ 	
+	    //Stage 3
+	    p = p1;
+	    volVectorField F2  = (-fvc::div(phi2,U2) + nu *fvc::laplacian(U2));
+	    volVectorField U3 = U1 + dt * a31 * F1 + dt * a32 * F2  ;
+	    U3.correctBoundaryConditions();
+
+	    pEqn = fvm::laplacian(p);
+	    pEqn.setReference(pRefCell, pRefValue);
+	    solve(pEqn ==  (1/(c3*dt))*fvc::div(U3));
+	    U3 = U3 - (c3*dt)*fvc::grad(p);
+	    U3.correctBoundaryConditions();
+	    surfaceScalarField phi3 = fvc::interpolate(U3)& mesh.Sf(); 
+	    volScalarField p3("p3", p);
+ 	
+	    // Stage New Time Step
+	    p = p1;
+	    volVectorField F3 =  (-fvc::div(phi3,U3) + nu *fvc::laplacian(U3));
+	    U = U1 +  dt * b1 * F1 +  dt * b2 * F2 + dt * b3 * F3 ; 
+	    U.correctBoundaryConditions();
+	    UStarfield.append(U);
+	    pEqn = fvm::laplacian(p);
+	    pEqn.setReference(pRefCell, pRefValue);
+	    solve(pEqn ==  (1/dt)*fvc::div(U));
+	    U = U - dt*fvc::grad(p);
+	    U.correctBoundaryConditions();
+
+	    phi = fvc::interpolate(U)& mesh.Sf();*/
 
 

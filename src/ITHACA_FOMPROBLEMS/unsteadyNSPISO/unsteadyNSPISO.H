@@ -103,6 +103,7 @@ class unsteadyNSPISO: public steadyNS
 
         /// Time-dependent Boundary Method
         word timedepbcMethod;
+	word ExplicitMethod;
 
         // Matrix containing the time-dependent boundary conditions for each time step
         Eigen::MatrixXd timeBCoff;
@@ -117,16 +118,16 @@ class unsteadyNSPISO: public steadyNS
         autoPtr<pisoControl> _piso;
 
         /// Reference pressure cell
-        label pRefCell;
+       // label pRefCell;
 
         /// Reference pressure value
-        scalar pRefValue;
+        // scalar pRefValue;
 
         /// Mesh
-        mutable autoPtr<fvMesh> _mesh;
+        ///mutable autoPtr<fvMesh> _mesh;
 
         /// Time
-        autoPtr<Time> _runTime;
+      //  autoPtr<Time> _runTime;
 
  
     	Eigen::MatrixXd A;
@@ -145,6 +146,7 @@ class unsteadyNSPISO: public steadyNS
         /// @return     1 if we must write 0 elsewhere.
         ///
         bool checkWrite(Time& timeObject);
+
 
 
         /// Specific variable for the unstationary case

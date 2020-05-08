@@ -102,6 +102,7 @@ class steadyNS: public reductionProblem
 
 	/// Projection Peqn onto Pressure modes
 	List<Eigen::MatrixXd> RedLinSysP;
+	List<Eigen::MatrixXd> RedLinSysPDiff;
 
         /// List of pointers used to form the supremizer snapshots matrix
         PtrList<volVectorField> supfield;
@@ -147,11 +148,17 @@ class steadyNS: public reductionProblem
         */
         ///@{
 
+
+	///dimensionedScalar nu;
+        autoPtr<dimensionedScalar> _nu;
+
         /// Diffusion term
         Eigen::MatrixXd B_matrix;
+	Eigen::MatrixXd B2_matrix;
 
         /// Mass Matrix
         Eigen::MatrixXd M_matrix;
+	Eigen::MatrixXd Mf_matrix;
 
         /// Gradient of pressure matrix
         Eigen::MatrixXd K_matrix;
@@ -163,14 +170,18 @@ class steadyNS: public reductionProblem
 	Eigen::MatrixXd bw;
 	Eigen::MatrixXd BC_matrix;
 	Eigen::MatrixXd BC_matrix_PPE;
+	Eigen::MatrixXd BC_matrix_PPE2;
 
         /// Non linear term
         List <Eigen::MatrixXd> C_matrix;
+	List <Eigen::MatrixXd> Ci_matrix;
         Eigen::Tensor<double, 3 > C_tensor;
 	Eigen::Tensor<double, 3 > Cf_tensor;
+	Eigen::Tensor<double, 3 > Ci_tensor;
 
         /// Div of velocity
         Eigen::MatrixXd P_matrix;
+	Eigen::MatrixXd Pp_matrix;
 	Eigen::MatrixXd Pf_matrix;
 	Eigen::MatrixXd PF_matrix;
 
@@ -180,6 +191,7 @@ class steadyNS: public reductionProblem
 
 	/// Interpolation term
 	Eigen::MatrixXd I_matrix;
+	Eigen::MatrixXd ID_matrix;
 
         /// Divergence of momentum PPE
         List <Eigen::MatrixXd> G_matrix;
@@ -338,6 +350,8 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the diffusion term.
         ///
         Eigen::MatrixXd diffusive_term(label NUmodes, label NPmodes, label NSUPmodes);
+
+	Eigen::MatrixXd diffusive_diff_term(label NUmodes, label NPmodes, label NSUPmodes);
 	
 	//--------------------------------------------------------------------------
         //  Projection Methods Momentum Equation
@@ -350,7 +364,8 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the interpolation term.
         ///
 	Eigen::MatrixXd interpolation_term(label NUmodes, label NPmodes, label NSUPmodes);
-
+	Eigen::MatrixXd mass_matrix_flux(label NUmodes, label NPmodes, label NSUPmodes);
+Eigen::MatrixXd interpolation_term_diffusion(label NUmodes, label NPmodes, label NSUPmodes);
         //--------------------------------------------------------------------------
         /// Gradient of pressure
         ///
@@ -384,6 +399,7 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the Laplacian of pressure Linear System.
         ///
 	List < Eigen::MatrixXd > pressure_gradient_term_linsys(label NPmodes);
+	List < Eigen::MatrixXd > pressure_gradient_term_linsys_diff(label NPmodes);
 
         //--------------------------------------------------------------------------
         /// Convective Term
@@ -396,6 +412,11 @@ class steadyNS: public reductionProblem
         ///
         List < Eigen::MatrixXd >  convective_term(label NUmodes, label NPmodes,
                 label NSUPmodes);
+
+	List < Eigen::MatrixXd >  convective_flux_int_mat(label NUmodes, label NPmodes,
+                label NSUPmodes);
+
+
 
         //--------------------------------------------------------------------------
         /// Mass Term
@@ -418,6 +439,7 @@ class steadyNS: public reductionProblem
         ///
 	Eigen::MatrixXd  boundary_term(label NUmodes, label NSUPmodes);
 	Eigen::MatrixXd  boundary_term_PPE(label NPmodes);
+	Eigen::MatrixXd  boundary_term_PPE2(label NPmodes);
 
         // Projection Methods Continuity Equation
 
@@ -431,6 +453,8 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the divergence term.
         ///
         Eigen::MatrixXd divergence_term(label NUmodes, label NPmodes, label NSUPmodes);
+
+	Eigen::MatrixXd divergence_term_pressure(label NUmodes, label NPmodes, label NSUPmodes);
 
 	//--------------------------------------------------------------------------
         /// Divergence flux Term 
@@ -614,6 +638,9 @@ class steadyNS: public reductionProblem
         /// @return     tensor_Cf
         ///	
 	Eigen::Tensor<double, 3 > convective_flux_tens(label NUmodes,
+                label NPmodes, label NSUPmodes);
+
+	Eigen::Tensor<double, 3 > convective_flux_int_tens(label NUmodes,
                 label NPmodes, label NSUPmodes);
 
         /// set U and P back to the values into the 0 folder

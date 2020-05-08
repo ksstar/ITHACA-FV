@@ -127,13 +127,25 @@ int newton_unsteadyNSPISO_sup::operator()(const Eigen::VectorXd& x,
         }
     }
 
+
+    if (problem->bcMethod == "none")
+    {
+	for (label i = 0; i < Nphi_u; i++)
+    	{
+        	cc = a_tmp.transpose() * 
+			Eigen::SliceFromTensor(problem->C_tensor, 0,i) * a_tmp;
+         	fvec(i) = - M5(i) + M1(i) - cc(0, 0) - problem->BC_matrix(i,0)-M2(i);
+	}
+    }
+    else
+{
+
     for (label i = 0; i < Nphi_u; i++)
     {
         cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
                 i) * a_old;
-        //fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i);
-//(M2(l)  - cc(0,0)-problem->BC_matrix(l,0))*dt + a_o(l);
-         fvec(i) = - M5(i) + M1(i) - cc(0, 0) + problem->BC_matrix(i,0)-M2(i);
+        fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i);
+    
         if (problem->bcMethod == "penalty")
         {
             for (label l = 0; l < N_BC; l++)
@@ -142,13 +154,12 @@ int newton_unsteadyNSPISO_sup::operator()(const Eigen::VectorXd& x,
             }
         }
     }
-
+}
     for (label j = 0; j < Nphi_p; j++)
     {
         label k = j + Nphi_u;
         fvec(k) = M3(j);
-	//fvec(k) = b_tmp(j);
-	fvec(k) = 0;
+         
     }
 
     if (problem->bcMethod == "lift")
@@ -158,8 +169,6 @@ int newton_unsteadyNSPISO_sup::operator()(const Eigen::VectorXd& x,
             fvec(j) = x(j) - BC(j);
         }
     }
-
-    //std::cout << "fvec  =  "  <<  fvec << std::endl;
 
     return 0;
 }
@@ -225,21 +234,33 @@ int newton_unsteadyNSPISO_PPE::operator()(const Eigen::VectorXd& x,
         }
     }
 
-    for (label i = 0; i < Nphi_u; i++)
+
+    if (problem->bcMethod == "none")
     {
-        cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+	for (label i = 0; i < Nphi_u; i++)
+    	{
+            cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
                 i) * a_tmp;
-        fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i) ;
-
-        if (problem->bcMethod == "penalty")
-        {
-            for (label l = 0; l < N_BC; l++)
-            {
-                fvec(i) += penaltyU(i, l);
-            }
-        }
+            fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i) ;
+    	}
     }
+    else
+    {
+    	for (label i = 0; i < Nphi_u; i++)
+    	{
+            cc = a_tmp.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+                i) * a_tmp;
+            fvec(i) = - M5(i) + M1(i) - cc(0, 0) - M2(i) - problem->BC_matrix(i,0);
 
+            if (problem->bcMethod == "penalty")
+            {
+            	for (label l = 0; l < N_BC; l++)
+            	{
+                    fvec(i) += penaltyU(i, l);
+            	}
+            }
+    	}
+    }
     for (label j = 0; j < Nphi_p; j++)
     {
         label k = j + Nphi_u;
@@ -297,7 +318,7 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
 
     if (problem->bcMethod == "lift")
     {
-        vel_now = setOnlineVelocity(vel);
+        vel_now = vel;
     }
     else if (problem->bcMethod == "penalty")
     {
@@ -392,10 +413,6 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
             }
         }
 
-	//y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
-        //             Pmodes)*0;
-//ITHACAutilities::get_coeffs(problem->Pfield[counter],Pmodes);
-
         Eigen::VectorXd res(y);
         res.setZero();
         hnls.solve(y);
@@ -463,29 +480,6 @@ void reducedUnsteadyNSPISO::solveOnline_sup(Eigen::MatrixXd vel,
 
 	ITHACAstream::exportMatrix(online_solution, "red_coeff", "eigen",
                                "./ITHACAoutput/red_coeff");
-
-/*	int exportEveryIndex = round(exportEvery / dt);
-	int outputIndex = round(finalTime / exportEvery)+1;
-	BCRom.resize(counter , 1);
-	
-
-	for (label i = 0; i < counter ; i++)
-        { 
-            for (label j = 0; j < Nphi_u; j++)
-            {
-                BCRom(i,0) +=  Umodes[j].boundaryFieldRef()[problem->inletIndex(0,0)][0].component(0) * 
-				online_solution[i](j+1,0);
-            }
-	}
-
-
-    // Export the solution
-   // ITHACAstream::exportMatrix(online_solution, "red_coeff", "python",
-   //                            "./ITHACAoutput/red_coeff");
-    
-
-    ITHACAstream::exportMatrix(BCRom, "BCRom", "eigen",
-                               "./ITHACAoutput/PostProcess");*/
 }
 
 // * * * * * * * * * * * * * * * Solve Functions PPE * * * * * * * * * * * * * //
@@ -507,7 +501,7 @@ void reducedUnsteadyNSPISO::solveOnline_PPE(Eigen::MatrixXd vel,
 
     if (problem->bcMethod == "lift")
     {
-        vel_now = setOnlineVelocity(vel);
+        vel_now = vel;
     }
     else if (problem->bcMethod == "penalty")
     {

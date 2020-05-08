@@ -235,6 +235,10 @@ class ITHACAutilities
         static double error_fields(GeometricField<T, fvPatchField, volMesh>& field1,
                                    GeometricField<T, fvPatchField, volMesh>& field2, volScalarField& Volumes);
 
+	template<typename T>
+        static double error_fields(GeometricField<T, fvsPatchField, surfaceMesh>& field1,
+                                   GeometricField<T, fvsPatchField, surfaceMesh>& field2, volScalarField& Volumes);
+
         //--------------------------------------------------------------------------
         /// Computes the absolute error between two Fields in L2 norm
         ///
@@ -279,6 +283,11 @@ class ITHACAutilities
         static Eigen::MatrixXd error_listfields(
             PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields1,
             PtrList<GeometricField<TypeField, fvPatchField, volMesh>>& fields2,
+            PtrList<volScalarField>& Volumes);
+
+        static Eigen::MatrixXd error_listfields(
+            PtrList<surfaceScalarField>& fields1,
+            PtrList<surfaceScalarField>& fields2,
             PtrList<volScalarField>& Volumes);
 
         //--------------------------------------------------------------------------
@@ -361,6 +370,8 @@ class ITHACAutilities
         ///
         static Eigen::MatrixXd get_mass_matrix(PtrList<volScalarField> modes,
                                                int Nmodes = 0);
+	static Eigen::MatrixXd get_mass_matrix(PtrList<surfaceScalarField> modes,
+                                               int Nmodes = 0);
 
         //-----------------------------------------------------------------------------
         /// Gets the mass matrix using the eigen routine
@@ -422,6 +433,19 @@ class ITHACAutilities
         ///
         static Eigen::VectorXd get_coeffs(volScalarField snapshot,
                                           PtrList<volScalarField>& modes, int Nmodes = 0);
+
+	//--------------------------------------------------------------------------
+        /// Project a snapshot vector field on a non-orthogonal basis function
+        /// and get the coefficients of the projection
+        ///
+        /// @param[in]  snapshot  The snapshots.
+        /// @param[in]  modes     The modes.
+        /// @param[in]  Nmodes    Number of modes.
+        ///
+        /// @return     The coefficients of the projection.
+        ///
+        static Eigen::VectorXd get_coeffs(surfaceScalarField snapshot,
+                                          PtrList<surfaceScalarField>& modes, int Nmodes = 0);
 
         //--------------------------------------------------------------------------
         /// Project a snapshot scalar field on a non-orthogonal basis function and get the coefficients of the projection
@@ -599,6 +623,8 @@ class ITHACAutilities
         /// @return     L2 norm of the volScalarField.
         ///
         static double L2norm(volScalarField field);
+
+	static double L2norm(surfaceScalarField field);
 
         //--------------------------------------------------------------------------
         /// Evaluate the L2 norm of a volVectorField
@@ -979,6 +1005,11 @@ template<>
 double ITHACAutilities::error_fields(
     GeometricField<scalar, fvPatchField, volMesh>& field1,
     GeometricField<scalar, fvPatchField, volMesh>& field2, volScalarField& Volumes);
+
+template<>
+double ITHACAutilities::error_fields(
+    GeometricField<scalar, fvsPatchField, surfaceMesh>& field1,
+    GeometricField<scalar, fvsPatchField, surfaceMesh>& field2, volScalarField& Volumes);
 
 template<>
 double ITHACAutilities::error_fields(
