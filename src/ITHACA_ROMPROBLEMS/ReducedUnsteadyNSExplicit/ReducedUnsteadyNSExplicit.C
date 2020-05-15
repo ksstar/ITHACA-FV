@@ -52,6 +52,11 @@ reducedUnsteadyNSExplicit::reducedUnsteadyNSExplicit(unsteadyNSExplicit& FOMprob
     Nphi_p = problem->K_matrix.cols();
     Nphi_phi = Nphi_u;
 
+    for (label k = 0; k < problem->liftfield.size(); k++)
+    {
+        Umodes.append(problem->liftfield[k]);
+    }
+
     for (label k = 0; k < problem->NUmodes; k++)
     {
         Umodes.append(problem->Umodes[k]);
@@ -103,6 +108,16 @@ if (problem->ExplicitMethod == "Ales")
     Eigen::VectorXd a_o = Eigen::VectorXd::Zero(Nphi_u);
     Eigen::MatrixXd b_n = Eigen::VectorXd::Zero(Nphi_p);
     Eigen::MatrixXd xx = Eigen::VectorXd::Zero(Nphi_p);
+
+
+    if (problem->bcMethod == "lift")
+    {
+        for (label j = 0; j < N_BC; j++)
+        {
+            a_n(j) = vel_now(j, 0);
+	    a_o(j) = vel_now(j, 0);
+        }
+    }
    
     // Counting variable
     int counter = 0;
@@ -118,10 +133,8 @@ if (problem->ExplicitMethod == "Ales")
     }
     time = tstart;
 
-    //a_o = ITHACAutilities::get_coeffs(problem->Ufield[0],
-      //               Umodes);
-    //y.tail(Nphi_p) = ITHACAutilities::get_coeffs(problem->Pfield[startSnap],
-                    // Pmodes);
+    a_o = ITHACAutilities::get_coeffs(problem->Ufield[0],
+                     Umodes);
 
     // Set size of online solution
     online_solution.resize(counter+1);
@@ -160,19 +173,17 @@ if (problem->ExplicitMethod == "Ales")
     	    {
         	cp = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
                 l) * a_o;
-        	RHS(l) = (1/dt) * M4(l,0)  - cp(0,0)+ M5(l,0);
-
+        	RHS(l) = (1/dt) * M4(l,0) - cp(0,0)+ M5(l,0);
     	    }
 
 	    List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
-	    RedLinSysP[1] = RedLinSysP[1] + nu * problem->RedLinSysPDiff[1];
+	    RedLinSysP[1] =(1/dt)*RedLinSysP[1]+ problem->RedLinSysPConv[1]+ nu * problem->RedLinSysPDiff[1];
 
     	    b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
-
 	    // Convective term
     	    Eigen::MatrixXd cc(1, 1);
     	    // Mom Term
-    	    Eigen::VectorXd M1 = problem->M_matrix * a_o;
+    	    //Eigen::VectorXd M1 = problem->M_matrix * a_o;
     	    // Diff Term
     	    Eigen::VectorXd M2 = problem->B_matrix * a_o * nu ;
 	    // Pressure Term
@@ -312,6 +323,15 @@ if (problem->ExplicitMethod == "Ales")
 
 	}*/
 
+	 if (problem->bcMethod == "lift")
+    	{
+            for (label j = 0; j < N_BC; j++)
+            {
+            	a_n(j) = vel_now(j, 0);
+	   	//a_o(j) = vel_now(j, 0);
+            }
+    	}
+
     	tmp_sol(0) = time;
     	tmp_sol.col(0).segment(1, Nphi_u) = a_n;
     	tmp_sol.col(0).tail(b_n.rows()) = b_n;
@@ -331,8 +351,23 @@ else if (problem->ExplicitMethod == "A")
     Eigen::VectorXd c_o = Eigen::VectorXd::Zero(Nphi_phi);
     Eigen::VectorXd c_n = Eigen::VectorXd::Zero(Nphi_phi);
 
+
+    a_o = ITHACAutilities::get_coeffs(problem->Ufield[0],
+                   Umodes);
+    b = ITHACAutilities::get_coeffs(problem->Pfield[0],
+                   Pmodes);
     c_o = ITHACAutilities::get_coeffs(problem->Phifield[0],
                    Phimodes);
+
+
+     if (problem->bcMethod == "lift")
+    	{
+            for (label j = 0; j < N_BC; j++)
+            {
+            	a_n(j) = vel_now(j, 0);
+	   	a_o(j) = vel_now(j, 0);
+            }
+    	}
 
     // Counting variable
     int counter = 0;
@@ -379,12 +414,11 @@ else if (problem->ExplicitMethod == "A")
     	{
         	cp = c_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
                 l) * a_o;
-        	RHS(l) = (1/dt) * M4(l,0)  - cp(0,0)+ M5(l,0);
+        	RHS(l) = (1/dt) * M4(l,0) - cp(0,0)+ M5(l,0);
 
     	}
-
 	List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
-	RedLinSysP[1] = RedLinSysP[1] + nu * problem->RedLinSysPDiff[1];
+	RedLinSysP[1] =(1/dt)*RedLinSysP[1]+ problem->RedLinSysPConv[1]+ nu * problem->RedLinSysPDiff[1];
 	b = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
     	//b = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, RHS, xx, presidual);
 	// Convective term
@@ -400,7 +434,50 @@ else if (problem->ExplicitMethod == "A")
               		l) * a_o;
         	 a_n(l) = a_o(l) + (M2(l)  - cc(0,0)-problem->BC_matrix(l,0)- M3(l))*dt  ;
     	}
-	surfaceScalarField phi_2(Phimodes[0]*0);
+
+
+	/*surfaceScalarField Phi_rec("Phi_rec", problem->_phi);
+
+        for (label j = 0; j < Nphi_p; j++)
+        {
+             Phi_rec += Phimodes[j]* c_o(j) ;
+        }
+
+	dimensionedScalar dt_fake
+        (
+            "dt_fake",
+            dimensionSet(0, 0, 1, 0, 0, 0, 0),
+            scalar(1.0)
+        );
+
+	dimensionedScalar nu_fake
+        (
+            "nu_fake",
+            dimensionSet(0, 2, -1, 0, 0, 0, 0),
+            scalar(1.0)
+        );*/
+	Eigen::VectorXd c_star = Eigen::VectorXd::Zero(Nphi_phi);
+	Eigen::VectorXd c_star3 = Eigen::VectorXd::Zero(Nphi_phi);
+	Eigen::VectorXd c_c = Eigen::VectorXd::Zero(Nphi_phi);
+	surfaceScalarField phi_2("Phi_2", problem->_phi);
+	surfaceScalarField phi_3("Phi_3", problem->_phi);
+	volVectorField U_rec("U_rec", problem->_U);
+
+     /*   for (label j = 0; j < Nphi_u; j++)
+        {
+             U_rec += Umodes[j] * a_o(j);
+        }
+
+	surfaceScalarField phi_c("Phi_c", problem->_phi);
+	phi_c =	dt_fake*fvc::flux(fvc::div(Phi_rec,U_rec))	;		
+		c_c = ITHACAutilities::get_coeffs(phi_c,
+                   Phimodes);
+
+	c_star = ITHACAutilities::get_coeffs(phi_2,
+                   Phimodes);*/
+
+		
+	//std::cout << " c_c=   " << c_c<< std::endl;
 	Eigen::MatrixXd M6 = problem->I_matrix * a_o;
 	Eigen::MatrixXd M7 = problem->ID_matrix * a_o*nu;
 	Eigen::MatrixXd M8 = problem->Kf_matrix*b.col(0);
@@ -408,20 +485,28 @@ else if (problem->ExplicitMethod == "A")
 	Eigen::MatrixXd M12 = Eigen::VectorXd::Zero(Nphi_phi);
 	Eigen::MatrixXd ci(Nphi_phi,1);
 	//Eigen::MatrixXd M9 = problem->Mf_matrix.colPivHouseholderQr().solve(M6 + dt*(M7-M8));
-	Eigen::MatrixXd M9 = problem->Mf_matrix.fullPivLu().solve(M6 + dt*(M7-M8));
-	
+	//Eigen::MatrixXd M9 = problem->Mf_matrix.fullPivLu().solve(M6 + dt*(M7-M8));
+	Eigen::MatrixXd M9 = problem->Mf_matrix.colPivHouseholderQr().solve(M6+ dt*(-M8+M7+nu*problem->BC_matrix_PPE));
 	for (label k = 0; k < Nphi_phi; k++)
     	{	
-		M12 = dt*problem->Ci_matrix[k] * a_o*c_o(k)+M12;
-		//Eigen::MatrixXd M13 = problem->Mf_matrix.colPivHouseholderQr().solve(M12);
-		Eigen::MatrixXd M13 = problem->Mf_matrix.fullPivLu().solve(M12);
+		M12 = dt*problem->Ci_matrix[k] * a_o*c_o(k) +M12;//
 		
-		c_n(k) =  M9(k) -M13(k);
 	}
+
+	Eigen::MatrixXd M13 = problem->Mf_matrix.colPivHouseholderQr().solve(M12);
+		c_n =  M9 -M13;//dt*c_c(k)+dt*nu*c_star(k)+dt*nu*c_star3(k)
 	tmp_sol(0) = time;
     	tmp_sol.col(0).segment(1, Nphi_u) = a_n;
     	tmp_sol.col(0).tail(b.rows()) = b;
     	online_solution[i] = tmp_sol;
+
+	 if (problem->bcMethod == "lift")
+    	{
+            for (label j = 0; j < N_BC; j++)
+            {
+            	a_n(j) = vel_now(j, 0);
+            }
+    	}
 
 	a_o = a_n;
 	c_o = c_n;

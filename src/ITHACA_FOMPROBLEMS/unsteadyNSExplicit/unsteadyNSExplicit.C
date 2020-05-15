@@ -111,7 +111,17 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     fvMesh& mesh = _mesh();
     volScalarField p = _p();
     volVectorField U = _U();
-    surfaceScalarField phi = _phi();
+    Vector<double> inl(0, 0, 0);
+    volVectorField U0 = _U();
+    assignIF(U0, inl);
+    
+    surfaceScalarField phi("phi",_phi()) ;
+    surfaceScalarField phi0("phi0",_phi()) ;
+    //if (ExplicitMethod == "Ales")
+    //{
+        phi0 = fvc::flux(U0);//_phi();
+	phi = fvc::flux(U);
+    //}
 #include "initContinuityErrs.H"
     dimensionedScalar nu = _nu();
     dimensionedScalar dt = timeStep*_dt();
@@ -124,19 +134,24 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     // Determine bc vector
     fvVectorMatrix UEqn
     (
-	fvm::laplacian(nu, U)
+	fvm::laplacian(nu, U0)
+	-fvm::div(phi0,U0)
     );     
+
     Foam2Eigen::fvMatrix2Eigen(UEqn, A, b);
     bw.resize(b.size(),1);
     bw.col(0) = b;
     ITHACAstream::exportMatrix(bw, "bw0", "eigen",
                                "./ITHACAoutput/BCvector/");
 
-   /* volVectorField HbyA("HbyA", U);
-    HbyA = UEqn.H()/UEqn.A();
-    phi = fvc::flux(HbyA);*/
+   /* volVectorField Ubcinit = (fvc::laplacian(nu, U0)-fvc::div(phi0,U0));
 
-    P0field.append(p);
+	Eigen::MatrixXd ModeVector = Foam2Eigen::field2Eigen(Ubcinit);
+	Eigen::MatrixXd ModeVector2 = Foam2Eigen::field2Eigen(Ubcinit.mesh().V());
+	Eigen::MatrixXd ModeVector3 = ModeVector * ModeVector2(0,0);
+	ITHACAstream::exportMatrix(ModeVector3, "ModeVector", "eigen",
+                               "./ITHACAoutput/BCvector/");
+//exit(0);*/
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
     ITHACAstream::exportSolution(phi, name(counter), folder);
@@ -144,7 +159,6 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     std::ofstream of(folder + name(counter) + "/" +
                      runTime.timeName());
     Ufield.append(U);
-    UStarfield.append(U);
     Pfield.append(p);
     Phifield.append(phi);
 
@@ -283,7 +297,7 @@ if (ExplicitMethod == "Ales")
 	    volVectorField U1aux(U);
 	    volVectorField Faux(U);
 
-	    Faux = dt * (fvc::laplacian(nu,U1)-fvc::div(phi1,U1));
+	    Faux = dt * (fvc::laplacian(nu,U1)-fvc::div(phi,U1));
 	    U1aux = U.oldTime() + Faux;
 
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
@@ -291,7 +305,7 @@ if (ExplicitMethod == "Ales")
 	    solve(pEqn ==  (1/dt)*fvc::div(U1aux)); 
 
 	    U = U1aux - dt*fvc::grad(p);
-	    Ufield.append(U);
+
 	    phi = fvc::interpolate(U)& mesh.Sf();
 
 	}
@@ -309,9 +323,11 @@ if (ExplicitMethod == "Ales")
             std::ofstream of(folder + name(counter) + "/" +
                              runTime.timeName());
             
-
+	    Ufield.append(U);
             Pfield.append(p);
 	    Phifield.append(phi);
+	
+	    ITHACAstream::exportSolution(phi, name(counter), folder);
 
             counter++;
             nextWrite += writeEvery;

@@ -98,6 +98,23 @@ _U = autoPtr<volVectorField>
      );
 volVectorField U = _U();
 
+_Ub = autoPtr<volVectorField>
+     (
+         new volVectorField
+         (
+             IOobject
+             (
+                 "Ub",
+                 runTime.timeName(),
+                 mesh,
+                 IOobject::MUST_READ,
+                 IOobject::AUTO_WRITE
+             ),
+             mesh
+         )
+     );
+volVectorField Ub = _Ub();
+
 volVectorField U0(U);
 
 _U0 = autoPtr<volVectorField>

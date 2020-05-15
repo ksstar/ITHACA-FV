@@ -103,6 +103,7 @@ class steadyNS: public reductionProblem
 	/// Projection Peqn onto Pressure modes
 	List<Eigen::MatrixXd> RedLinSysP;
 	List<Eigen::MatrixXd> RedLinSysPDiff;
+	List<Eigen::MatrixXd> RedLinSysPConv;
 
         /// List of pointers used to form the supremizer snapshots matrix
         PtrList<volVectorField> supfield;
@@ -155,6 +156,7 @@ class steadyNS: public reductionProblem
         /// Diffusion term
         Eigen::MatrixXd B_matrix;
 	Eigen::MatrixXd B2_matrix;
+	Eigen::MatrixXd Bbc_matrix;
 
         /// Mass Matrix
         Eigen::MatrixXd M_matrix;
@@ -188,6 +190,7 @@ class steadyNS: public reductionProblem
         /// Laplacian term PPE
         Eigen::MatrixXd D_matrix;
 	Eigen::MatrixXd DF_matrix;
+	Eigen::MatrixXd DFbc_matrix;
 
 	/// Interpolation term
 	Eigen::MatrixXd I_matrix;
@@ -249,6 +252,10 @@ class steadyNS: public reductionProblem
 
         /// Initial Velocity field (for restart purposes)
         autoPtr<volVectorField> _U0;
+
+	
+ 	/// Velocity field
+        autoPtr<volVectorField> _Ub;
 
 
         /// Mesh
@@ -350,6 +357,7 @@ class steadyNS: public reductionProblem
         /// @return     reduced matrix in Eigen::MatrixXd format for the diffusion term.
         ///
         Eigen::MatrixXd diffusive_term(label NUmodes, label NPmodes, label NSUPmodes);
+	Eigen::MatrixXd diffusive_term_BC(label NUmodes, label NPmodes, label NSUPmodes);
 
 	Eigen::MatrixXd diffusive_diff_term(label NUmodes, label NPmodes, label NSUPmodes);
 	
@@ -400,6 +408,7 @@ Eigen::MatrixXd interpolation_term_diffusion(label NUmodes, label NPmodes, label
         ///
 	List < Eigen::MatrixXd > pressure_gradient_term_linsys(label NPmodes);
 	List < Eigen::MatrixXd > pressure_gradient_term_linsys_diff(label NPmodes);
+	List < Eigen::MatrixXd > pressure_gradient_term_linsys_conv(label NPmodes);
 
         //--------------------------------------------------------------------------
         /// Convective Term
@@ -519,6 +528,7 @@ Eigen::MatrixXd interpolation_term_diffusion(label NUmodes, label NPmodes, label
         Eigen::MatrixXd laplacian_pressure(label NPmodes);
 
 	Eigen::MatrixXd laplacian_pressure_FOM(label NUmodes, label NPmodes);
+	Eigen::MatrixXd laplacian_pressure_bc(label NUmodes, label NPmodes, label NSUPmodes);
 
         //--------------------------------------------------------------------------
         /// @brief      Term N° 1 given by the additional boundary condition using a PPE approach
