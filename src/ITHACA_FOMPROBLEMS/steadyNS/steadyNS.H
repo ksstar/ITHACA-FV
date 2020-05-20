@@ -129,6 +129,9 @@ class steadyNS: public reductionProblem
         /// List of pointers containing the total number of lift, supremizer and velocity modes
         Modes<vector> L_U_SUPmodes;
 
+
+	Modes<scalar> Pmodes0;
+
         /// Tolerance for the residual of the stationary problems, there is the same tolerance for velocity and pressure
         scalar tolerance;
 

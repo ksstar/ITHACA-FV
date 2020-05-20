@@ -1,0 +1,4 @@
+19ExplicitOpen.C
+
+EXE = $(FOAM_USER_APPBIN)/19ExplicitOpen
+

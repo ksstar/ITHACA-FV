@@ -107,18 +107,10 @@ if (problem->ExplicitMethod == "Ales")
     Eigen::VectorXd a_n = Eigen::VectorXd::Zero(Nphi_u);
     Eigen::VectorXd a_o = Eigen::VectorXd::Zero(Nphi_u);
     Eigen::MatrixXd b_n = Eigen::VectorXd::Zero(Nphi_p);
+    Eigen::MatrixXd b_p = Eigen::VectorXd::Zero(Nphi_p);
+    Eigen::MatrixXd b_q = Eigen::VectorXd::Zero(Nphi_p);
     Eigen::MatrixXd xx = Eigen::VectorXd::Zero(Nphi_p);
 
-
-    if (problem->bcMethod == "lift")
-    {
-        for (label j = 0; j < N_BC; j++)
-        {
-            a_n(j) = vel_now(j, 0);
-	    a_o(j) = vel_now(j, 0);
-        }
-    }
-   
     // Counting variable
     int counter = 0;
 
@@ -135,6 +127,18 @@ if (problem->ExplicitMethod == "Ales")
 
     a_o = ITHACAutilities::get_coeffs(problem->Ufield[0],
                      Umodes);
+    b_n = ITHACAutilities::get_coeffs(problem->Pfield[0],
+                     Pmodes);
+
+
+    if (problem->bcMethod == "lift")
+    {
+        for (label j = 0; j < N_BC; j++)
+        {
+            a_n(j) = vel_now(j, 0);
+	    a_o(j) = vel_now(j, 0);
+        }
+    }
 
     // Set size of online solution
     online_solution.resize(counter+1);
@@ -155,8 +159,6 @@ if (problem->ExplicitMethod == "Ales")
     	std::cout << " ################## time =   " << time <<
                   " ##################" << std::endl;
 
-	//if (problem->Method == "FE")
-	//{
 	    Eigen::VectorXd presidualOld = Eigen::VectorXd::Zero(Nphi_p);
             Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
             scalar P_norm_res(1);
@@ -173,13 +175,93 @@ if (problem->ExplicitMethod == "Ales")
     	    {
         	cp = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
                 l) * a_o;
-        	RHS(l) = (1/dt) * M4(l,0) - cp(0,0)+ M5(l,0);
+        	RHS(l) = (1/dt) * M4(l,0)- cp(0,0) + M5(l,0); //- cp(0,0)- M501(l,0)- problem->RedLinSysPConv[1]
     	    }
+	    
+	/*  List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	   RedLinSysP[1] =(1/dt)*RedLinSysP[1]+nu * problem->RedLinSysPDiff[1]+ problem->RedLinSysPConv[1];
 
-	    List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
-	    RedLinSysP[1] =(1/dt)*RedLinSysP[1]+ problem->RedLinSysPConv[1]+ nu * problem->RedLinSysPDiff[1];
+ 	   b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);*/
+   
+	b_n = ITHACAutilities::get_coeffs(problem->Pfield[i], Pmodes);
 
-    	    b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
+	dimensionedScalar dt_fake
+        (
+            "dt_fake",
+            dimensionSet(0, 0, 1, 0, 0, 0, 0),
+            scalar(1.0)
+        );
+
+
+	volVectorField U_rec("U_rec", Umodes[0]*0);
+	for (label j = 0; j < Nphi_u; j++)
+        {
+            U_rec += Umodes[j] * a_o(j);
+        }
+
+	//volVectorField U_rec("U_rec", problem->Ufield[i]);
+	ITHACAstream::exportSolution(U_rec , name(i), "./ITHACAoutput/intersol");
+	
+	volVectorField U1aux("U1aux",problem->_U);
+	U1aux =   dt*dt_fake * (-fvc::div(fvc::flux(U_rec),U_rec));
+	volScalarField rhs = (1/dt)*(1/dt_fake)*fvc::div(U1aux);
+
+	ITHACAstream::exportSolution(U1aux , name(i), "./ITHACAoutput/intersol");
+	//ITHACAstream::exportSolution(rhs , name(i), "./ITHACAoutput/intersol");
+
+	volVectorField U_rec2("U_rec2", problem->_Ub);
+	for (label j = 0; j < Nphi_u; j++)
+        {
+            U_rec2 += Umodes[j] * a_o(j);
+        }
+	//volVectorField U_rec2("U_rec", problem->Ufield[i]);
+	Vector<double> v0(0, 0, 0);
+	//ITHACAutilities::changeBCtype( U_rec2,"fixedValue",1);
+	//ITHACAutilities::assignBC( U_rec2,1,v0);
+	ITHACAstream::exportSolution(U_rec2 , name(i), "./ITHACAoutput/intersol");
+
+	Vector<double> inl(1, 0, 0);
+	volVectorField U0("U0",problem->_Ub());
+	ITHACAutilities::assignBC( U0,0,inl);
+	ITHACAutilities::changeBCtype( U0,"fixedValue",1);
+	ITHACAutilities::assignBC( U0,1,v0);
+	ITHACAstream::exportSolution(U0 , name(i), "./ITHACAoutput/intersol");
+
+	volVectorField U_b("U_b", problem->_Ub);
+
+	volVectorField U2aux("U2aux",problem->_U());
+	U2aux =   dt*dt_fake * (
+				-fvc::div(fvc::flux(U_rec2),U_rec2)
+				-fvc::div(fvc::flux(U0),U0)
+				-fvc::div(fvc::flux(U0),U_rec2)
+				-fvc::div(fvc::flux(U_rec2),U0)
+				//+fvc::div(fvc::flux(U_b),U_rec2)
+				//+fvc::div(fvc::flux(U_rec2),U_b)
+				//+fvc::div(fvc::flux(U_b),U0)
+				//+fvc::div(fvc::flux(U0),U_b)
+				);
+
+	ITHACAstream::exportSolution(U2aux , name(i), "./ITHACAoutput/intersol");
+
+  	volVectorField Uout("Uout", problem->_U());
+	Uout =  U2aux-U1aux;
+	ITHACAstream::exportSolution(Uout , name(i), "./ITHACAoutput/intersol");
+
+	volScalarField rhs2 = (1/dt)*(1/dt_fake)*fvc::div(U2aux);
+	//ITHACAstream::exportSolution(rhs2 , name(i), "./ITHACAoutput/intersol");
+	
+	b_p = ITHACAutilities::get_coeffs(rhs,Pmodes);
+	//std::cout << "  b_p   " <<  b_p << std::endl;
+ 	//b_q = ITHACAutilities::get_coeffs(rhs2,Pmodes);
+	//std::cout << "  b_q  " <<  b_q << std::endl;
+
+        List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	RedLinSysP[1] =(1/dt)*RedLinSysP[1]+ nu * problem->RedLinSysPDiff[1]+ 
+			(1/dt) * M4 	   +M5 + b_p;
+ 	
+        b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, xx, xx, presidual);
+
+
 	    // Convective term
     	    Eigen::MatrixXd cc(1, 1);
     	    // Mom Term
@@ -193,142 +275,14 @@ if (problem->ExplicitMethod == "Ales")
     	    {
         	cc = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
               		l) * a_o;
-        	 a_n(l) =  (M2(l)  - cc(0,0))*dt -problem->BC_matrix(l,0)*dt + a_o(l)- dt*M3(l);
+        	 a_n(l) =  (M2(l)  - cc(0,0))*dt  -problem->BC_matrix(l,0)*dt+ a_o(l)- dt*M3(l);
     	    }
-
-	//}
-	/*else if (problem->Method == "RK3")
-	{
-	std::cout << " ########## RK3   " <<
-                  " ###########" << std::endl;
-
-	Eigen::VectorXd presidualOld = Eigen::VectorXd::Zero(Nphi_p);
-        Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
-        scalar P_norm_res(1);
-
-	Eigen::VectorXd a_2 = Eigen::VectorXd::Zero(Nphi_u);
-	Eigen::VectorXd a_3 = Eigen::VectorXd::Zero(Nphi_u);
-	Eigen::VectorXd RHS  = Eigen::VectorXd::Zero(Nphi_p);
-
-	// Diffusion Term
-    	Eigen::VectorXd M5_1 = problem->DF_matrix * a_o *nu ;
-	// Convection Term
-	Eigen::MatrixXd cp_1(1, 1);
-	// Mom term
-	Eigen::MatrixXd M4 = problem->P_matrix * a_o;
-
-    	for (label l = 0; l < Nphi_p; l++)
-    	{
-        	cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
-                l) * a_o;
-        	RHS(l) = (1/(problem->c2*dt)) * (M4(l,0)  - (problem->a21 *dt) * (cp_1(0,0)- M5_1(l,0)));
-
-    	}
-	List<Eigen::MatrixXd> RedLinSysProm2 = problem->RedLinSysP;
-	RedLinSysProm2[1] = (problem->a21/(problem->c2))*RedLinSysProm2[1];
-	
-    	b_n = reducedProblem::solveLinearSysAxb(RedLinSysProm2, RHS, xx, presidual);
-
-	// Convective term
-    	Eigen::MatrixXd cc_1(1, 1);
-    	// Diff Term
-    	Eigen::VectorXd M2_1 = problem->B_matrix * a_o * nu ;
-	// Pressure Term
-	Eigen::VectorXd M3_2 = problem->K_matrix * b_n;
-
-    	for (label l = 0; l < Nphi_u; l++)
-    	{
-        	cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
-              		l) * a_o;
-        	 a_2(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->a21 *dt) 
-			 	- (problem->c2*dt)*M3_2(l);
-    	}
-
-	// Stage 3
-        presidual = Eigen::VectorXd::Zero(Nphi_p);
-
-    	Eigen::VectorXd M5_2 = problem->DF_matrix * a_2 *nu ;
-	Eigen::MatrixXd cp_2(1, 1);
-
-    	for (label l = 0; l < Nphi_p; l++)
-    	{
-	        cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
-                l) * a_o;
-        	cp_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
-                l) * a_2;
-        	RHS(l) = (1/(problem->c3*dt)) * (M4(l,0) 
-			 - (problem->a31 *dt) * (cp_1(0,0)- M5_1(l,0))
-			 - (problem->a32 *dt) * (cp_2(0,0)- M5_2(l,0)));
-
-    	}
-	List<Eigen::MatrixXd> RedLinSysProm3 = problem->RedLinSysP;
-	RedLinSysProm3[1] = (1/(problem->c3))*RedLinSysProm3[1];
-	
-    	b_n = reducedProblem::solveLinearSysAxb(RedLinSysProm3, RHS, xx, presidual);
-
-
-    	Eigen::MatrixXd cc_2(1, 1);
-    	Eigen::VectorXd M2_2 = problem->B_matrix * a_2 * nu ;
-	Eigen::VectorXd M3_3 = problem->K_matrix * b_n;
-
-    	for (label l = 0; l < Nphi_u; l++)
-    	{	cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
-              		l) * a_o;
-        	cc_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
-              		l) * a_2;
-        	 a_3(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->a31 *dt) 
-				+  (M2_2(l)  - cc_2(0,0)-problem->BC_matrix(l,0))*(problem->a32 *dt) 
-			 	- (problem->c3*dt)*M3_3(l);
-    	}
-
-	// Stage Final
-        presidual = Eigen::VectorXd::Zero(Nphi_p);
-    	Eigen::VectorXd M5_3 = problem->DF_matrix * a_3 *nu ;
-	Eigen::MatrixXd cp_3(1, 1);
-
-    	for (label l = 0; l < Nphi_p; l++)
-    	{
-	        cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
-                l) * a_o;
-        	cp_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
-                l) * a_2;
-        	cp_3 = a_3.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
-                l) * a_3;
-        	RHS(l) = (1/dt) * (M4(l,0)  
-			- (problem->b1 *dt) * (cp_1(0,0)- M5_1(l,0))
-			- (problem->b2 *dt) * (cp_2(0,0)- M5_2(l,0))
-			- (problem->b3 *dt) * (cp_3(0,0)- M5_3(l,0)));
-
-    	}
-
-    	b_n = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, RHS, xx, presidual);
-
-    	Eigen::MatrixXd cc_3(1, 1);
-    	Eigen::VectorXd M2_3 = problem->B_matrix * a_3 * nu ;
-	Eigen::VectorXd M3 = problem->K_matrix * b_n;
-
-    	for (label l = 0; l < Nphi_u; l++)
-    	{	
-	         cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
-              		l) * a_o;
-        	 cc_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
-              		l) * a_2;
-        	 cc_3 = a_3.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
-              		l) * a_3;
-        	 a_n(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->b1 *dt) 
-				+  (M2_2(l)  - cc_2(0,0)-problem->BC_matrix(l,0))*(problem->b2 *dt) 
-				+  (M2_3(l)  - cc_3(0,0)-problem->BC_matrix(l,0))*(problem->b3 *dt) 
-			 	-  dt*M3(l);
-    	}
-
-	}*/
 
 	 if (problem->bcMethod == "lift")
     	{
             for (label j = 0; j < N_BC; j++)
             {
             	a_n(j) = vel_now(j, 0);
-	   	//a_o(j) = vel_now(j, 0);
             }
     	}
 
@@ -571,5 +525,136 @@ void reducedUnsteadyNSExplicit::reconstruct(fileName folder)
     }
 }
 
+
+
+	//if (problem->Method == "FE")
+	//{
+
+//}
+	/*else if (problem->Method == "RK3")
+	{
+	std::cout << " ########## RK3   " <<
+                  " ###########" << std::endl;
+
+	Eigen::VectorXd presidualOld = Eigen::VectorXd::Zero(Nphi_p);
+        Eigen::VectorXd presidual = Eigen::VectorXd::Zero(Nphi_p);
+        scalar P_norm_res(1);
+
+	Eigen::VectorXd a_2 = Eigen::VectorXd::Zero(Nphi_u);
+	Eigen::VectorXd a_3 = Eigen::VectorXd::Zero(Nphi_u);
+	Eigen::VectorXd RHS  = Eigen::VectorXd::Zero(Nphi_p);
+
+	// Diffusion Term
+    	Eigen::VectorXd M5_1 = problem->DF_matrix * a_o *nu ;
+	// Convection Term
+	Eigen::MatrixXd cp_1(1, 1);
+	// Mom term
+	Eigen::MatrixXd M4 = problem->P_matrix * a_o;
+
+    	for (label l = 0; l < Nphi_p; l++)
+    	{
+        	cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
+        	RHS(l) = (1/(problem->c2*dt)) * (M4(l,0)  - (problem->a21 *dt) * (cp_1(0,0)- M5_1(l,0)));
+
+    	}
+	List<Eigen::MatrixXd> RedLinSysProm2 = problem->RedLinSysP;
+	RedLinSysProm2[1] = (problem->a21/(problem->c2))*RedLinSysProm2[1];
+	
+    	b_n = reducedProblem::solveLinearSysAxb(RedLinSysProm2, RHS, xx, presidual);
+
+	// Convective term
+    	Eigen::MatrixXd cc_1(1, 1);
+    	// Diff Term
+    	Eigen::VectorXd M2_1 = problem->B_matrix * a_o * nu ;
+	// Pressure Term
+	Eigen::VectorXd M3_2 = problem->K_matrix * b_n;
+
+    	for (label l = 0; l < Nphi_u; l++)
+    	{
+        	cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	 a_2(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->a21 *dt) 
+			 	- (problem->c2*dt)*M3_2(l);
+    	}
+
+	// Stage 3
+        presidual = Eigen::VectorXd::Zero(Nphi_p);
+
+    	Eigen::VectorXd M5_2 = problem->DF_matrix * a_2 *nu ;
+	Eigen::MatrixXd cp_2(1, 1);
+
+    	for (label l = 0; l < Nphi_p; l++)
+    	{
+	        cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
+        	cp_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_2;
+        	RHS(l) = (1/(problem->c3*dt)) * (M4(l,0) 
+			 - (problem->a31 *dt) * (cp_1(0,0)- M5_1(l,0))
+			 - (problem->a32 *dt) * (cp_2(0,0)- M5_2(l,0)));
+
+    	}
+	List<Eigen::MatrixXd> RedLinSysProm3 = problem->RedLinSysP;
+	RedLinSysProm3[1] = (1/(problem->c3))*RedLinSysProm3[1];
+	
+    	b_n = reducedProblem::solveLinearSysAxb(RedLinSysProm3, RHS, xx, presidual);
+
+
+    	Eigen::MatrixXd cc_2(1, 1);
+    	Eigen::VectorXd M2_2 = problem->B_matrix * a_2 * nu ;
+	Eigen::VectorXd M3_3 = problem->K_matrix * b_n;
+
+    	for (label l = 0; l < Nphi_u; l++)
+    	{	cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	cc_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_2;
+        	 a_3(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->a31 *dt) 
+				+  (M2_2(l)  - cc_2(0,0)-problem->BC_matrix(l,0))*(problem->a32 *dt) 
+			 	- (problem->c3*dt)*M3_3(l);
+    	}
+
+	// Stage Final
+        presidual = Eigen::VectorXd::Zero(Nphi_p);
+    	Eigen::VectorXd M5_3 = problem->DF_matrix * a_3 *nu ;
+	Eigen::MatrixXd cp_3(1, 1);
+
+    	for (label l = 0; l < Nphi_p; l++)
+    	{
+	        cp_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_o;
+        	cp_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_2;
+        	cp_3 = a_3.transpose() * Eigen::SliceFromTensor(problem->Cf_tensor, 0,
+                l) * a_3;
+        	RHS(l) = (1/dt) * (M4(l,0)  
+			- (problem->b1 *dt) * (cp_1(0,0)- M5_1(l,0))
+			- (problem->b2 *dt) * (cp_2(0,0)- M5_2(l,0))
+			- (problem->b3 *dt) * (cp_3(0,0)- M5_3(l,0)));
+
+    	}
+
+    	b_n = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, RHS, xx, presidual);
+
+    	Eigen::MatrixXd cc_3(1, 1);
+    	Eigen::VectorXd M2_3 = problem->B_matrix * a_3 * nu ;
+	Eigen::VectorXd M3 = problem->K_matrix * b_n;
+
+    	for (label l = 0; l < Nphi_u; l++)
+    	{	
+	         cc_1 = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	 cc_2 = a_2.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_2;
+        	 cc_3 = a_3.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_3;
+        	 a_n(l) = a_o(l)+  (M2_1(l)  - cc_1(0,0)-problem->BC_matrix(l,0))*(problem->b1 *dt) 
+				+  (M2_2(l)  - cc_2(0,0)-problem->BC_matrix(l,0))*(problem->b2 *dt) 
+				+  (M2_3(l)  - cc_3(0,0)-problem->BC_matrix(l,0))*(problem->b3 *dt) 
+			 	-  dt*M3(l);
+    	}
+
+	}*/
 
 //************************************************************************* //

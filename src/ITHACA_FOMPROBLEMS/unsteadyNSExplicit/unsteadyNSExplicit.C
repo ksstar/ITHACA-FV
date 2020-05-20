@@ -114,7 +114,28 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     Vector<double> inl(0, 0, 0);
     volVectorField U0 = _U();
     assignIF(U0, inl);
+
+dimensionedScalar dt_fake
+        (
+            "dt_fake",
+            dimensionSet(0, 0, 1, 0, 0, 0, 0),
+            scalar(0.005)
+        );
+
+dimensionedScalar nu_fake
+        (
+            "nu_fake",
+            dimensionSet(0, 2, -1, 0, 0, 0, 0),
+            scalar(0.01)
+        );
+
+    volScalarField divU = (1/dt_fake)*fvc::div(U0);
+    ITHACAstream::exportSolution(divU, name(counter), folder);
     
+
+    volScalarField divlap = fvc::div(fvc::laplacian(nu_fake, U0));
+    ITHACAstream::exportSolution(divlap, name(counter), folder);
+
     surfaceScalarField phi("phi",_phi()) ;
     surfaceScalarField phi0("phi0",_phi()) ;
     //if (ExplicitMethod == "Ales")
@@ -144,14 +165,6 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     ITHACAstream::exportMatrix(bw, "bw0", "eigen",
                                "./ITHACAoutput/BCvector/");
 
-   /* volVectorField Ubcinit = (fvc::laplacian(nu, U0)-fvc::div(phi0,U0));
-
-	Eigen::MatrixXd ModeVector = Foam2Eigen::field2Eigen(Ubcinit);
-	Eigen::MatrixXd ModeVector2 = Foam2Eigen::field2Eigen(Ubcinit.mesh().V());
-	Eigen::MatrixXd ModeVector3 = ModeVector * ModeVector2(0,0);
-	ITHACAstream::exportMatrix(ModeVector3, "ModeVector", "eigen",
-                               "./ITHACAoutput/BCvector/");
-//exit(0);*/
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
     ITHACAstream::exportSolution(phi, name(counter), folder);
