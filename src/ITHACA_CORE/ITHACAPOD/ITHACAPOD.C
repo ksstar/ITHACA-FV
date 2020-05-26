@@ -190,8 +190,10 @@ void ITHACAPOD::getModes(
 
         for (int i = 0; i < modes.size(); i++)
         {
-            GeometricField<Field_type, fvPatchField, volMesh>  tmp(snapshots[0].name(),
-                    snapshots[0] * 0);
+           // GeometricField<Field_type, fvPatchField, volMesh>  tmp(snapshots[0].name(),
+            //        snapshots[0] * 0);
+	    GeometricField<Field_type, fvPatchField, volMesh>  tmp(snapshots[0].name(),
+                    snapshots[0]);
             Eigen::VectorXd vec = modesEig.col(i);
             tmp = Foam2Eigen::Eigen2field(tmp, vec);
 
@@ -370,8 +372,10 @@ void ITHACAPOD::getModesPhi(
 
         for (int i = 0; i < modes.size(); i++)
         {
-            GeometricField<Field_type, fvsPatchField, surfaceMesh>  tmp(snapshots[0].name(),
-                    snapshots[0] * 0);
+            //GeometricField<Field_type, fvsPatchField, surfaceMesh>  tmp(snapshots[0].name(),
+            //        snapshots[0] * 0);
+	    GeometricField<Field_type, fvsPatchField, surfaceMesh>  tmp(snapshots[0].name(),
+                    snapshots[0]);
             Eigen::VectorXd vec = modesEig.col(i);
             tmp = Foam2Eigen::Eigen2fieldPhi(tmp, vec);
 

@@ -307,7 +307,7 @@ if (example.bcMethod == "lift")
     // Search the lift function
      example.liftSolve();
     // Normalize the lifting function
-    ITHACAutilities::normalizeFields(example.liftfield);
+  //  ITHACAutilities::normalizeFields(example.liftfield);
     // Create homogeneous basis functions for velocity
     example.computeLift(example.Ufield, example.liftfield, example.Uomfield);
   ITHACAPOD::getModes(example.Uomfield, example.Umodes, example.podex, 0, 0,
@@ -411,20 +411,29 @@ if (example.ExplicitMethod == "A"|| example.ExplicitMethod == "B")
  // Perform the projection for all number of modes in list List_of_modes
     Eigen::MatrixXd L2errorProjMatrixU(example.Ufield.size(),1);
     Eigen::MatrixXd L2errorProjMatrixP(example.Pfield.size(), 1);
-   
+
+        PtrList<volVectorField> ULmodes;
+
+        for (label k = 0; k < example.liftfield.size(); k++)
+        {
+            ULmodes.append(example.liftfield[k]);
+        }   
+
+        for (label k = 0; k < NmodesUproj; k++)
+        {
+            ULmodes.append(example.Umodes[k]);
+        }
+
 
         Eigen::MatrixXd coeffU = ITHACAutilities::get_coeffs(example.Ufield,
-                                 example.Umodes,
-                                 NmodesUproj );
+                                 ULmodes, (NmodesUproj + example.liftfield.size()));
         Eigen::MatrixXd coeffP = ITHACAutilities::get_coeffs(example.Pfield, example.Pmodes,
                                  NmodesPproj );
 
         PtrList<volVectorField> rec_fieldU = ITHACAutilities::reconstruct_from_coeff(
-                example.Umodes, coeffU, NmodesUproj);
+               ULmodes, coeffU,(NmodesUproj+ example.liftfield.size()));
         PtrList<volScalarField> rec_fieldP = ITHACAutilities::reconstruct_from_coeff(
                 example.Pmodes, coeffP, NmodesPproj );
-	Eigen::MatrixXd L2errorProjMatrixPhi(example.Ufield.size(), 1);
-	
 
         Eigen::MatrixXd L2errorProjU = ITHACAutilities::error_listfields(example.Ufield,
                                        rec_fieldU);
@@ -451,6 +460,7 @@ if (example.ExplicitMethod == "A"|| example.ExplicitMethod == "B")
  
 if (example.ExplicitMethod == "A"|| example.ExplicitMethod == "B")
 {
+		Eigen::MatrixXd L2errorProjMatrixPhi(example.Ufield.size(), 1);
 	Eigen::MatrixXd coeffPhi = ITHACAutilities::get_coeffs(example.Phifield, example.Phimodes,
                                  NmodesUproj );
 	PtrList<surfaceScalarField> rec_fieldPhi = ITHACAutilities::reconstruct_from_coeff(

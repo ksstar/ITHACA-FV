@@ -177,89 +177,84 @@ if (problem->ExplicitMethod == "Ales")
                 l) * a_o;
         	RHS(l) = (1/dt) * M4(l,0)- cp(0,0) + M5(l,0); //- cp(0,0)- M501(l,0)- problem->RedLinSysPConv[1]
     	    }
-	    
-	/*  List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
-	   RedLinSysP[1] =(1/dt)*RedLinSysP[1]+nu * problem->RedLinSysPDiff[1]+ problem->RedLinSysPConv[1];
 
- 	   b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);*/
-   
-	b_n = ITHACAutilities::get_coeffs(problem->Pfield[i], Pmodes);
+	    if (problem->bcMethod == "lift")
+    	    {
+		List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	   	RedLinSysP[1] =0*RedLinSysP[1];
 
-	dimensionedScalar dt_fake
+ 	   	b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
+	    }
+	    else
+	    {
+		List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	   	RedLinSysP[1] =(1/dt)*RedLinSysP[1]+nu * problem->RedLinSysPDiff[1]+ problem->RedLinSysPConv[1];
+
+ 	   	b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
+
+	    }
+
+
+	/*    volVectorField U_rec("U_rec", Umodes[0] );
+
+            for (label j = 0; j < Nphi_u; j++)
+            {
+                U_rec += Umodes[j] * online_solution[i](j + 1, 0);
+            }*/
+
+
+/*	    dimensionedScalar dt_fake
         (
             "dt_fake",
             dimensionSet(0, 0, 1, 0, 0, 0, 0),
-            scalar(1.0)
+            scalar(dt)
         );
 
+	dimensionedScalar nu_fake
+        (
+            "nu_fake",
+            dimensionSet(0, 2, -1, 0, 0, 0, 0),
+            scalar(nu)
+        );
 
-	volVectorField U_rec("U_rec", Umodes[0]*0);
-	for (label j = 0; j < Nphi_u; j++)
-        {
-            U_rec += Umodes[j] * a_o(j);
-        }
+	    volVectorField U1aux("U1aux",problem->_Ub);
+	    volVectorField U1auxDiff(problem->_Ub);
+	    volVectorField U1auxDiff2(problem->_Ub);
+	    volVectorField U1auxConv(problem->_Ub);
+	    volVectorField U1auxConv2(problem->_Ub);
+	    volVectorField Uaux(problem->Ufield[0]);
 
-	//volVectorField U_rec("U_rec", problem->Ufield[i]);
-	ITHACAstream::exportSolution(U_rec , name(i), "./ITHACAoutput/intersol");
+	    volVectorField U0("U0",problem->Ufield[0]);
+            Vector<double> inl(0, 0, 0);
+            ITHACAutilities::assignIF(U0, inl);
+	    ITHACAutilities::changeBCtype( U0,"fixedValue",1);
+    	    ITHACAutilities::assignBC( U0,1,inl);
+
+	    volVectorField U1("U1",problem->_Ub);
+	    U1 = problem->Ufield[i-1];
+	    
+
+	    U1aux = problem->Ufield[i-1];
+
+	 //   ITHACAstream::exportSolution(U1,  name(i), "./ITHACAoutput/intersol");
+	 //   ITHACAstream::exportSolution(U0,  name(i), "./ITHACAoutput/intersol");
+	 //   ITHACAstream::exportSolution(U1aux,  name(i), "./ITHACAoutput/intersol");
 	
-	volVectorField U1aux("U1aux",problem->_U);
-	U1aux =   dt*dt_fake * (-fvc::div(fvc::flux(U_rec),U_rec));
-	volScalarField rhs = (1/dt)*(1/dt_fake)*fvc::div(U1aux);
+	   // U1auxDiff = dt_fake * (fvc::laplacian(nu_fake,problem->Ufield[i-1]));	
+	    U1auxDiff = dt_fake * (fvc::laplacian(nu_fake,U1));
+	    U1auxDiff2 = dt_fake * (fvc::laplacian(nu_fake,U0));
+           // U1auxConv = dt_fake *(-fvc::div(fvc::flux(problem->Ufield[i-1]),problem->Ufield[i-1]));
+	    U1auxConv = dt_fake *(-fvc::div(fvc::flux(U1),U1));
+	    U1auxConv2 = dt_fake *(-fvc::div(fvc::flux(U0),U0));
+	    volScalarField p1(problem->_p);
+	    fvScalarMatrix pEqn = fvm::laplacian(p1);
+	    pEqn.setReference(0, 0.0);
+	    solve(pEqn ==  	((1/dt_fake)*fvc::div(U1)+(1/dt_fake)*fvc::div(U0)
+				+(1/dt_fake)*fvc::div(U1auxDiff)+(1/dt_fake)*fvc::div(U1auxDiff2)
+				+(1/dt_fake)*fvc::div(U1auxConv)+(1/dt_fake)*fvc::div(U1auxConv2))); 
 
-	ITHACAstream::exportSolution(U1aux , name(i), "./ITHACAoutput/intersol");
-	//ITHACAstream::exportSolution(rhs , name(i), "./ITHACAoutput/intersol");
-
-	volVectorField U_rec2("U_rec2", problem->_Ub);
-	for (label j = 0; j < Nphi_u; j++)
-        {
-            U_rec2 += Umodes[j] * a_o(j);
-        }
-	//volVectorField U_rec2("U_rec", problem->Ufield[i]);
-	Vector<double> v0(0, 0, 0);
-	//ITHACAutilities::changeBCtype( U_rec2,"fixedValue",1);
-	//ITHACAutilities::assignBC( U_rec2,1,v0);
-	ITHACAstream::exportSolution(U_rec2 , name(i), "./ITHACAoutput/intersol");
-
-	Vector<double> inl(1, 0, 0);
-	volVectorField U0("U0",problem->_Ub());
-	ITHACAutilities::assignBC( U0,0,inl);
-	ITHACAutilities::changeBCtype( U0,"fixedValue",1);
-	ITHACAutilities::assignBC( U0,1,v0);
-	ITHACAstream::exportSolution(U0 , name(i), "./ITHACAoutput/intersol");
-
-	volVectorField U_b("U_b", problem->_Ub);
-
-	volVectorField U2aux("U2aux",problem->_U());
-	U2aux =   dt*dt_fake * (
-				-fvc::div(fvc::flux(U_rec2),U_rec2)
-				-fvc::div(fvc::flux(U0),U0)
-				-fvc::div(fvc::flux(U0),U_rec2)
-				-fvc::div(fvc::flux(U_rec2),U0)
-				//+fvc::div(fvc::flux(U_b),U_rec2)
-				//+fvc::div(fvc::flux(U_rec2),U_b)
-				//+fvc::div(fvc::flux(U_b),U0)
-				//+fvc::div(fvc::flux(U0),U_b)
-				);
-
-	ITHACAstream::exportSolution(U2aux , name(i), "./ITHACAoutput/intersol");
-
-  	volVectorField Uout("Uout", problem->_U());
-	Uout =  U2aux-U1aux;
-	ITHACAstream::exportSolution(Uout , name(i), "./ITHACAoutput/intersol");
-
-	volScalarField rhs2 = (1/dt)*(1/dt_fake)*fvc::div(U2aux);
-	//ITHACAstream::exportSolution(rhs2 , name(i), "./ITHACAoutput/intersol");
-	
-	b_p = ITHACAutilities::get_coeffs(rhs,Pmodes);
-	//std::cout << "  b_p   " <<  b_p << std::endl;
- 	//b_q = ITHACAutilities::get_coeffs(rhs2,Pmodes);
-	//std::cout << "  b_q  " <<  b_q << std::endl;
-
-        List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
-	RedLinSysP[1] =(1/dt)*RedLinSysP[1]+ nu * problem->RedLinSysPDiff[1]+ 
-			(1/dt) * M4 	   +M5 + b_p;
- 	
-        b_n = reducedProblem::solveLinearSysAxb(RedLinSysP, xx, xx, presidual);
+	       b_n = ITHACAutilities::get_coeffs(p1,
+                     Pmodes);*/
 
 
 	    // Convective term
@@ -278,13 +273,30 @@ if (problem->ExplicitMethod == "Ales")
         	 a_n(l) =  (M2(l)  - cc(0,0))*dt  -problem->BC_matrix(l,0)*dt+ a_o(l)- dt*M3(l);
     	    }
 
+
 	 if (problem->bcMethod == "lift")
     	{
+
+	     for (label l = 0; l < Nphi_u; l++)
+    	    {
+        	cc = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	 a_n(l) =  (M2(l)  - cc(0,0))*dt + a_o(l)- dt*M3(l);
+    	    }
             for (label j = 0; j < N_BC; j++)
             {
             	a_n(j) = vel_now(j, 0);
             }
     	}
+	else
+	{
+            for (label l = 0; l < Nphi_u; l++)
+    	    {
+        	cc = a_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	 a_n(l) =  (M2(l)  - cc(0,0))*dt  -problem->BC_matrix(l,0)*dt+ a_o(l)- dt*M3(l);
+    	    }
+	}
 
     	tmp_sol(0) = time;
     	tmp_sol.col(0).segment(1, Nphi_u) = a_n;
@@ -371,10 +383,25 @@ else if (problem->ExplicitMethod == "A")
         	RHS(l) = (1/dt) * M4(l,0) - cp(0,0)+ M5(l,0);
 
     	}
-	List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
-	RedLinSysP[1] =(1/dt)*RedLinSysP[1]+ problem->RedLinSysPConv[1]+ nu * problem->RedLinSysPDiff[1];
-	b = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
+	//List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	//RedLinSysP[1] =(1/dt)*RedLinSysP[1]+ problem->RedLinSysPConv[1]+ nu * problem->RedLinSysPDiff[1];
+	//b = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
     	//b = reducedProblem::solveLinearSysAxb(problem->RedLinSysP, RHS, xx, presidual);
+
+	if (problem->bcMethod == "lift")
+    	{
+		List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	   	RedLinSysP[1] =0*RedLinSysP[1];
+
+ 	   	b = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
+	}
+    	else
+	{
+		List<Eigen::MatrixXd> RedLinSysP = problem->RedLinSysP;
+	   	RedLinSysP[1] =(1/dt)*RedLinSysP[1]+nu * problem->RedLinSysPDiff[1]+ problem->RedLinSysPConv[1];
+
+ 	   	b = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
+	}
 	// Convective term
     	Eigen::MatrixXd cc(1, 1);
     	// Diff Term
@@ -382,85 +409,54 @@ else if (problem->ExplicitMethod == "A")
 	// Pressure Term
 	Eigen::VectorXd M3 = problem->K_matrix * b;
 
-    	for (label l = 0; l < Nphi_u; l++)
+	 if (problem->bcMethod == "lift")
     	{
+	    for (label l = 0; l < Nphi_u; l++)
+    	    {
+        	cc = c_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
+              		l) * a_o;
+        	 a_n(l) = a_o(l) + (M2(l)  - cc(0,0)- M3(l))*dt  ;
+    	    }
+            for (label j = 0; j < N_BC; j++)
+            {
+            	a_n(j) = vel_now(j, 0);
+            }
+    	}
+	else
+	{
+	    for (label l = 0; l < Nphi_u; l++)
+    	    {
         	cc = c_o.transpose() * Eigen::SliceFromTensor(problem->C_tensor, 0,
               		l) * a_o;
         	 a_n(l) = a_o(l) + (M2(l)  - cc(0,0)-problem->BC_matrix(l,0)- M3(l))*dt  ;
-    	}
+    	    }
+	}
 
-
-	/*surfaceScalarField Phi_rec("Phi_rec", problem->_phi);
-
-        for (label j = 0; j < Nphi_p; j++)
-        {
-             Phi_rec += Phimodes[j]* c_o(j) ;
-        }
-
-	dimensionedScalar dt_fake
-        (
-            "dt_fake",
-            dimensionSet(0, 0, 1, 0, 0, 0, 0),
-            scalar(1.0)
-        );
-
-	dimensionedScalar nu_fake
-        (
-            "nu_fake",
-            dimensionSet(0, 2, -1, 0, 0, 0, 0),
-            scalar(1.0)
-        );*/
-	Eigen::VectorXd c_star = Eigen::VectorXd::Zero(Nphi_phi);
-	Eigen::VectorXd c_star3 = Eigen::VectorXd::Zero(Nphi_phi);
-	Eigen::VectorXd c_c = Eigen::VectorXd::Zero(Nphi_phi);
-	surfaceScalarField phi_2("Phi_2", problem->_phi);
-	surfaceScalarField phi_3("Phi_3", problem->_phi);
-	volVectorField U_rec("U_rec", problem->_U);
-
-     /*   for (label j = 0; j < Nphi_u; j++)
-        {
-             U_rec += Umodes[j] * a_o(j);
-        }
-
-	surfaceScalarField phi_c("Phi_c", problem->_phi);
-	phi_c =	dt_fake*fvc::flux(fvc::div(Phi_rec,U_rec))	;		
-		c_c = ITHACAutilities::get_coeffs(phi_c,
-                   Phimodes);
-
-	c_star = ITHACAutilities::get_coeffs(phi_2,
-                   Phimodes);*/
-
-		
-	//std::cout << " c_c=   " << c_c<< std::endl;
 	Eigen::MatrixXd M6 = problem->I_matrix * a_o;
 	Eigen::MatrixXd M7 = problem->ID_matrix * a_o*nu;
 	Eigen::MatrixXd M8 = problem->Kf_matrix*b.col(0);
 	Eigen::MatrixXd M11(Nphi_phi,Nphi_phi);
 	Eigen::MatrixXd M12 = Eigen::VectorXd::Zero(Nphi_phi);
 	Eigen::MatrixXd ci(Nphi_phi,1);
-	//Eigen::MatrixXd M9 = problem->Mf_matrix.colPivHouseholderQr().solve(M6 + dt*(M7-M8));
-	//Eigen::MatrixXd M9 = problem->Mf_matrix.fullPivLu().solve(M6 + dt*(M7-M8));
-	Eigen::MatrixXd M9 = problem->Mf_matrix.colPivHouseholderQr().solve(M6+ dt*(-M8+M7+nu*problem->BC_matrix_PPE));
+	
 	for (label k = 0; k < Nphi_phi; k++)
     	{	
 		M12 = dt*problem->Ci_matrix[k] * a_o*c_o(k) +M12;//
-		
 	}
 
-	Eigen::MatrixXd M13 = problem->Mf_matrix.colPivHouseholderQr().solve(M12);
-		c_n =  M9 -M13;//dt*c_c(k)+dt*nu*c_star(k)+dt*nu*c_star3(k)
+	if (problem->bcMethod == "lift")
+    	{
+		c_n = problem->Mf_matrix.colPivHouseholderQr().solve(M6-M12+ dt*(-M8+M7));
+	}
+	else
+	{
+		c_n = problem->Mf_matrix.colPivHouseholderQr().solve(M6-M12+ dt*(-M8+M7+nu*problem->BC_matrix_PPE));
+	}
+
 	tmp_sol(0) = time;
     	tmp_sol.col(0).segment(1, Nphi_u) = a_n;
     	tmp_sol.col(0).tail(b.rows()) = b;
     	online_solution[i] = tmp_sol;
-
-	 if (problem->bcMethod == "lift")
-    	{
-            for (label j = 0; j < N_BC; j++)
-            {
-            	a_n(j) = vel_now(j, 0);
-            }
-    	}
 
 	a_o = a_n;
 	c_o = c_n;
