@@ -139,6 +139,40 @@ _phi = autoPtr<surfaceScalarField>
        );
 surfaceScalarField phi = _phi();
 
+_phib = autoPtr<surfaceScalarField>
+       (
+           new surfaceScalarField
+           (
+               IOobject
+               (
+                   "phib",
+                   runTime.timeName(),
+                   mesh,
+                   IOobject::READ_IF_PRESENT,
+                   IOobject::AUTO_WRITE
+               ),
+              mesh
+           )
+       );
+surfaceScalarField phib = _phib();
+
+_phic = autoPtr<surfaceScalarField>
+       (
+           new surfaceScalarField
+           (
+               IOobject
+               (
+                   "phic",
+                   runTime.timeName(),
+                   mesh,
+                   IOobject::READ_IF_PRESENT,
+                   IOobject::AUTO_WRITE
+               ),
+              mesh
+           )
+       );
+surfaceScalarField phic = _phic();
+
 surfaceScalarField phi0(phi);
 
 _phi0 = autoPtr<surfaceScalarField>

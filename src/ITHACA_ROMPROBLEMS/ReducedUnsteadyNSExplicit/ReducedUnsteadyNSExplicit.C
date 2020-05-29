@@ -402,6 +402,7 @@ else if (problem->ExplicitMethod == "A")
 
  	   	b = reducedProblem::solveLinearSysAxb(RedLinSysP, RHS, xx, presidual);
 	}
+
 	// Convective term
     	Eigen::MatrixXd cc(1, 1);
     	// Diff Term
@@ -450,7 +451,8 @@ else if (problem->ExplicitMethod == "A")
 	}
 	else
 	{
-		c_n = problem->Mf_matrix.colPivHouseholderQr().solve(M6-M12+ dt*(-M8+M7+nu*problem->BC_matrix_PPE));
+		c_n = problem->Mf_matrix.colPivHouseholderQr().solve(M6-M12+ dt*(-M8+M7
+					+nu*problem->BC_matrix_PPE-problem->Bbc_matrix));
 	}
 
 	tmp_sol(0) = time;

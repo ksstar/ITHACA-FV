@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
     example.inletIndex(0, 1) = 0;
     // Time parameters
     example.startTime = 0;
-    example.finalTime = 1.0;
+    example.finalTime = 2.0;
     example.timeStep = 0.005;
     example.writeEvery = 0.005;
 
@@ -371,7 +371,11 @@ if (example.ExplicitMethod == "A"|| example.ExplicitMethod == "B")
 
     for (int j = 0; j < example.Phimodes.size(); j++)
     {
+
+	adjustPhi(example.Phimodes[j], example.Ufield[0], example.Pfield[0]);
 	volScalarField PhidivDivModes = fvc::div(example.Phimodes[j]);
+
+	 
 
    	DivModes(j,0) = example.timeStep*
         	mag(PhidivDivModes)().weightedAverage(PhidivDivModes.mesh().V()).value(); //scalar sumLocalContErr

@@ -379,10 +379,10 @@ void ITHACAPOD::getModesPhi(
             Eigen::VectorXd vec = modesEig.col(i);
             tmp = Foam2Eigen::Eigen2fieldPhi(tmp, vec);
 
-            //for (int k = 0; k < NBC; k++)
-            //{
-            //    ITHACAutilities::assignBC(tmp, k, modesEigBC[k].col(i));
-            //}
+            for (int k = 0; k < NBC; k++)
+            {
+                ITHACAutilities::assignBC(tmp, k, modesEigBC[k].col(i));
+            }
 
             modes.set(i, tmp);
         }

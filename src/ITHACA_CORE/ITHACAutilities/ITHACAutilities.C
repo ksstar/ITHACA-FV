@@ -1248,6 +1248,53 @@ void ITHACAutilities::assignBC(volScalarField& s, label BC_ind,
     }
 }
 
+void ITHACAutilities::assignBC(surfaceScalarField& s, label BC_ind,
+                               Eigen::MatrixXd valueVec)
+{
+    word typeBC = s.boundaryField()[BC_ind].type();
+
+    if (typeBC == "fixedValue" || typeBC == "calculated"
+            || typeBC == "fixedFluxPressure" ||  typeBC == "processor")
+    {
+        for (label i = 0; i < s.boundaryField()[BC_ind].size(); i++)
+        {
+            double value = valueVec(i);
+            s.boundaryFieldRef()[BC_ind][i] = value;
+        }
+    }
+    else if (s.boundaryField()[BC_ind].type() == "fixedGradient")
+    {
+        fixedGradientFvPatchScalarField& Tpatch =
+            refCast<fixedGradientFvPatchScalarField>(s.boundaryFieldRef()[BC_ind]);
+        scalarField& gradTpatch = Tpatch.gradient();
+        forAll(gradTpatch, faceI)
+        {
+            double value = valueVec(faceI);
+            gradTpatch[faceI] = value;
+        }
+    }
+    else if (s.boundaryField()[BC_ind].type() == "freestream")
+    {
+        for (label i = 0; i < s.boundaryField()[BC_ind].size(); i++)
+        {
+            double value = valueVec(i);
+            s.boundaryFieldRef()[BC_ind][i] = value;
+        }
+
+        freestreamFvPatchField<scalar>& Tpatch =
+            refCast<freestreamFvPatchField<scalar>>(s.boundaryFieldRef()[BC_ind]);
+        scalarField& gradTpatch = Tpatch.freestreamValue();
+        forAll(gradTpatch, faceI)
+        {
+            double value = valueVec(faceI);
+            gradTpatch[faceI] = value;
+        }
+    }
+    else if (s.boundaryField()[BC_ind].type() == "empty")
+    {
+    }
+}
+
 // Assign a BC for a scalar field
 void ITHACAutilities::assignBC(volVectorField& s, label BC_ind,
                                Eigen::MatrixXd valueVec)

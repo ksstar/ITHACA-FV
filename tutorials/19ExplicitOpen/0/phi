@@ -14017,7 +14017,7 @@ boundaryField
 {
     inlet
     {
-        type            calculated;
+        type            fixedValue;
         value           nonuniform List<scalar> 
 25
 (
@@ -14085,22 +14085,22 @@ boundaryField
     }
     top
     {
-        type            calculated;
+        type            fixedValue;
         value           uniform 0;
     }
     bottomwall
     {
-        type            calculated;
+        type            fixedValue;
         value           uniform 0;
     }
     bottomsym
     {
-        type            calculated;
+        type            fixedValue;
         value           uniform 0;
     }
     cavitywall
     {
-        type            calculated;
+        type            fixedValue;
         value           uniform 0;
     }
     frontAndBack

@@ -600,6 +600,15 @@ class ITHACAutilities
         ///
         static void assignBC(volScalarField& s, label BC_ind, Eigen::MatrixXd valueVec);
 
+	//--------------------------------------------------------------------------
+        /// Assign Boundary Condition to a surfaceScalarField
+        ///
+        /// @param[in]  s       field where you want to assign the BC.
+        /// @param[in]  BC_ind  The BC index.
+        /// @param[in]  valueVec   The value you want to assign (it must be a double).
+        ///
+        static void assignBC(surfaceScalarField& s, label BC_ind, Eigen::MatrixXd valueVec);
+
         //--------------------------------------------------------------------------
         /// @brief      A method to comput the time-parameter combined matrix whose any single element
         /// corresponds to a unique snapshot in the snapshots acquired for the offline stage

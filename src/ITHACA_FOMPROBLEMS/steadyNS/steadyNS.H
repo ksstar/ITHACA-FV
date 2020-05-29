@@ -193,6 +193,7 @@ class steadyNS: public reductionProblem
         /// Laplacian term PPE
         Eigen::MatrixXd D_matrix;
 	Eigen::MatrixXd DF_matrix;
+	Eigen::MatrixXd Cf_matrix;
 	Eigen::MatrixXd DFbc_matrix;
 
 	/// Interpolation term
@@ -256,11 +257,12 @@ class steadyNS: public reductionProblem
         /// Initial Velocity field (for restart purposes)
         autoPtr<volVectorField> _U0;
 
-	
  	/// Velocity field
         autoPtr<volVectorField> _Ub;
 
-
+	/// SurfaceScalar field
+        autoPtr<surfaceScalarField> _phib;
+	autoPtr<surfaceScalarField> _phic;
         /// Mesh
         mutable autoPtr<fvMesh> _mesh;
 
@@ -363,6 +365,7 @@ class steadyNS: public reductionProblem
 	Eigen::MatrixXd diffusive_term_BC(label NUmodes, label NPmodes, label NSUPmodes);
 
 	Eigen::MatrixXd diffusive_diff_term(label NUmodes, label NPmodes, label NSUPmodes);
+	Eigen::MatrixXd convective_flux_cross_term(label NUmodes, label NPmodes, label NSUPmodes);
 	
 	//--------------------------------------------------------------------------
         //  Projection Methods Momentum Equation

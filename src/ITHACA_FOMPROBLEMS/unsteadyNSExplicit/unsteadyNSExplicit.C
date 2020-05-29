@@ -114,6 +114,8 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     Vector<double> inl(0, 0, 0);
     volVectorField U0 = _U();
     assignIF(U0, inl);
+   ITHACAutilities::changeBCtype( U0,"fixedValue",1);
+    	    assignBC( U0,1,inl);
 
 dimensionedScalar dt_fake
         (
@@ -129,20 +131,25 @@ dimensionedScalar nu_fake
             scalar(0.01)
         );
 
-    volScalarField divU = (1/dt_fake)*fvc::div(U0);
+   /* volScalarField divU = (1/dt_fake)*fvc::div(U0);
     ITHACAstream::exportSolution(divU, name(counter), folder);
     
 
     volScalarField divlap = fvc::div(fvc::laplacian(nu_fake, U0));
-    ITHACAstream::exportSolution(divlap, name(counter), folder);
+    ITHACAstream::exportSolution(divlap, name(counter), folder);*/
 
     surfaceScalarField phi("phi",_phi()) ;
-    surfaceScalarField phi0("phi0",_phi()) ;
-    //if (ExplicitMethod == "Ales")
-    //{
-        phi0 = fvc::flux(U0);//_phi();
+    //surfaceScalarField phi0("phi0",_phi()) ;
+    if (ExplicitMethod == "Ales")
+    {
+    //    phi0 = fvc::flux(U0);//_phi();
 	phi = fvc::flux(U);
-    //}
+    }
+    else if (ExplicitMethod == "A")
+    {
+       // phi0 = _phi();
+	phi = _phi();
+    }
 #include "initContinuityErrs.H"
     dimensionedScalar nu = _nu();
     dimensionedScalar dt = timeStep*_dt();
@@ -156,7 +163,7 @@ dimensionedScalar nu_fake
     fvVectorMatrix UEqn
     (
 	fvm::laplacian(nu, U0)
-	-fvm::div(phi0,U0)
+	-fvm::div(fvc::flux(U0),U0)
     );     
 
     Foam2Eigen::fvMatrix2Eigen(UEqn, A, b);
@@ -164,7 +171,6 @@ dimensionedScalar nu_fake
     bw.col(0) = b;
     ITHACAstream::exportMatrix(bw, "bw0", "eigen",
                                "./ITHACAoutput/BCvector/");
-
     ITHACAstream::exportSolution(U, name(counter), folder);
     ITHACAstream::exportSolution(p, name(counter), folder);
     ITHACAstream::exportSolution(phi, name(counter), folder);
@@ -320,6 +326,7 @@ if (ExplicitMethod == "Ales")
 	    U = U1aux - dt*fvc::grad(p);
 
 	    phi = fvc::interpolate(U)& mesh.Sf();
+	    
 
 	}
 
@@ -441,6 +448,7 @@ else if (ExplicitMethod == "A")
 	    U = U1aux - dt*fvc::grad(p);
 	    U.correctBoundaryConditions();
 	    phi = fvc::flux(U1aux) - dt*fvc::snGrad(p)*mag(mesh.magSf());
+	    
 
 
 	    /*volVectorField U1aux(U);
