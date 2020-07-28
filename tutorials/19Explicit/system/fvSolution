@@ -32,7 +32,7 @@ solvers
     }
 
 
-P_rec
+    P_rec
     {
         solver          PCG;
         preconditioner  DIC;

@@ -98,7 +98,7 @@ _U = autoPtr<volVectorField>
      );
 volVectorField U = _U();
 
-_Ub = autoPtr<volVectorField>
+/*_Ub = autoPtr<volVectorField>
      (
          new volVectorField
          (
@@ -113,7 +113,7 @@ _Ub = autoPtr<volVectorField>
              mesh
          )
      );
-volVectorField Ub = _Ub();
+volVectorField Ub = _Ub();*/
 
 volVectorField U0(U);
 
@@ -156,7 +156,7 @@ _phib = autoPtr<surfaceScalarField>
        );
 surfaceScalarField phib = _phib();
 
-_phic = autoPtr<surfaceScalarField>
+/*_phic = autoPtr<surfaceScalarField>
        (
            new surfaceScalarField
            (
@@ -171,7 +171,7 @@ _phic = autoPtr<surfaceScalarField>
               mesh
            )
        );
-surfaceScalarField phic = _phic();
+surfaceScalarField phic = _phic();*/
 
 surfaceScalarField phi0(phi);
 

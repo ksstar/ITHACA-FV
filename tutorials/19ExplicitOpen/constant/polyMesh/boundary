@@ -42,15 +42,15 @@ FoamFile
     {
         type            wall;
         inGroups        1(wall);
-        nFaces          58;
+        nFaces          60;
         startFace       14225;
     }
     bottomsym
     {
         type            wall;
         inGroups        1(wall);
-        nFaces          77;
-        startFace       14283;
+        nFaces          75;
+        startFace       14285;
     }
     cavitywall
     {

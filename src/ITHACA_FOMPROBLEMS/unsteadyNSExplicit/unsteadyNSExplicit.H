@@ -117,7 +117,7 @@ class unsteadyNSExplicit: public steadyNS
         word timeDerivativeSchemeOrder;
 
 	// Matrix to store norm of div(U) and div(phi)
-	Eigen::MatrixXd DivNorm;
+	Eigen::MatrixXd ContErrFOM;
 
         /// pisoControl
         autoPtr<pisoControl> _piso;

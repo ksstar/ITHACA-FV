@@ -22,24 +22,24 @@ ddtSchemes
 
 gradSchemes
 {
-    default         Gauss midPoint;
-    grad(p)         Gauss midPoint;
+    default         Gauss linear;
+    grad(p)         Gauss linear;
 }
 
 divSchemes
 {
-    default         Gauss midPoint;
+    default         Gauss linear;
     //div(phi,U)      Gauss midPoint;
 }
 
 laplacianSchemes
 {
-    default         Gauss midPoint orthogonal;
+    default         Gauss linear orthogonal;
 }
 
 interpolationSchemes
 {
-    default         midPoint;
+    default         linear;
 }
 
 snGradSchemes

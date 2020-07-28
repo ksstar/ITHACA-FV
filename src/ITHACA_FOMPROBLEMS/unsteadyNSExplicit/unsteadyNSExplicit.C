@@ -114,29 +114,8 @@ void unsteadyNSExplicit::truthSolve(List<scalar> mu_now, fileName folder)
     Vector<double> inl(0, 0, 0);
     volVectorField U0 = _U();
     assignIF(U0, inl);
-   ITHACAutilities::changeBCtype( U0,"fixedValue",1);
-    	    assignBC( U0,1,inl);
-
-dimensionedScalar dt_fake
-        (
-            "dt_fake",
-            dimensionSet(0, 0, 1, 0, 0, 0, 0),
-            scalar(0.005)
-        );
-
-dimensionedScalar nu_fake
-        (
-            "nu_fake",
-            dimensionSet(0, 2, -1, 0, 0, 0, 0),
-            scalar(0.01)
-        );
-
-   /* volScalarField divU = (1/dt_fake)*fvc::div(U0);
-    ITHACAstream::exportSolution(divU, name(counter), folder);
-    
-
-    volScalarField divlap = fvc::div(fvc::laplacian(nu_fake, U0));
-    ITHACAstream::exportSolution(divlap, name(counter), folder);*/
+    ITHACAutilities::changeBCtype( U0,"fixedValue",1);
+    assignBC(U0,1,inl);
 
     surfaceScalarField phi("phi",_phi()) ;
     //surfaceScalarField phi0("phi0",_phi()) ;
@@ -144,6 +123,7 @@ dimensionedScalar nu_fake
     {
     //    phi0 = fvc::flux(U0);//_phi();
 	phi = fvc::flux(U);
+	//phi = _phi();
     }
     else if (ExplicitMethod == "A")
     {
@@ -162,8 +142,8 @@ dimensionedScalar nu_fake
     // Determine bc vector
     fvVectorMatrix UEqn
     (
-	fvm::laplacian(nu, U0)
-	-fvm::div(fvc::flux(U0),U0)
+	-fvm::laplacian(nu, U0)
+	+fvm::div(fvc::flux(U0),U0)
     );     
 
     Foam2Eigen::fvMatrix2Eigen(UEqn, A, b);
@@ -315,19 +295,13 @@ if (ExplicitMethod == "Ales")
 	{
 	    volVectorField U1aux(U);
 	    volVectorField Faux(U);
-
 	    Faux = dt * (fvc::laplacian(nu,U1)-fvc::div(phi,U1));
 	    U1aux = U.oldTime() + Faux;
-
 	    fvScalarMatrix pEqn = fvm::laplacian(p);
 	    pEqn.setReference(pRefCell, pRefValue);
 	    solve(pEqn ==  (1/dt)*fvc::div(U1aux)); 
-
 	    U = U1aux - dt*fvc::grad(p);
-
 	    phi = fvc::interpolate(U)& mesh.Sf();
-	    
-
 	}
 
 	#include "continuityErrs.H"
@@ -340,14 +314,13 @@ if (ExplicitMethod == "Ales")
         {
             ITHACAstream::exportSolution(U, name(counter), folder);
 	    ITHACAstream::exportSolution(p, name(counter), folder);
+	    ITHACAstream::exportSolution(phi, name(counter), folder);
             std::ofstream of(folder + name(counter) + "/" +
                              runTime.timeName());
             
 	    Ufield.append(U);
             Pfield.append(p);
 	    Phifield.append(phi);
-	
-	    ITHACAstream::exportSolution(phi, name(counter), folder);
 
             counter++;
             nextWrite += writeEvery;
@@ -486,8 +459,6 @@ else if (ExplicitMethod == "A")
             Ufield.append(U);
             Pfield.append(p);
 	    Phifield.append(phi);
-	    //Phidiv = fvc::div(phi);
-	    //Phidivfield.append(Phidiv);
 
             counter++;
             nextWrite += writeEvery;
@@ -497,18 +468,7 @@ else if (ExplicitMethod == "A")
 
     }
 
-    /*DivNorm.resize(Phidivfield.size(),2);
-    for (label j = 0; j < Phidivfield.size(); j++)
-    {
-   	DivNorm(j,0) = runTime.deltaTValue()*
-        	mag(Phidivfield[j])().weightedAverage(Phidivfield[j].mesh().V()).value(); //scalar sumLocalContErr
-	DivNorm(j,1) = runTime.deltaTValue()*
-        	Phidivfield[j].weightedAverage(Phidivfield[j].mesh().V()).value(); //scalar globalContErr
-    }
-    ITHACAstream::exportMatrix(DivNorm, "DivNorm", "eigen",folder);*/
 }
-
-
 else if (ExplicitMethod == "B")
 {
 
@@ -641,6 +601,17 @@ else if (ExplicitMethod == "B")
     ITHACAstream::exportMatrix(DivNorm, "DivNorm", "eigen",
                                    folder);*/
 }
+
+    ContErrFOM.resize(Phifield.size(),2);
+    for (label j = 0; j < Phifield.size(); j++)
+    {
+	volScalarField contErr = fvc::div(Phifield[j]);
+   	ContErrFOM(j,0) = runTime.deltaTValue()*
+        	mag(contErr)().weightedAverage(contErr.mesh().V()).value(); //scalar sumLocalContErr
+	ContErrFOM(j,1) = runTime.deltaTValue()*
+        	contErr.weightedAverage(contErr.mesh().V()).value(); //scalar globalContErr
+    }
+    ITHACAstream::exportMatrix(ContErrFOM, "ContErrFOM", "eigen",folder);
 
 
    

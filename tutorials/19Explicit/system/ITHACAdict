@@ -19,9 +19,9 @@ EigenSolver eigen;
 
 // Number of modes to output and to use for projection
 NmodesUout 15;
-NmodesUproj 7;
+NmodesUproj 15;
 NmodesPout 15;
-NmodesPproj 7;
+NmodesPproj 15;
 NmodesSUPout 0;
 NmodesSUPproj 0;
 
@@ -42,7 +42,7 @@ timeDerivativeSchemeOrder first;
 
 Method FE;
 
-ExplicitMethod A;
+ExplicitMethod Ales;
 
 PoissonMethod FOM;
 
