@@ -11,7 +11,7 @@ FoamFile
     format      ascii;
     class       surfaceScalarField;
     location    "0";
-    object      phib;
+    object      phi;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -21,70 +21,21 @@ internalField   uniform 0;
 
 boundaryField
 {
-    inlet
-    {
-        type            fixedValue;
-        value           nonuniform List<scalar> 
-25
-(
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.000399999999999996
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.000399999999999996
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
-)
-;    
-   }
-    outlet
-    {
-        type            calculated;
-        value           uniform 0;
-    }
-    top
+    movingWall
     {
         type            fixedValue;
         value           uniform 0;
     }
-    bottomwall
+    fixedWalls
     {
         type            fixedValue;
         value           uniform 0;
     }
-    bottomsym
-    {
-        type            fixedValue;
-        value           uniform 0;
-    }
-    cavitywall
-    {
-        type            fixedValue;
-        value           uniform 0;
-    }
+   
     frontAndBack
     {
         type            empty;
-        value           nonuniform 0();
+       // value           uniform 0;
     }
 }
 
-// ************************************************************************* //

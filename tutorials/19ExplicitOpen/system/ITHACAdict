@@ -18,10 +18,10 @@ FoamFile
 EigenSolver eigen;
 
 // Number of modes to output and to use for projection
-NmodesUout 50;
-NmodesUproj 50;
-NmodesPout 50;
-NmodesPproj 50;
+NmodesUout 10;
+NmodesUproj 10;
+NmodesPout 10;
+NmodesPproj 10;
 NmodesSUPout 0;
 NmodesSUPproj 0;
 

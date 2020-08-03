@@ -232,9 +232,9 @@ int main(int argc, char* argv[])
     example.offlineSolve();
     auto finish_FOM = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_FOM = finish_FOM - start_FOM;
-   // std::cout << "elapsed_FOM: " << elapsed_FOM.count() << " seconds.";
-   // std::cout << std::endl;
-
+  /*  std::cout << "elapsed_FOM: " << elapsed_FOM.count() << " seconds.";
+    std::cout << std::endl;
+exit(0);*/
 
 
     auto start_POD = std::chrono::high_resolution_clock::now();
@@ -242,7 +242,7 @@ int main(int argc, char* argv[])
                         NmodesUout);
     ITHACAPOD::getModes(example.Pfield, example.Pmodes, example.podex, 0, 0,
                        NmodesPout);
-exit(0);
+//exit(0);
 
     if (example.ExplicitMethod == "A"|| example.ExplicitMethod == "B")
     {

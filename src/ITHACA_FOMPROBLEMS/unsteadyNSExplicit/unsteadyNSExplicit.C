@@ -420,7 +420,9 @@ else if (ExplicitMethod == "A")
 
 	    U = U1aux - dt*fvc::grad(p);
 	    U.correctBoundaryConditions();
-	    phi = fvc::flux(U1aux) - dt*fvc::snGrad(p)*mag(mesh.magSf());
+	    //phi = fvc::flux(U1aux) - dt*fvc::snGrad(p)*mag(mesh.magSf());
+
+	   phi = fvc::flux(U1aux) - dt*fvc::snGrad(p)*mag(mesh.magSf());
 	    
 
 
@@ -451,11 +453,11 @@ else if (ExplicitMethod == "A")
         
  	if (checkWrite(runTime))
         {
-            ITHACAstream::exportSolution(U, name(counter), folder);
+          /*  ITHACAstream::exportSolution(U, name(counter), folder);
 	    ITHACAstream::exportSolution(p, name(counter), folder);
 	    ITHACAstream::exportSolution(phi, name(counter), folder);
             std::ofstream of(folder + name(counter) + "/" +
-                             runTime.timeName());
+                             runTime.timeName());*/
             Ufield.append(U);
             Pfield.append(p);
 	    Phifield.append(phi);

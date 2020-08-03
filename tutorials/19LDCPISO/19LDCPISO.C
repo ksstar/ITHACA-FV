@@ -110,16 +110,27 @@ int main(int argc, char* argv[])
     auto start_FOM = std::chrono::high_resolution_clock::now();
     example.offlineSolve();
     auto finish_FOM = std::chrono::high_resolution_clock::now();
-
-
     std::chrono::duration<double> elapsed_FOM = finish_FOM - start_FOM;
-
+    // Solve the supremizer problem
+    example.solvesupremizer();
+    if (example.bcMethod == "lift")
+    {
+    // Search the lift function
+    example.liftSolve();
+    // Normalize the lifting function
+    //ITHACAutilities::normalizeFields(example.liftfield);
+    // Create homogeneous basis functions for velocity
+    example.computeLift(example.Ufield, example.liftfield, example.Uomfield);
+    }
+  
+    
     ITHACAPOD::getModes(example.Ufield, example.Umodes, example.podex, 0, 0,
                         NmodesUout);
     ITHACAPOD::getModes(example.Pfield, example.Pmodes, example.podex, 0, 0,
                         NmodesPout);
-
-
+    ITHACAPOD::getModes(example.supfield, example.supmodes, example.podex,
+                        example.supex, 1, NmodesSUPout);
+/*
      Eigen::MatrixXd coeffL2Uortho = ITHACAutilities::get_coeffs_ortho(example.Ufield,
               example.Umodes, NmodesUout);
     ITHACAstream::exportMatrix(coeffL2Uortho, "coeffL2Uortho", "eigen",
@@ -138,13 +149,13 @@ Eigen::MatrixXd coeffL2Portho = ITHACAutilities::get_coeffs_ortho(example.Pfield
 Eigen::MatrixXd coeffL2P = ITHACAutilities::get_coeffs_ortho(example.Pfield,
               example.Pmodes, NmodesPout);
     ITHACAstream::exportMatrix(coeffL2P, "coeffL2P", "eigen",
-                               "./ITHACAoutput/Matrices/");
+                               "./ITHACAoutput/Matrices/");*/
 
 
     // Galerkin Projection
     example.projectSUP("./Matrices", NmodesUproj, NmodesPproj, NmodesSUPproj);
 
-  //Post-Process
+ /* //Post-Process
     Eigen::MatrixXd PostPfom(example.Ufield.size(), 1); 
 
     for (label i = 0; i < example.Ufield.size(); i++)
@@ -152,7 +163,7 @@ Eigen::MatrixXd coeffL2P = ITHACAutilities::get_coeffs_ortho(example.Pfield,
 	PostPfom(i, 0) =  0.5*fvc::domainIntegrate(example.Ufield[i] & example.Ufield[i]).value();
     }
 
-    ITHACAstream::exportMatrix(PostPfom, "PostP", "eigen", "./ITHACAoutput/PostProcess");
+    ITHACAstream::exportMatrix(PostPfom, "PostP", "eigen", "./ITHACAoutput/PostProcess");*/
  
    reducedUnsteadyNSPISO reduced(example);
     // Set values of the reduced stuff
@@ -182,7 +193,7 @@ Eigen::MatrixXd coeffL2P = ITHACAutilities::get_coeffs_ortho(example.Pfield,
     ITHACAstream::exportMatrix(L2errorMatrixP, "L2errorMatrixP", "eigen",
                                "./ITHACAoutput/l2error");
 
-    //Post-Process
+ /*   //Post-Process
     Eigen::MatrixXd PostP(example.Ufield.size(), 2); 
 
     for (label i = 0; i < example.Ufield.size(); i++)
@@ -193,7 +204,7 @@ Eigen::MatrixXd coeffL2P = ITHACAutilities::get_coeffs_ortho(example.Pfield,
 	
     }
 
-    ITHACAstream::exportMatrix(PostP, "PostP", "eigen", "./ITHACAoutput/PostProcess");
+    ITHACAstream::exportMatrix(PostP, "PostP", "eigen", "./ITHACAoutput/PostProcess");*/
 
     //Computational Time
     std::cout << "elapsed_FOM: " << elapsed_FOM.count() << " seconds.";

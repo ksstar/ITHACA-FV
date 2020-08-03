@@ -28,8 +28,16 @@ gradSchemes
 
 divSchemes
 {
-    default         Gauss linear; //Gauss midPoint;
-    //div(phi,U)      Gauss midPoint;
+    default         Gauss linear upwind; //Gauss midPoint;
+    /*div(phi,U)      Gauss upwind;
+    div(interpolate(U),U)      Gauss upwind;
+    div(phi_0,U_0)      Gauss upwind;
+    div(phi,U_0)      Gauss upwind;
+    div(phi_0,U)      Gauss upwind;
+    div(U)      Gauss linear;
+    div(U_0)      Gauss linear;
+    div(phi_0)      Gauss linear;
+    div(U0)      Gauss linear;*/
 }
 
 laplacianSchemes

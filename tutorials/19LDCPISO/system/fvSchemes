@@ -22,24 +22,25 @@ ddtSchemes
 
 gradSchemes
 {
-    default         Gauss linear;
-    grad(p)         Gauss linear;
+    default         Gauss midPoint;
+    //grad(p)         Gauss linear;
 }
 
 divSchemes
 {
-    default         Gauss linear;
-    div(phi,U)      Gauss linear;
+    default         Gauss midPoint;
+    //div(phi,U)      bounded Gauss midPoint;
+    //div((interpolate(U)&S),U) bounded Gauss midPoint;
 }
 
 laplacianSchemes
 {
-    default         Gauss linear orthogonal;
+    default         Gauss midPoint orthogonal;
 }
 
 interpolationSchemes
 {
-    default         linear;
+    default         midPoint;
 }
 
 snGradSchemes
@@ -49,7 +50,9 @@ snGradSchemes
 
 fluxRequired
 {
+    default         no;
     p;
+    Phi;
 }
 
 

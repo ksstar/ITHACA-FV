@@ -11,7 +11,7 @@ FoamFile
     format      ascii;
     class       surfaceScalarField;
     location    "0";
-    object      phib;
+    object      phic;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -24,37 +24,8 @@ boundaryField
     inlet
     {
         type            fixedValue;
-        value           nonuniform List<scalar> 
-25
-(
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.000399999999999996
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.000399999999999996
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
--0.0004
-)
-;    
-   }
+        value           uniform 0;
+    }
     outlet
     {
         type            calculated;

@@ -23,7 +23,7 @@ boundaryField
 {
     inlet
     {
-        type            fixedValue;
+        type            calculated;
         value           nonuniform List<scalar> 
 25
 (
@@ -53,11 +53,11 @@ boundaryField
 -0.0004
 -0.0004
 )
-;    
-   }
+;
+    }
     outlet
     {
-        type            calculated;
+        type            fixedValue;
         value           uniform 0;
     }
     top
