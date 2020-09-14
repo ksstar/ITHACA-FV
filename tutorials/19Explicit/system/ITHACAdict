@@ -18,10 +18,10 @@ FoamFile
 EigenSolver eigen;
 
 // Number of modes to output and to use for projection
-NmodesUout 15;
-NmodesUproj 15;
-NmodesPout 15;
-NmodesPproj 15;
+NmodesUout 20;
+NmodesUproj 20;
+NmodesPout 20;
+NmodesPproj 20;
 NmodesSUPout 0;
 NmodesSUPproj 0;
 
@@ -42,7 +42,7 @@ timeDerivativeSchemeOrder first;
 
 Method FE;
 
-ExplicitMethod Ales;
+ExplicitMethod A;
 
 PoissonMethod FOM;
 
